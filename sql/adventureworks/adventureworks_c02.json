@@ -1,0 +1,40 @@
+{
+  "T":
+  {
+  	"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where p.makeflag = 'f' and p.finishedgoodsflag ='f' and p.safetystocklevel > 100 and p.listprice=0 and poh.shipmethodid>1 and poh.orderdate>'2011-01-01 00:00:00' and poh.shipdate > '2011-01-01 00:00:00' and poh.subtotal> 100 and pod.orderqty>1 and pod.unitprice>20;",
+  	"pkList": "purchaseorderid,purchaseorderdetailid"
+  },
+	"F":
+	[	{
+  		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where p.makeflag = 'f' and p.finishedgoodsflag ='f' and p.safetystocklevel > 100 and p.listprice=0 and poh.shipmethodid>1 and poh.orderdate>'2011-01-01 00:00:00' and poh.shipdate > '2011-01-01 00:00:00' and poh.subtotal> 150 and pod.orderqty>1 and pod.unitprice>20;",
+		"pkList": "purchaseorderid,purchaseorderdetailid",
+		"relevent": ["PH0-N8"]
+		},
+		{
+  		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where p.makeflag = 'f' and p.finishedgoodsflag ='f' and p.safetystocklevel < 100 and p.listprice=0 and poh.shipmethodid>1 and poh.orderdate>'2011-01-01 00:00:00' and poh.shipdate > '2011-01-01 00:00:00' and poh.subtotal> 100 and pod.orderqty>1 and pod.unitprice>20;",
+		"pkList": "purchaseorderid,purchaseorderdetailid",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where p.makeflag = 'f' and p.finishedgoodsflag ='f' and p.safetystocklevel > 100 and p.listprice=0 and poh.status>1 and poh.orderdate>'2011-01-01 00:00:00' and poh.shipdate > '2011-01-01 00:00:00' and poh.subtotal> 100 and pod.orderqty>1 and pod.unitprice>20;",
+		"pkList": "purchaseorderid,purchaseorderdetailid",
+		"relevent": ["PH0-N5"]
+		},
+		{
+  		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where p.makeflag = 'f' and p.finishedgoodsflag ='f' and p.safetystocklevel > 100 and p.listprice=0 and poh.shipmethodid>1 and poh.orderdate>'2011-01-01 00:00:00' and poh.shipdate > '2011-01-01 00:00:00' and poh.subtotal> 100 and pod.orderqty>1;",
+		"pkList": "purchaseorderid,purchaseorderdetailid",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where p.makeflag = 'f' and p.finishedgoodsflag ='f' and p.safetystocklevel > 100 and p.listprice=0 and poh.shipmethodid>0 and poh.orderdate>'2011-01-01 00:00:00' and poh.shipdate > '2012-01-01 00:00:00' and poh.subtotal> 0 and pod.orderqty>1;",
+		"pkList": "purchaseorderid,purchaseorderdetailid",
+		"relevent": ["PH0-missing_node1","PH0-N8","PH0-N7","PH0-N5"]
+		},
+		{
+  		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where p.makeflag = 'f' and p.finishedgoodsflag ='f' and p.safetystocklevel > 100 and p.listprice=0 and poh.shipmethodid>1 and poh.orderdate>'2011-01-01 00:00:00' and poh.shipdate > '2011-01-01 00:00:00' and poh.subtotal> 100 and pod.orderqty>1 and pod.unitprice>20 and poh.modifieddate>'2013-01-01';",
+		"pkList": "purchaseorderid,purchaseorderdetailid",
+		"relevent": ["PH0-N11"]
+		}
+	]
+
+}

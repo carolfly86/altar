@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where birth_date = '1954-09-26' or last_name like 'Al%' or hire_date = '1990-08-21' or emp_no < 12000;",
+  	"pkList": "emp_no"
+  },
+	"F":
+	[
+		{
+  		"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where birth_date = '1952-09-26' or last_name like 'Al%' or hire_date = '1990-08-21' or emp_no < 12000;",
+		"pkList": "emp_no",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where birth_date = '1954-09-26' or last_name = 'Al' or hire_date = '1990-08-21' or emp_no < 12000;",
+		"pkList": "emp_no",
+		"relevent": ["PH1-N2"]
+		},
+		{
+  		"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where birth_date = '1954-09-26' or last_name like 'Al%' or hire_date = '1990-08-21' or emp_no = 12000;",
+		"pkList": "emp_no",
+		"relevent": ["PH3-N4"]
+		},
+		{
+  		"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where birth_date = '1954-09-26' or last_name like 'Al%' or hire_date = '1990-08-21' ;",
+		"pkList": "emp_no",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  		"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where birth_date < '1950-02-26' or last_name like 'Al%' or hire_date = '1990-08-21' or emp_no = 12000;",
+		"pkList": "emp_no",
+		"relevent": ["PH0-N1","PH3-N4"]
+		},
+		{
+  		"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where birth_date = '1954-09-26' or last_name like 'Al%' or hire_date = '1990-08-21' or (emp_no < 12000 and last_name like 'S%') ;",
+		"pkList": "emp_no",
+		"relevent": ["PH3-N5"]
+		}
+	]
+
+}

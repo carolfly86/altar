@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select c.personid from customer c join person p on c.personid = p.businessentityid where p.firstname = 'James' or p.middlename ='C' or p.modifieddate= '2014-05-27 00:00:00';",
+  	"pkList": "personid"
+  },
+	"F":
+	[
+		{
+		"query": "select c.personid from customer c join person p on c.personid = p.businessentityid where p.firstname = 'James' or p.middlename ='C' or p.modifieddate= '2015-05-27 00:00:00';",
+		"pkList": "personid",
+		"relevent": ["PH2-N3"]
+		}
+		,{
+		"query": "select c.personid from customer c join person p on c.personid = p.businessentityid where p.firstname = 'James' or p.middlename ='C' or p.modifieddate> '2014-05-27 00:00:00';",
+		"pkList": "personid",
+		"relevent": ["PH2-N3"]
+		}
+		,{
+		"query": "select c.personid from customer c join person p on c.personid = p.businessentityid where p.firstname = 'James' or p.middlename ='C' or c.modifieddate= '2014-05-27 00:00:00';",
+		"pkList": "personid",
+		"relevent": ["PH2-N3"]
+		}
+		,{
+		"query": "select c.personid from customer c join person p on c.personid = p.businessentityid where p.firstname = 'James' or p.middlename ='C' ;",
+		"pkList": "personid",
+		"relevent": ["missing_branch1-missing_node1"]
+		}
+		,{
+		"query": "select c.personid from customer c join person p on c.personid = p.businessentityid where p.firstname = 'William' or p.lastname ='James' or p.modifieddate= '2014-05-27 00:00:00';",
+		"pkList": "personid",
+		"relevent": ["PH0-N1","PH1-N2"]
+		}
+		,{
+		"query": "select c.personid from customer c join person p on c.personid = p.businessentityid where p.firstname = 'James' or p.middlename ='C' or (p.modifieddate= '2014-05-27 00:00:00' and c.modifieddate= '2014-05-27 00:00:00') ;",
+		"pkList": "personid",
+		"relevent": ["PH2-N4"]
+		}
+	]
+
+}

@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select emp_no,from_date,salary from salaries where from_date = to_date and salary < 70000 and emp_no > 100000 ",
+  	"pkList": "emp_no, from_date"
+  },
+	"F":
+	[
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where from_date = to_date and salary < 60000 and emp_no > 100000",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where from_date > to_date and salary < 70000 and emp_no > 100000",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where from_date = to_date and emp_no < 70000 and emp_no > 100000",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where from_date = to_date and salary < 70000",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where from_date = '2001-10-04' and salary < 60000 and emp_no > 100000",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N1","PH0-N2"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where from_date = to_date and salary < 70000 and emp_no > 100000 and to_date >'1995-01-01'",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N4"]
+		}
+	]
+
+}

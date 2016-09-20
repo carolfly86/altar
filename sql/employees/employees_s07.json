@@ -1,0 +1,17 @@
+{
+  "T":
+  {
+  	"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where ( birth_date = '1954-09-26' and gender = 'M' ) or hire_date = '1990-08-21' or last_name like 'Al%';",
+  	"pkList": "emp_no"
+  },
+	"F":
+	[
+
+		{
+  		"query": "select emp_no,birth_date,first_name,last_name,gender,hire_date from employees where ( birth_date = '1954-09-26' and gender = 'F' ) or hire_date = '1990-08-21' or first_name like 'Al%';",
+		"pkList": "emp_no",
+		"relevent": ["PH0-N2","PH2-N4"]
+		}
+	]
+
+}

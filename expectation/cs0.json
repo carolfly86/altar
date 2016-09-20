@@ -1,0 +1,85 @@
+{
+	"expectations":
+	[
+	   {
+		  "support": "film_id = 1",
+		  "behavior": "rental_rate=0.99"
+		},
+		{
+		  "support": "film_id = 2",
+		  "behavior": "rental_rate=4.99"
+		},
+		{
+		  "support": "film_id = 3",
+		  "behavior": "rental_rate=2.99"
+		},
+		{
+		  "support": "film_id = 4",
+		  "behavior": "rental_rate=2.99"
+		},
+		{
+		  "support": "film_id = 5",
+		  "behavior": "rental_rate=2.99"
+		},
+		{
+		  "support": "film_id = 6",
+		  "behavior": "rental_rate=2.99"
+		},
+		{
+		  "support": "film_id = 7",
+		  "behavior": "rental_rate=4.99"
+		},
+		{
+		  "support": "film_id = 8",
+		  "behavior": "rental_rate=4.99"
+		},
+		{
+		  "support": "film_id = 9",
+		  "behavior": "rental_rate=2.99"
+		},
+		{
+		  "support": "film_id = 10",
+		  "behavior": "rental_rate=4.99"
+		},
+	   {
+		  "support": "film_id = 1",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 2",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 3",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 4",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 5",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 6",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 7",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 8",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 9",
+		  "behavior": "release_year=2006"
+		},
+		{
+		  "support": "film_id = 10",
+		  "behavior": "release_year=2006"
+		}		
+	]
+}

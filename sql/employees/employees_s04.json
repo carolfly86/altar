@@ -1,0 +1,36 @@
+{
+  "T":
+  {
+  	"query": "select emp_no,from_date,salary from salaries where salary = 50000 or from_date = '1993-04-01' or to_date = '1993-04-01'",
+  	"pkList": "emp_no, from_date"
+  },
+	"F":
+	[
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where salary = 51000 or from_date = '1993-04-01' or to_date = '1993-04-01'",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where salary < 50000 or from_date = '1993-04-01' or to_date = '1993-04-01'",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where emp_no = 50000 or from_date = '1993-04-01' or to_date = '1993-04-01'",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where salary = 50000 or from_date = '1993-04-01' ",
+		"pkList": "emp_no,from_date",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  	    "query": "select emp_no,from_date,salary from salaries where salary = 60000 or from_date = '1994-04-01' or to_date = '1993-04-01'",
+		"pkList": "emp_no,from_date",
+		"relevent": ["PH0-N1","PH1-N2"]
+		}
+	]
+
+}

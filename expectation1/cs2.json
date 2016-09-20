@@ -1,0 +1,13 @@
+{
+	"expectations":
+	[
+		{
+		  "support": "rental_rate between 0 and 4 ",
+		  "behavior": "length>90"
+		},
+		{
+		  "support": "length>90",
+		  "behavior": "rental_rate between 0 and 4"
+		}
+	]
+}

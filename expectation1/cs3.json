@@ -1,0 +1,41 @@
+{
+	"expectations":
+	[
+	   {
+		  "support":  "film_id = 9",
+		  "behavior": "rental_rate = 3.79"
+		},
+		{
+		  "support":  "film_id = 9",
+		  "behavior": "release_year = 2014"
+		},
+		{
+		  "support":  "film_id = 9",
+		  "behavior": "length = 114"
+		},
+		{
+		  "support":  "film_id = 14",
+		  "behavior": "rental_rate = 1.09"
+		},
+		{
+		  "support":  "film_id = 14",
+		  "behavior": "release_year = 2007"
+		},
+		{
+		  "support":  "film_id = 14",
+		  "behavior": "length = 94"
+		},
+		{
+		  "support":  "film_id = 11",
+		  "behavior": "rental_rate = 2.89"
+		},
+		{
+		  "support":  "film_id = 11",
+		  "behavior": "release_year = 2015"
+		},
+		{
+		  "support":  "film_id = 11",
+		  "behavior": "length = 126"
+		}
+	]
+}

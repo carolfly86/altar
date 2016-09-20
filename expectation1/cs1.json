@@ -1,0 +1,33 @@
+{
+	"expectations":
+	[
+	   {
+		  "support":  "release_year<2010",
+		  "behavior": "rental_rate<2"
+		},
+		{
+		  "support": "release_year>=2010",
+		  "behavior": "rental_rate>2"
+		},
+		{
+		  "support": "rental_rate between 0 and 4 ",
+		  "behavior": "length>90"
+		},
+		{
+		  "support": "rental_rate = 1.09 ",
+		  "behavior": "release_year = 2007"
+		},
+		{
+		  "support": "rental_rate = 1.19 ",
+		  "behavior": "release_year = 2008"
+		},
+		{
+		  "support": "rental_rate = 1.29 ",
+		  "behavior": "release_year = 2009"
+		},
+		{
+		  "support": "rental_rate > 2.39 ",
+		  "behavior": "release_year >= 2010"
+		}
+	]
+}

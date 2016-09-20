@@ -1,0 +1,36 @@
+{
+  "T":
+  {
+  	"query": "select dm.emp_no as dept_manager_emp_no, de.emp_no as dept_emp_emp_no from dept_manager dm join dept_emp de on dm.dept_no = de.dept_no where  (dm.emp_no = 111133 and dm.to_date = '9999-01-01') or (dm.from_date = de.from_date and dm.dept_no = 'd001');",
+  	"pkList": "dept_manager_emp_no, dept_emp_emp_no"
+  },
+	"F":
+	[
+		{
+  		"query": "select dm.emp_no as dept_manager_emp_no, de.emp_no as dept_emp_emp_no from dept_manager dm join dept_emp de on dm.dept_no = de.dept_no where  (dm.emp_no = 111133 and dm.to_date = '9999-01-01') or (dm.from_date = de.from_date and dm.dept_no = 'd003');",
+		"pkList": "dept_manager_emp_no, dept_emp_emp_no",
+		"relevent": ["PH1-N4"]
+		},
+		{
+  		"query": "select dm.emp_no as dept_manager_emp_no, de.emp_no as dept_emp_emp_no from dept_manager dm join dept_emp de on dm.dept_no = de.dept_no where  (dm.emp_no = 111133 and dm.to_date > '9999-01-01') or (dm.from_date = de.from_date and dm.dept_no = 'd001');",
+		"pkList": "dept_manager_emp_no, dept_emp_emp_no",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select dm.emp_no as dept_manager_emp_no, de.emp_no as dept_emp_emp_no from dept_manager dm join dept_emp de on dm.dept_no = de.dept_no where  (de.emp_no = 111133 and dm.to_date = '9999-01-01') or (dm.from_date = de.from_date and dm.dept_no = 'd001');",
+		"pkList": "dept_manager_emp_no, dept_emp_emp_no",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select dm.emp_no as dept_manager_emp_no, de.emp_no as dept_emp_emp_no from dept_manager dm join dept_emp de on dm.dept_no = de.dept_no where  (dm.emp_no = 111133 and dm.to_date = '9999-01-01') or (dm.from_date = de.from_date );",
+		"pkList": "dept_manager_emp_no, dept_emp_emp_no",
+		"relevent": ["PH1-missing_node1"]
+		},
+		{
+  		"query": "select dm.emp_no as dept_manager_emp_no, de.emp_no as dept_emp_emp_no from dept_manager dm join dept_emp de on dm.dept_no = de.dept_no where  (dm.emp_no = 111133 and dm.from_date = '9999-01-01') or (dm.from_date < de.from_date and dm.dept_no = 'd001');",
+		"pkList": "dept_manager_emp_no, dept_emp_emp_no",
+		"relevent": ["PH0-N2","PH1-N3"]
+		}
+	]
+
+}

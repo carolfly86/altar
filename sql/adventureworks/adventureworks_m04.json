@@ -1,0 +1,42 @@
+{
+  "T":
+  {
+  	"query": "select p.productid,l.locationid from product p join productinventory pi on p.productid = pi.productid join location l on l.locationid = pi.locationid where ( l.costrate = 0 and pi.quantity < 500 and pi.shelf = 'A') or (p.makeflag = 'f' and p.color is null and p.listprice =0);",
+  	"pkList": "productid, locationid"
+  },
+	"F":
+	[
+		{
+		"query": "select p.productid,l.locationid from product p join productinventory pi on p.productid = pi.productid join location l on l.locationid = pi.locationid where ( l.costrate = 0 and pi.quantity < 500 and pi.shelf = 'B') or (p.makeflag = 'f' and p.color is null and p.listprice =0);",
+		"pkList": "productid, locationid",
+		"relevent": ["PH0-N3"]
+		},
+		{
+		"query": "select p.productid,l.locationid from product p join productinventory pi on p.productid = pi.productid join location l on l.locationid = pi.locationid where ( l.costrate = 0 and pi.quantity > 500 and pi.shelf = 'A') or (p.makeflag = 'f' and p.color is null and p.listprice =0);",
+		"pkList": "productid, locationid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+		"query": "select p.productid,l.locationid from product p join productinventory pi on p.productid = pi.productid join location l on l.locationid = pi.locationid where ( l.costrate = 0 and p.reorderpoint < 500 and pi.shelf = 'A') or (p.makeflag = 'f' and p.color is null and p.listprice =0);",
+		"pkList": "productid, locationid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+		"query": "select p.productid,l.locationid from product p join productinventory pi on p.productid = pi.productid join location l on l.locationid = pi.locationid where ( l.costrate = 0 and pi.quantity < 500 and pi.shelf = 'A') or (p.makeflag = 'f' and p.color is null);",
+		"pkList": "productid, locationid",
+		"relevent": ["PH1-missing_node1"]
+		},
+
+		{
+		"query": "select p.productid,l.locationid from product p join productinventory pi on p.productid = pi.productid join location l on l.locationid = pi.locationid where ( l.costrate = 0 and pi.quantity < 500) or (p.makeflag = 'f' and p.color is not null and p.listprice =0);",
+		"pkList": "productid, locationid",
+		"relevent": ["PH0-missing_node1","PH1-N4"]
+		},
+		{
+  		"query": "select p.productid,l.locationid from product p join productinventory pi on p.productid = pi.productid join location l on l.locationid = pi.locationid where ( l.costrate = 0 and pi.quantity < 500 and pi.shelf = 'A') or (p.makeflag = 'f' and p.color is null and p.listprice =0 and l.availability >5);",
+		"pkList": "productid, locationid",
+		"relevent": ["PH1-N7"]
+		}
+	]
+
+}

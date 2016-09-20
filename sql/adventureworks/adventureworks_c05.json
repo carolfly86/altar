@@ -1,0 +1,40 @@
+{
+  "T":
+  {
+  	"query": "select sod.salesorderid, sod.salesorderdetailid from salesorderdetail sod join salesorderheader soh on sod.salesorderid = soh.salesorderid join creditcard cc on soh.creditcardid = cc.creditcardid where ( sod.orderqty >1 and sod.unitprice >500 and sod.unitpricediscount >0 ) or (soh.subtotal > 120000  and soh.freight > 3500) or (soh.revisionnumber=9 and soh.status =5 and soh.territoryid =5) or (cc.cardtype='ColonialVoice' and cc.expyear > 2007 and cc.expmonth > 6);",
+  	"pkList": "salesorderid, salesorderdetailid"
+  },
+	"F":
+	[	{
+  		"query": "select sod.salesorderid, sod.salesorderdetailid from salesorderdetail sod join salesorderheader soh on sod.salesorderid = soh.salesorderid join creditcard cc on soh.creditcardid = cc.creditcardid where ( sod.orderqty >1 and sod.unitprice >100 and sod.unitpricediscount >0 ) or (soh.subtotal > 120000  and soh.freight > 3500) or (soh.revisionnumber=9 and soh.status =5 and soh.territoryid =5) or (cc.cardtype='ColonialVoice' and cc.expyear > 2007 and cc.expmonth > 6);",
+		"pkList": "salesorderid, salesorderdetailid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select sod.salesorderid, sod.salesorderdetailid from salesorderdetail sod join salesorderheader soh on sod.salesorderid = soh.salesorderid join creditcard cc on soh.creditcardid = cc.creditcardid where ( sod.orderqty >1 and sod.unitprice >500 and sod.unitpricediscount >0 ) or (soh.subtotal > 120000  and soh.freight > 3500) or (soh.revisionnumber=9 and soh.status =5 and soh.territoryid =5) or (cc.cardtype='ColonialVoice' and cc.expyear > 2007 and cc.expmonth = 6);",
+		"pkList": "salesorderid, salesorderdetailid",
+		"relevent": ["PH3-N11"]
+		},
+		{
+  		"query": "select sod.salesorderid, sod.salesorderdetailid from salesorderdetail sod join salesorderheader soh on sod.salesorderid = soh.salesorderid join creditcard cc on soh.creditcardid = cc.creditcardid where ( sod.orderqty >1 and sod.unitprice >500 and sod.unitpricediscount >0 ) or (soh.totaldue > 120000  and soh.freight > 3500) or (soh.revisionnumber=9 and soh.status =5 and soh.territoryid =5) or (cc.cardtype='ColonialVoice' and cc.expyear > 2007 and cc.expmonth > 6);",
+		"pkList": "salesorderid, salesorderdetailid",
+		"relevent": ["PH1-N4"]
+		},
+		{
+  		"query": "select sod.salesorderid, sod.salesorderdetailid from salesorderdetail sod join salesorderheader soh on sod.salesorderid = soh.salesorderid join creditcard cc on soh.creditcardid = cc.creditcardid where ( sod.unitprice >500 and sod.unitpricediscount >0 ) or (soh.subtotal > 120000  and soh.freight > 3500) or (soh.revisionnumber=9 and soh.status =5 and soh.territoryid =5) or (cc.cardtype='ColonialVoice' and cc.expyear > 2007 and cc.expmonth > 6);",
+		"pkList": "salesorderid, salesorderdetailid",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select sod.salesorderid, sod.salesorderdetailid from salesorderdetail sod join salesorderheader soh on sod.salesorderid = soh.salesorderid join creditcard cc on soh.creditcardid = cc.creditcardid where ( sod.unitprice >500 and sod.unitpricediscount >0 ) or (soh.subtotal > 120000  and soh.freight > 4000) or (soh.revisionnumber=9 and soh.status =5 and soh.territoryid =5) or (cc.cardtype='ColonialVoice' and cc.expyear = 2008 and cc.expmonth = 6);",
+		"pkList": "salesorderid, salesorderdetailid",
+		"relevent": ["PH0-missing_node1","PH1-N4","PH3-N9","PH3-N10"]
+		},
+		{
+  		"query": "select sod.salesorderid, sod.salesorderdetailid from salesorderdetail sod join salesorderheader soh on sod.salesorderid = soh.salesorderid join creditcard cc on soh.creditcardid = cc.creditcardid where ( sod.orderqty >1 and sod.unitprice >500 and sod.unitpricediscount >0 ) or (soh.subtotal > 120000  and soh.freight > 3500 and sod.orderqty >1) or (soh.revisionnumber=9 and soh.status =5 and soh.territoryid =5 ) or (cc.cardtype='ColonialVoice' and cc.expyear > 2007 and cc.expmonth > 6);",
+		"pkList": "salesorderid, salesorderdetailid",
+		"relevent": ["PH1-N6"]
+		}
+	]
+
+}

@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Manager%' or e.hiredate> '2010-01-01' or e.vacationhours >80 or p.lastname like 'G%' or p.title is not null;",
+  	"pkList": "businessentityid"
+  },
+	"F":
+	[
+		{
+		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Supervisor%' or e.hiredate> '2010-01-01' or e.vacationhours >80 or p.lastname like 'G%' or p.title is not null;",
+		"pkList": "businessentityid",
+		"relevent": ["PH0-N1"]
+		},
+		{
+		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Manager%' or e.hiredate= '2010-01-01' or e.vacationhours >80 or p.lastname like 'G%' or p.title is not null;",
+		"pkList": "businessentityid",
+		"relevent": ["PH1-N2"]
+		},
+		{
+		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Manager%' or e.hiredate> '2010-01-01' or e.vacationhours >80 or p.firstname like 'G%' or p.title is not null;",
+		"pkList": "businessentityid",
+		"relevent": ["PH3-N4"]
+		},
+		{
+		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Manager%' or e.hiredate> '2010-01-01' or e.vacationhours >80 or p.lastname like 'G%';",
+		"pkList": "businessentityid",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Supervisor%' or e.hiredate= '2010-01-01' or e.vacationhours >70 or p.lastname like 'G%' or p.title is not null;",
+		"pkList": "businessentityid",
+		"relevent": ["PH0-N1","PH1-N2","PH2-N3"]
+		},
+		{
+  		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Manager%' or e.hiredate> '2010-01-01' or e.vacationhours >80 or p.lastname like 'G%' or p.title is not null or e.birthdate > '1980-01-01';",
+		"pkList": "businessentityid",
+		"relevent": ["PH5-N6"]
+		}
+	]
+
+}
