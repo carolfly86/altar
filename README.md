@@ -7,6 +7,7 @@ Currently it supports PostgresSQL.
 
 1. `bundle install`
 2. update the database config file in config/default.yml
+
 ## Usage
 
 1. Create a directory in `/sql` directory, the name of the directory should be the database name.
