@@ -1,7 +1,7 @@
 # ALTAR
 
-ALTAR is a automated SQL predicate fault locazilation tool.
-Currently the only database it supports it PostgresSQL.
+ALTAR is an automated SQL predicate fault localization tool.
+Currently it supports PostgresSQL.
 
 ## Installation
 
