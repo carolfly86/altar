@@ -1,4 +1,7 @@
-def queryTest(script,golden_record_opr,is_baseline)
+def queryTest(script,golden_record_opr,method)
+# method: b --- baseline SBFL methods
+#         o --- original 
+#         n --- new
 	dbname = script.split('_')[0]
 	query_json = JSON.parse(File.read("sql/#{dbname}/#{script}.json"))
 	create_test_result_tbl()
@@ -51,7 +54,7 @@ def queryTest(script,golden_record_opr,is_baseline)
 	f_options_list.each_with_index do |f_options,idx|
 
 		fqueryObj = QueryObj.new(f_options)
-		if is_baseline == 'y'
+		if method == 'o'
 			beginTime = Time.now
 			tarantular = Tarantular.new(fqueryObj,tqueryObj,1)
 			tarantular.predicateTest()
@@ -71,7 +74,7 @@ def queryTest(script,golden_record_opr,is_baseline)
 		puts "begin test"
 		beginTime = Time.now
 		localizeErr = LozalizeError.new(fqueryObj,tqueryObj)
-		selectionErrList = localizeErr.selecionErr(is_baseline)
+		selectionErrList = localizeErr.selecionErr(method)
 		puts 'test end'
 		endTime = Time.now
 		m_u_tuple_count = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count

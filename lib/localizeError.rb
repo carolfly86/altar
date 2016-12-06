@@ -35,6 +35,22 @@ class LozalizeError
     res.each do |r|
       @pkList << r['attname']
     end
+
+    @pkFullList = []
+
+    @pkList.each do |pk_col|
+      h =  Hash.new
+      # binding.pry
+      #col = ReverseParseTree.find_col_by_name(@ps['SELECT']['targetList'], c)['fullname']
+      col = ReverseParseTree.find_col_by_name(@fPS['SELECT']['targetList'], pk_col)
+      # pp @fPS['SELECT']['targetList']
+      # abort('test')
+      h['alias'] = col['alias']
+      h['col'] = col['col']
+      @pkFullList.push(h)
+    end
+
+
     # pp "@pkList: #{@pkList}"
     #pp @ps
     @pkJoin = ''
@@ -285,11 +301,13 @@ class LozalizeError
 
 
   # where cond error localization
-  def selecionErr(is_baseline = 'n')
+  def selecionErr(method = 'n')
 
     whereErrList = []
     joinErrList = []
 
+    allcolumns_construct(method)
+    ftuples_tbl_create
 
     # pkNull = @pkSelect.gsub(',',' IS NULL AND ')
 
@@ -332,15 +350,22 @@ class LozalizeError
     suspicious_score_upd(@predicateTree.branches)
     # exnorate algorithm
 
-    if (is_baseline == 'n')
-      puts 'exonerate algorithm'
+    if (method == 'o')
+      puts 'old exonerate algorithm'
       true_query_PT_construct()
       constraint_query = constraint_predicate_construct()
-      allcolumns_construct()
+      # allcolumns_construct()
       tuple_mutation_test(missinPK,'M',constraint_query)
       tuple_mutation_test(unWantedPK,'U',constraint_query)
-    else
+    elsif (method == 'n')
+      puts 'new exonerate algorithm'
+      true_query_PT_construct()
+      constraint_query = constraint_predicate_construct()
+
+    elsif (method == 'b')
       puts 'baseline'
+    else
+      puts 'Unknown method'  
     end
     # remove constraint_nodes in node_query_mapping
     query = "delete from node_query_mapping where test_id = #{@test_id} and type = 't'"
@@ -368,8 +393,9 @@ class LozalizeError
     constraintPredicateQuery=RewriteQuery.rewrite_predicate_query(constraintPredicateQuery, t_predicate_collist)
 
   end
-  def allcolumns_construct()
-    all_columns = DBConn.getAllRelFieldList(@fromPT)
+  def allcolumns_construct(method)
+
+    all_columns = DBConn.getAllRelFieldList(@fromPT) 
     # @allColumnList = all_columns
     # pp @allColumnList
     # @all_column_combinations = []
@@ -380,7 +406,7 @@ class LozalizeError
     #     @all_column_combinations << cc.to_set
     #   end
     # end
-    @column_combinations = Columns_Combination.new(all_columns)
+    @column_combinations = Columns_Combination.new(all_columns) unless method == 'b'
     # pp @allColumnList
     @allColumns_select = all_columns.map do |field|
       col = field.relname.nil? ? "#{field.relname}.#{field.colname}" : "#{field.relalias}.#{field.colname}"
@@ -448,6 +474,7 @@ class LozalizeError
 
   end
 
+
   def suspicious_score_upd(predicate_tree_branches)
     predicate_tree_branches.each do |br|
       br.nodes.each do |nd|
@@ -476,17 +503,14 @@ class LozalizeError
     pkArry = []
     res.each do |r|
       pk = []
-      @pkList.each do |c|
+      @pkFullList.each do |pkcol|
         h =  Hash.new
         # binding.pry
-        #col = ReverseParseTree.find_col_by_name(@ps['SELECT']['targetList'], c)['fullname']
-        col = ReverseParseTree.find_col_by_name(@fPS['SELECT']['targetList'], c)
-        # pp @fPS['SELECT']['targetList']
-        # abort('test')
-        h['val'] = r[c]
-        h['alias'] = col['alias']
-        h['col'] = col['col']
-
+     
+        colname = pkcol['col'].split('.')[1]
+        h['val'] = r[colname]
+        h['alias'] = pkcol['alias']
+        h['col'] = pkcol['col']
         pk.push(h)
       end
       pkArry.push(pk)
@@ -506,25 +530,6 @@ class LozalizeError
     end
     score
   end
-  # def get_test_result()
-  #   query = "select * from node_query_mapping where test_id = #{@test_id}"
-  #   rst = DBConn.exec(query)
-  #   score = Hash.new()
-  #   score["totalScore"] = 0
-  #   rst.each do |t|
-  #     score["totalScore"] += t['suspicious_score'].to_i
-  #     loc = t['location']
-  #     query = t['query']
-  #     columns = t['columns']
-  #     node = "#{t['branch_name']}-#{t['node_name']}"
-  #     score[node] = {'location'=> loc,
-  #       'query'=> query,
-  #       'columns'=> columns.gsub('{',''),
-  #       'score'=> t['suspicious_score']
-  #     }
-  #   end
-  #   score
-  # end
 
   def whereCondTest(pkArry, type)
 
@@ -604,33 +609,69 @@ class LozalizeError
   end
 
 
-  def find_unwanted_tuples(count_only = false)
+  def find_unwanted_tuples()
     pkNull = @pkSelect.gsub(',',' IS NULL AND ')
-    # Unwanted rows
-    query = 'SELECT '+
-            ( count_only ?  'count() as count' : @pkSelect )+
-            " FROM #{@fTable} f LEFT JOIN #{@tTable} t ON #{@pkJoin} where #{pkNull.gsub('f.','t.')} IS NULL"
-    res = DBConn.exec(query)
-    @unwanted_tuple_count = count_only ? res[0]['count'].to_i : res.count()
+    select_query = 'SELECT #TARGETLIST#'+
+                    " FROM #{@fTable} f LEFT JOIN #{@tTable} t ON #{@pkJoin} where #{pkNull.gsub('f.','t.')} IS NULL"
 
+    # Unwanted rows
+    targetList=  @pkSelect
+
+    query = select_query.gsub('#TARGETLIST#', targetList)
+    res = DBConn.exec(query)
+    @unwanted_tuple_count =  res.count()
+
+    # Insert into ftuples_tbl
+    renamedPKCol = @pkFullList.map{|pk|  "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+    targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_branches,'none'::varchar(300) as mutation_nodes,'none'::varchar(300) as mutation_cols,'U'::varchar(1) as type,#{@allColumns_select}"
+    val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
+    pkjoin = @pkFullList.map do |c|
+                "tbl1.#{c['col'].split('.')[1]} = tbl2.#{c['alias']}_pk"
+            end.join(' AND ')
+    query = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
+
+    query = "INSERT INTO ftuples #{query}"
+    puts query
+    DBConn.exec(query)
     # puts 'unwanted rows query'
     # puts query
     return query,res
   end
-  def find_missing_tuples(count_only = false)
+  def find_missing_tuples()
     pkNull = @pkSelect.gsub(',',' IS NULL AND ')
-    # Unwanted rows
-    query = 'SELECT '+
-             ( count_only ?  'count() as count': @pkSelect.gsub('f.','t.'))+
-             " FROM #{@tTable} t LEFT JOIN #{@fTable} f ON #{@pkJoin} where #{pkNull} IS NULL"
-    res = DBConn.exec(query)
-    @missing_tuple_count = count_only ? res[0]['count'].to_i : res.count()
 
-    # puts 'missing rows query'
-    # puts query
+    select_query = 'SELECT #TARGETLIST#'+
+                   " FROM #{@tTable} t LEFT JOIN #{@fTable} f ON #{@pkJoin} where #{pkNull} IS NULL"
+    # Unwanted rows
+    targetList= @pkSelect.gsub('f.','t.')
+    query = select_query.gsub('#TARGETLIST#', targetList)
+    res = DBConn.exec(query)
+    @missing_tuple_count = res.count()
+
+    # Insert into ftuples_tbl
+    renamedPKCol = @pkFullList.map{|pk|  "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+    targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_branches,'none'::varchar(300) as mutation_nodes,'none'::varchar(300) as mutation_cols,'M'::varchar(1) as type,#{@allColumns_select}"
+    val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
+    pkjoin = @pkFullList.map do |c|
+                "tbl1.#{c['col'].split('.')[1]} = tbl2.#{c['alias']}_pk"
+            end.join(' AND ')
+    query = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
+    query = "INSERT INTO ftuples #{query}"
+    DBConn.exec(query)
 
     return query, res
   end
 
+  def ftuples_tbl_create()
+
+    renamedPKCol = @pkFullList.map{|pk|  "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+
+    targetListReplacement ="#{renamedPKCol},'none'::varchar(300) as mutation_branches,'none'::varchar(300) as mutation_nodes,'none'::varchar(300) as mutation_cols,'none'::varchar(1) as type,#{@allColumns_select}"
+    query =  ReverseParseTree.reverseAndreplace(@fPS, targetListReplacement,'1=2')
+    pkList = @pkFullList.map{|pk| "#{pk['alias']}_pk" }.join(', ')+',mutation_branches,mutation_nodes,mutation_cols, type'
+    query=QueryBuilder.create_tbl('ftuples',pkList,query)
+    DBConn.exec(query)
+
+  end
 
 end

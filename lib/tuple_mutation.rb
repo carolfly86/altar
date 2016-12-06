@@ -96,31 +96,7 @@ class TupleMutation
 		@allColumns_select = allColumns_select
 		@allColumns_renamed =allColumns_renamed
 	end
-	# def allcolumns_construct(all_columns)
-	# 	@allColumnList = all_columns
-	# 	# pp @allColumnList
-	# 	@all_column_combinations = []
-	# 	# columnNames = @allColumnList.map do |field|
-	# 	# 	# field.colname
-	# 	# 	"#{field.relname}_#{field.colname}"
-	# 	# end
-	# 	max = @allColumnList.count()
-	# 	1.upto(max) do |i|
-	# 		@allColumnList.combination(i).each do |cc|
-	# 			@all_column_combinations << cc.to_set
-	# 		end
-	# 	end
- #        pp '@all_column_combinations'
- #        pp @all_column_combinations.count()
-	# 	# pp @allColumnList
-	# 	@allColumns = @allColumnList.map do |field|
-	# 		col = field.relname.nil? ? "#{field.relname}.#{field.colname}" : "#{field.relalias}.#{field.colname}"
-	# 		"#{col} as #{field.relname}_#{field.colname} "
-	# 	end.join(',')
-	# 	@allColNames = @allColumnList.map do |field|
-	# 		"#{field.relname}_#{field.colname} "
-	# 	end.join(',')
-	# end
+
 	#unwanted to satisfied mutation
 	def unwanted_to_satisfied()
 		# t_pkCol=@pkCol.split(',').map{|c| "t.#{c}"}.join(',')
@@ -132,7 +108,7 @@ class TupleMutation
 
 		1.upto(max) do |i|
 			bn_pair = unwanted_branch_node_pairs(i)
-			mutationTbl_upd(bn_pair,updateTup)
+			mutationTbl_upd(bn_pair,updateTup,@pkCond)
 
 			# binding.pry
 			exluded=DBConn.exec(@excluded_query)
@@ -187,7 +163,7 @@ class TupleMutation
 				# mutationTbl_create()
 				# pp "#{i}th column combination"
 				# pp ith_col_combinations
-				mutationTbl_upd(bn_pair,updateTup)
+				mutationTbl_upd(bn_pair,updateTup,@pkCond)
 				satisfied=DBConn.exec(@constraintPredicateQuery)
 				if satisfied.count() >0
 					# 1.upto(i) do |j|
@@ -233,7 +209,7 @@ class TupleMutation
 		1.upto(max) do |i|
 			bn_pair = missing_branch_node_pairs(i)
 			# mutationTbl_create()
-			mutationTbl_upd(bn_pair,updateTup)
+			mutationTbl_upd(bn_pair,updateTup,@pkCond)
 			# binding.pry
 			# pp @constraintPredicateQuery
 			satisfied=DBConn.exec(@constraintPredicateQuery)
@@ -278,7 +254,7 @@ class TupleMutation
 				# the ith combination is the the number of guilty branches
 				bn_pair = remaining_col_combination_bn_pairs(ith_col_combinations)
 				# mutationTbl_create()
-				mutationTbl_upd(bn_pair,updateTup)
+				mutationTbl_upd(bn_pair,updateTup,@pkCond)
 
 				excluded=DBConn.exec(@excluded_query)
 				if excluded.count() >0
@@ -387,12 +363,13 @@ class TupleMutation
 		return res[0]['count'].to_i>0
 	end
 
-	def mutationTbl_create()
+	def mutationTbl_create(whereCond)
 		# colCombination = @allColumnList.combination(ith_combination).to_a.map{|c| c.map{|col| col.colname}.join(',')}.map{|c| "'#{c}'"}.join(',')
 
 		renamedPKCol = @pk.map{|pk|  "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+
 		targetListReplacement ="#{renamedPKCol},'none'::varchar(300) as mutation_branches,'none'::varchar(300) as mutation_nodes,'none'::varchar(300) as mutation_cols,#{@allColumns_select}"
-		query =  ReverseParseTree.reverseAndreplace(@fParseTree, targetListReplacement,@pkCond)
+		query =  ReverseParseTree.reverseAndreplace(@fParseTree, targetListReplacement,whereCond)
 		pkList = @renamedPK.map{|pk| QueryBuilder.get_colalias(pk) }.join(', ')+',mutation_branches,mutation_nodes,mutation_cols'
 		query=QueryBuilder.create_tbl(@mutation_tbl,pkList,query)
 		# puts 'mutationTbl_create'
@@ -401,48 +378,64 @@ class TupleMutation
 		DBConn.exec(query)
 
 	end
-	def mutationTbl_upd(bn_pairs,updateTup)
+	def mutationTbl_upd(bn_pairs,updateTup, whereCond)
 
-		mutationTbl_create()
-
+		mutationTbl_create(whereCond)
+		# binding.pry
 		updQueryArray = []
-		renamedPKCond = @pk.map{|pk|  pk['col']+'_pk' +' = '+ pk['val'].to_s.str_int_rep }.join(' AND ')
+		# renamedPKCond = @pk.map{|pk|  pk['col']+'_pk' +' = '+ pk['val'].to_s.str_int_rep }.join(' AND ')
 
-		query = "select #{@allColumns_renamed} from #{@mutation_tbl} where #{@renamePKCond} and mutation_branches = 'none' and mutation_cols = 'none'"
-		res = DBConn.exec(query)
-		original_tup =res[0]
+		# query = "select #{@allColumns_renamed} from #{@mutation_tbl} where #{@renamePKCond} and mutation_branches = 'none' and mutation_cols = 'none'"
+		# res = DBConn.exec(query)
+		# original_tup =res[0]
 
+		all_cols = @allColumns_renamed.split(',').map{|v| v.gsub(' ','')}
 		#insert
 		query = ""
+		find=false
 		bn_pairs.each_with_index do |bn,id|
-			insert_tup=  original_tup.map do |key,original_value|
+			# insert_tup=  original_tup.map do |key,original_value|
 
-				# # bn['cols'].split(',').each do |col|
-				# pp bn
-				# pp "bn['cols'] "
-				# pp bn['cols']
-				# pp 'updateTup'
-				# pp updateTup
-				if bn['cols'].to_a.any?{|col| key == col.renamed_colname }
-					val = updateTup[0][key].nil? ? 'NULL' : updateTup[0][key].to_s.str_int_rep
-					"#{val} as #{key}"
-				else
+			# 	# # bn['cols'].split(',').each do |col|
+			# 	# pp bn
+			# 	# pp "bn['cols'] "
+			# 	# pp bn['cols']
+			# 	# pp 'updateTup'
+			# 	# pp updateTup
+			# 	if bn['cols'].to_a.any?{|col| key == col.renamed_colname }
+			# 		val = updateTup[0][key].nil? ? 'NULL' : updateTup[0][key].to_s.str_int_rep
+			# 		"#{val} as #{key}"
+			# 	else
+			# 		val = original_value.nil? ? 'NULL' : original_value.to_s.str_int_rep
+			# 		"#{val} as #{key} "
+			# 	end
+			# 	# binding.pry if original_value.nil? || updateTup[0][key].nil?
+			# end.join(',')
 
-					val = original_value.nil? ? 'NULL' : original_value.to_s.str_int_rep
-					"#{val} as #{key} "
-				end
-				# binding.pry if original_value.nil? || updateTup[0][key].nil?
-			end.join(',')
+			insert_tup = all_cols.map do |col|
+							if bn['cols'].to_a.any?{|bn_col| bn_col.renamed_colname == col }
+								find=true
+								val = updateTup[0][col].nil? ? 'NULL' : updateTup[0][col].to_s.str_int_rep
+								"#{val} as #{col}"
+							else
+								col
+							end
+						end.join(',')
+
 			mutation_columns = bn['cols'].to_a.map{|c| c.fullname}.join(',')
-			query = query + "INSERT INTO #{@mutation_tbl} select #{@renamedPKCol},'#{bn['branches']}' as mutation_branches,'#{bn['nodes']}' as mutation_nodes, '#{mutation_columns}' as mutation_cols ,#{insert_tup} ;"
-		end
-		# if @pk.any?{|pk| pk['col'] = 'emp_no' and pk['val'] = '58160'}
-		# 	pp bn_pairs
-		# end
-		# pp query
-		DBConn.exec(query)
+			query = query + "INSERT INTO #{@mutation_tbl} "+
+			                "select #{@renamedPKCol},'#{bn['branches']}' as mutation_branches,'#{bn['nodes']}' as mutation_nodes, '#{mutation_columns}' as mutation_cols ,#{insert_tup} "+
+			                "from #{@mutation_tbl} where mutation_branches = 'none' and mutation_cols = 'none'; "
 
+			                # "from #{@mutation_tbl} where #{@renamePKCond} and mutation_branches = 'none' and mutation_cols = 'none'; "
+		end
+
+		DBConn.exec(query)
+		# binding.pry
 	end
+
+
+
 	def remaining_col_combination_bn_pairs(ith_col_combinations)
 		bn_pairs = []
 		ith_col_combinations.each do |cols|
@@ -611,6 +604,20 @@ class TupleMutation
 				res = DBConn.exec(query)
 			end
 		end
+	end
+
+
+	def eliminate_redundant_tuples(guilty_nodes,updateTup, type)
+		
+		# create mutation table containing all failed rows
+		# update identified guilty columns in mutation table
+		mutationTbl_upd(guilty_nodes,updateTup, '')
+		if type == 'U' # unwanted
+		else
+		end
+		# remove redundant tuples
+		# update suspicious score
+
 	end
 
 end

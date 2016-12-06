@@ -1,4 +1,4 @@
 default:
   database: 'employees'
-  user: 'user'
+  user: 'myuser'
   password: 'password'
