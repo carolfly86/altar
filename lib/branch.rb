@@ -12,7 +12,7 @@ class Branch
         if tuple_type =='M'
             @nodes.find_all{|nd| !targetNodes.include?(nd.name) }
         # for unwanted tuples, if it exists in tuple_node_test_result 
-        # it must be passed    
+        # it must be passed
         elsif tuple_type =='U'
             @nodes.find_all{|nd| targetNodes.include?(nd.name) }
         end

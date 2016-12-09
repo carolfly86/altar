@@ -209,7 +209,8 @@ class PredicateTree
     self.branches.each do |br|
       br.nodes.each do |nd|
         nodeName=nd.name
-        columnsArray=nd.columns.map{|c| "'"+(c.relalias.nil? ? '' : c.relalias+'.')+c.colname+"'"}.join(',')
+        # columnsArray=nd.columns.map{|c| "'"+(c.relalias.nil? ? '' : c.relalias+'.')+c.colname+"'"}.join(',')
+        columnsArray=nd.columns.map{|c| "'"+ c.relname+'.'+c.colname+"'"}.join(',')
         query = "INSERT INTO #{@nqTblName} values (#{@test_id} ,'#{br.name}','#{nd.name}', '#{nd.query.gsub(/'/,'\'\'')}',#{nd.location}, ARRAY[#{columnsArray}], #{nd.suspicious_score} , '#{@type}' )"
         # pp query
         DBConn.exec(query)

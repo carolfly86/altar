@@ -29,10 +29,10 @@ module RewriteQuery
     column_list.each do |col|
       query=RewriteQuery.replace_fullname_with_renamed_colname(query,col)
     end
-    query="SELECT mutation_branches,mutation_nodes, mutation_cols "+
-          " FROM mutation_tuple "+
-          " WHERE mutation_branches <> 'none' and mutation_cols <>'none' and "+
-          query
+    # query="SELECT mutation_branches,mutation_nodes, mutation_cols "+
+    #       " FROM mutation_tuple "+
+    #       " WHERE mutation_branches <> 'none' and mutation_cols <>'none' and "+
+    query
 
   end
   def RewriteQuery.rename_duplicate_columns(colList)

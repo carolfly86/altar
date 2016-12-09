@@ -49,7 +49,7 @@ module QueryBuilder
         end
         dataTypeCond = " AND p.typcategory IN ('#{dataType}') ;"
         query = query + dataTypeCond
-      end  
+      end
       unless col.to_s ==''
         colCond = " and a.attname = '#{col}'"
         query = query +colCond

@@ -72,11 +72,15 @@ def queryTest(script,golden_record_opr,method)
 		# tarantular_rank = tarantular.relevence(f_options[:relevent])
 		# return
 		puts "begin test"
+
 		beginTime = Time.now
+		puts "test start time: #{beginTime}"
+
 		localizeErr = LozalizeError.new(fqueryObj,tqueryObj)
 		selectionErrList = localizeErr.selecionErr(method)
 		puts 'test end'
 		endTime = Time.now
+		puts "test end time: #{endTime}"
 		m_u_tuple_count = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count
 		fqueryObj.score = localizeErr.getSuspiciouScore()
 		puts 'fquery score:'

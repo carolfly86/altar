@@ -350,19 +350,30 @@ class LozalizeError
     suspicious_score_upd(@predicateTree.branches)
     # exnorate algorithm
 
-    if (method == 'o')
+    case method
+    when 'o'
       puts 'old exonerate algorithm'
       true_query_PT_construct()
       constraint_query = constraint_predicate_construct()
       # allcolumns_construct()
       tuple_mutation_test(missinPK,'M',constraint_query)
       tuple_mutation_test(unWantedPK,'U',constraint_query)
-    elsif (method == 'n')
+    when 'or'
+      puts 'old exonerate algorithm with duplicate removal'
+          # reset suspicious score
+      query = "update node_query_mapping set suspicious_score = 0 where type = 'f'"
+      res = DBConn.exec(query)
+
+      true_query_PT_construct()
+      constraint_query = constraint_predicate_construct()
+      # allcolumns_construct()
+      tuple_mutation_test_with_dup_removal('M',constraint_query)
+      tuple_mutation_test_with_dup_removal('U',constraint_query)
+    when 'n'
       puts 'new exonerate algorithm'
       true_query_PT_construct()
       constraint_query = constraint_predicate_construct()
-
-    elsif (method == 'b')
+    when 'b'
       puts 'baseline'
     else
       puts 'Unknown method'  
@@ -385,6 +396,7 @@ class LozalizeError
   def constraint_predicate_construct()
 
     t_predicate_collist= @tPredicateTree.all_columns
+    pp "t_predicate_collist: #{t_predicate_collist}"
     # pp 't_predicate_tree.all_columns'
     # rename_where_pt = @tQueryObj.parseTree['SELECT']['whereClause']
     constraintPredicateQuery=ReverseParseTree.whereClauseConst(@tWherePT)
@@ -417,10 +429,9 @@ class LozalizeError
     end.join(',')
   end
 
-  def tuple_mutation_test(pkArry, type,constraint_predicate)
+  def tuple_mutation_test(pkArry,type,constraint_predicate)
 
     # tPredicateArry =tPredicateTree.predicateArrayGen(tPDTree)
-
     pkArry.each do |pk|
       # pp pk
       # pp type
@@ -463,15 +474,32 @@ class LozalizeError
           # abort('missing')
           # end
       end
-      # if pk[0]['col'] == 'e.emp_no' and pk[0]['val'] == '237542'
-      #   binding.pry
-      #   abort('test')
-      # end
-      # pp "end: #{Time.now}"
 
-      # abort('test')
+
     end
 
+  end
+
+  def tuple_mutation_test_with_dup_removal(type,constraint_predicate)
+
+    targetList= @pkFullList.map{|pk|  "#{pk['alias']}_pk as #{pk['alias']}" }.join(', ')
+    query = "select #{targetList} from ftuples where type='#{type}' limit 1"
+    pp query
+    res = DBConn.exec(query)
+    cnt = 1
+    while res.cmd_tuples>0
+      puts cnt
+      puts "begin: #{Time.now}"
+      pkArry = pkArryGen(res)
+      # pp pkArry
+      # puts test
+      tuple_mutation_test(pkArry,type,constraint_predicate)
+      res = DBConn.exec(query)
+      # pp res
+      # puts test
+      puts "end: #{Time.now}"
+      cnt = cnt +1
+    end
   end
 
 
@@ -506,7 +534,6 @@ class LozalizeError
       @pkFullList.each do |pkcol|
         h =  Hash.new
         # binding.pry
-     
         colname = pkcol['col'].split('.')[1]
         h['val'] = r[colname]
         h['alias'] = pkcol['alias']
@@ -623,7 +650,7 @@ class LozalizeError
 
     # Insert into ftuples_tbl
     renamedPKCol = @pkFullList.map{|pk|  "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
-    targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_branches,'none'::varchar(300) as mutation_nodes,'none'::varchar(300) as mutation_cols,'U'::varchar(1) as type,#{@allColumns_select}"
+    targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_cols,'U'::varchar(1) as type,#{@allColumns_select}"
     val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
     pkjoin = @pkFullList.map do |c|
                 "tbl1.#{c['col'].split('.')[1]} = tbl2.#{c['alias']}_pk"
@@ -650,13 +677,14 @@ class LozalizeError
 
     # Insert into ftuples_tbl
     renamedPKCol = @pkFullList.map{|pk|  "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
-    targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_branches,'none'::varchar(300) as mutation_nodes,'none'::varchar(300) as mutation_cols,'M'::varchar(1) as type,#{@allColumns_select}"
+    targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_cols,'M'::varchar(1) as type,#{@allColumns_select}"
     val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
     pkjoin = @pkFullList.map do |c|
                 "tbl1.#{c['col'].split('.')[1]} = tbl2.#{c['alias']}_pk"
             end.join(' AND ')
     query = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
     query = "INSERT INTO ftuples #{query}"
+    pp query
     DBConn.exec(query)
 
     return query, res
@@ -666,9 +694,9 @@ class LozalizeError
 
     renamedPKCol = @pkFullList.map{|pk|  "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
 
-    targetListReplacement ="#{renamedPKCol},'none'::varchar(300) as mutation_branches,'none'::varchar(300) as mutation_nodes,'none'::varchar(300) as mutation_cols,'none'::varchar(1) as type,#{@allColumns_select}"
+    targetListReplacement ="#{renamedPKCol},'none'::varchar(800) as mutation_cols,'none'::varchar(1) as type,#{@allColumns_select}"
     query =  ReverseParseTree.reverseAndreplace(@fPS, targetListReplacement,'1=2')
-    pkList = @pkFullList.map{|pk| "#{pk['alias']}_pk" }.join(', ')+',mutation_branches,mutation_nodes,mutation_cols, type'
+    pkList = @pkFullList.map{|pk| "#{pk['alias']}_pk" }.join(', ')+',mutation_cols, type'
     query=QueryBuilder.create_tbl('ftuples',pkList,query)
     DBConn.exec(query)
 

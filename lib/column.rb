@@ -1,11 +1,16 @@
 class Column
 	attr_accessor :colname, :relname, :relalias, :datatype, :typcategory, :colalias
-	attr_reader :fullname, :expr, :renamed_colname
+	attr_reader :relname_fullname, :fullname,:expr, :renamed_colname
 	def fullname
 		# relalias.colname
 		@fullname = @relalias.to_s.empty? ? @colname : "#{@relalias}.#{@colname}" 
 		# @expr = @colalias.to_s.empty? ? @expr : "#{@expr} as #{@colalias}"
 	end
+    def relname_fullname
+        # relalias.colname
+        @relname_fullname = "#{@relname}.#{@colname}" 
+        # @expr = @colalias.to_s.empty? ? @expr : "#{@expr} as #{@colalias}"
+    end
     def renamed_colname
         # relname_colname
         @renamed_colname = "#{@relname}_#{@colname}" 
