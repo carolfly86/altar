@@ -24,7 +24,7 @@ class SqlMutation
 	def join_scMutation
 		newPS = @ps
 		joinExpr = @ps['SELECT']['fromClause'][0]['JOINEXPR']
-			
+
 		oldQuals = joinExpr['quals']
 		# if Cross join, we define join type as 4
 		oldJoinType = oldQuals.nil? ? '4' : joinExpr['jointype']
@@ -190,7 +190,7 @@ class SqlMutation
 		   		Utils.rand_uuid()
 		   else
 		   		'nil'
-		   end					 
+		   end
 
 	end
 	def generate_rand_col(fieldList,oldCol)

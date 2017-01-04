@@ -41,7 +41,7 @@ class Tarantular
     # pp @wherePT
     @predicateTree.build_full_pdtree(@fromPT[0], @wherePT,root)
     @pdtree = @predicateTree.pdtree
-    @pdtree.print_tree
+    # @pdtree.print_tree
     # pp 'branches'
     # pp @predicateTree.branches
     @fromCondStr = ReverseParseTree.fromClauseConstr(@fromPT)
@@ -139,14 +139,20 @@ class Tarantular
     query = "update #{@tarantular_tbl} set tarantular_score = case when failed_cnt = 0 and passed_cnt = 0 then 0 "+
     "else (failed_cnt::float(2)/total_failed_cnt::float(2))/(failed_cnt::float(2)/total_failed_cnt::float(2) + passed_cnt::float(2)/total_passed_cnt::float(2)) end "+
     ", ochihai_score = case when failed_cnt + passed_cnt = 0 then 0 "+
-    "else failed_cnt::float(2)/(|/(total_failed_cnt*(failed_cnt + passed_cnt)::bigint))::float(2) end "
-    # puts query
+    "else failed_cnt::float(2)/(|/(total_failed_cnt*(failed_cnt + passed_cnt)::bigint))::float(2) end " +
+    ", naish2_score = case when failed_cnt = 0 then 0 else failed_cnt::float(2) - passed_cnt::float(2)/(total_passed_cnt+1)::float(2) end"+
+    ", kulczynski2_score = case when failed_cnt = 0 then 0 else "+
+    "  (failed_cnt::float(2)/total_failed_cnt::float(2) + failed_cnt::float(2)/(failed_cnt + passed_cnt)::float(2))/2 end "
+
+    puts query
     DBConn.exec(query)
 
   # rank tarantular score
    query = "INSERT INTO tarantular_result SELECT test_id,  branch_name||'-'||node_name,"+
    " sum(tarantular_score) as sum_tarantular_score, rank() over(order by sum(tarantular_score) desc) AS tarantular_rank , "+
    " sum(ochihai_score) as sum_ochihai_score, rank() over(order by sum(ochihai_score) desc) AS ochihai_rank"+
+   ", sum(naish2_score) as sum_naish2_score, rank() over(order by sum(naish2_score) desc) AS naish2_score"+
+   ", sum(kulczynski2_score) as sum_kulczynski2_score, rank() over(order by sum(kulczynski2_score) desc) AS kulczynski2_score"+
    " from tarantular_tbl group by branch_name,node_name, test_id;"
     # puts query
     DBConn.exec(query)
@@ -155,30 +161,43 @@ class Tarantular
 
   def relevence(relevent_set)
     relevent_bn = relevent_set.map{|r| "'#{r}'"}.join(',')
-    query = "select tarantular_rank,ochihai_rank from tarantular_result where bn_name in (#{relevent_bn})"
+    query = "select tarantular_rank,ochihai_rank,naish2_rank,kulczynski2_rank from tarantular_result where bn_name in (#{relevent_bn})"
     # puts query
     res = DBConn.exec(query)
     @ranks={}
     tlist = []
     olist =[]
+    nlist=[]
+    klist = []
     if res.count>0
       res.each do |r|
         tlist<< r['tarantular_rank'].to_s
         olist<<r['ochihai_rank'].to_s
+        nlist<< r['naish2_rank'].to_s
+        klist<<r['kulczynski2_rank'].to_s
       end
       @ranks['tarantular_rank'] = tlist.join(',')
       @ranks['ochihai_rank'] = olist.join(',')
+      @ranks['naish2_rank'] = nlist.join(',')
+      @ranks['kulczynski2_rank'] = klist.join(',')
     else
-      @ranks = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0' }
+      @ranks = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0' }
     end
     @ranks
   end
 
+  def failed_tuple_count
+    query = "select count(1) as failed_cnt from tarantular_execution where type = 'f'"
+    res = DBConn.exec(query)
+    res[0]['failed_cnt']
+  end
   private
   def create_tarantular_tbl
     query = "select #{@test_id} as test_id, branch_name, node_name, query,location, "+
     " 't'::boolean as eval_result, 0 as passed_cnt, 0 as total_passed_cnt, "+
     " 0 as failed_cnt, 0 as total_failed_cnt, 0::float(2) as tarantular_score, 0::float(2) as ochihai_score "+
+    " , 0::float(2) as naish2_score, 0::float(2) as kulczynski2_score "+
+
     " from node_query_mapping"
     pkList = 'test_id, branch_name, node_name,eval_result'
     # puts query
@@ -194,7 +213,7 @@ class Tarantular
     # create node based tarantular_tbl
       query =  %Q(DROP TABLE if exists tarantular_result;
   CREATE TABLE tarantular_result
-  (test_id int, bn_name varchar(90), sum_tarantular_score float(2), tarantular_rank int, sum_ochihai_score float(2), ochihai_rank int);)
+  (test_id int, bn_name varchar(90), sum_tarantular_score float(2), tarantular_rank int, sum_ochihai_score float(2), ochihai_rank int, sum_naish2_score float(2), naish2_rank int, sum_kulczynski2_score float(2), kulczynski2_rank int);)
     DBConn.exec(query)
 
   end

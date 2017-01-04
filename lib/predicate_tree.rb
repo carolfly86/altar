@@ -219,7 +219,7 @@ class PredicateTree
   end
   def node_query_mapping_upd(branch_name, node_name,query)
     query = "UPDATE #{@nqTblName} SET #{query} where test_id=#{@test_id} and branch_name = '#{branch_name}' and node_name = '#{node_name}'"
-    # pp query
+    pp query
     DBConn.exec(query)
   end
   def node_query_mapping_create()

@@ -47,7 +47,7 @@ ALTER TABLE golden_record OWNER TO yguo;
 
 COPY golden_record (employees_emp_no, employees_birth_date, employees_first_name, employees_last_name, employees_gender, employees_hire_date, salaries_emp_no, salaries_salary, salaries_from_date, salaries_to_date, titles_emp_no, titles_title, titles_from_date, titles_to_date, type, branch) FROM stdin;
 22446	1956-10-30	Shugo	Albarhamtoshy	M	1993-08-17	22446	50205	1993-08-17	1994-08-17	22446	Engineer	1993-08-17	9999-01-01	satisfied	PH0
-11015	1965-01-24	Jeanna	Riesenhuber	M	1992-05-29	11015	57076	1998-03-14	1999-03-14	11015	Senior Staff	1998-03-14	2000-02-22	satisfied	PH1
+11015	1965-01-24	Jeanna	Riesenhuber	M	1992-05-29	11015	57076	1988-03-14	1999-03-14	11015	Senior Staff	1998-03-14	2000-02-22	satisfied	PH1
 12446	1953-09-02	Georgi	Facello	F	1986-06-26	12446	40205	1985-06-26	1985-08-26	12446	Senior Engineer	1985-06-26	9999-01-01	excluded	
 \.
 

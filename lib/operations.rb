@@ -54,7 +54,7 @@ def queryTest(script,golden_record_opr,method)
 	f_options_list.each_with_index do |f_options,idx|
 
 		fqueryObj = QueryObj.new(f_options)
-		if method == 'o'
+		if method == 'b'
 			beginTime = Time.now
 			tarantular = Tarantular.new(fqueryObj,tqueryObj,1)
 			tarantular.predicateTest()
@@ -62,33 +62,38 @@ def queryTest(script,golden_record_opr,method)
 			tarantular_duration = (endTime - beginTime).to_i
 			tarantular_rank = tarantular.relevence(f_options[:relevent])
 			total_test_cnt = tarantular.total_test_cnt
+			m_u_tuple_count = tarantular.failed_tuple_count
+			totalScore = m_u_tuple_count
+			duration = tarantular_duration
 		else
 			tarantular_duration = 0
-			tarantular_rank = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0' }
+			tarantular_rank = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0' }
 			total_test_cnt = 0
+
+			puts "begin test"
+
+			beginTime = Time.now
+			puts "test start time: #{beginTime}"
+
+			localizeErr = LozalizeError.new(fqueryObj,tqueryObj)
+			selectionErrList = localizeErr.selecionErr(method)
+			puts 'test end'
+			endTime = Time.now
+			puts "test end time: #{endTime}"
+			m_u_tuple_count = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count
+			fqueryObj.score = localizeErr.getSuspiciouScore()
+			puts 'fquery score:'
+			pp fqueryObj.score
+			totalScore = fqueryObj.score['totalScore']
+			duration = (endTime - beginTime).to_i
+			puts "duration: #{duration}"
+
 		end
 		# pp tarantular_rank
 		# return
 		# tarantular_rank = tarantular.relevence(f_options[:relevent])
 		# return
-		puts "begin test"
-
-		beginTime = Time.now
-		puts "test start time: #{beginTime}"
-
-		localizeErr = LozalizeError.new(fqueryObj,tqueryObj)
-		selectionErrList = localizeErr.selecionErr(method)
-		puts 'test end'
-		endTime = Time.now
-		puts "test end time: #{endTime}"
-		m_u_tuple_count = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count
-		fqueryObj.score = localizeErr.getSuspiciouScore()
-		puts 'fquery score:'
-		pp fqueryObj.score
-		pp fqueryObj.score['totalScore']
-		duration = (endTime - beginTime).to_i
-		puts "duration: #{duration}"
-		update_test_result_tbl(idx,fqueryObj.query,tqueryObj.query,m_u_tuple_count,duration,fqueryObj.score['totalScore'],f_options[:relevent],tarantular_rank,tarantular_duration,total_test_cnt)
+		update_test_result_tbl(idx,fqueryObj.query,tqueryObj.query,m_u_tuple_count,duration,totalScore,f_options[:relevent],tarantular_rank,tarantular_duration,total_test_cnt)
 	end
 
 	# puts "begin fix"
@@ -171,7 +176,9 @@ end
 def create_test_result_tbl()
 	query =  %Q(DROP TABLE if exists test_result;
 	CREATE TABLE test_result
-	(test_id int, fquery text, tquery text, m_u_tuple_count bigint, duration bigint, total_score bigint, harmonic_mean float(2), jaccard float(2), column_cnt int, ochihai_rank varchar(50), tarantular_rank varchar(50), tarantular_duration int, total_test_cnt int);)
+	(test_id int, fquery text, tquery text, m_u_tuple_count bigint, duration bigint, total_score bigint,
+	harmonic_mean float(2), jaccard float(2), column_cnt int, 
+	tarantular_rank varchar(50), ochihai_rank varchar(50), kulczynski2_rank varchar(50), naish2_rank varchar(50),tarantular_duration int, total_test_cnt int);)
   	 # pp query
     DBConn.exec(query)
 
@@ -195,13 +202,14 @@ def update_test_result_tbl(test_id,fquery,tquery,m_u_tuple_count,duration,total_
 				0,
 				0,
 				0,
-				'#{rank['ochihai_rank']}',
 				'#{rank['tarantular_rank']}',
+				'#{rank['ochihai_rank']}',
+				'#{rank['kulczynski2_rank']}',
+				'#{rank['naish2_rank']}',
 				#{tarantular_duration},
 				#{total_test_cnt}
 
 			)
-	# puts query
     DBConn.exec(query)
 
     query =  %Q(INSERT INTO test_result_detail

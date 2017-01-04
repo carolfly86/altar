@@ -16,10 +16,10 @@ module RewriteQuery
               rewriteCols[key] = val
               val.map{|c| "#{c.relalias}.#{c.colname} as #{c.relname}_#{c.colname}" }.join(',') 
             else
-                val.map{|c| "#{c.relalias}.#{c.colname}" }.join(',') 
+                val.map{|c| "#{c.relalias}.#{c.colname}" }.join(',')
             end
       newTargetList << col
-    end 
+    end
     targetListReplacement = newTargetList.join(',')
     newQuery =  ReverseParseTree.reverseAndreplace(parseTree, targetListReplacement,'')
     return newQuery, rewriteCols

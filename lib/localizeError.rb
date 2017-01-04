@@ -301,7 +301,7 @@ class LozalizeError
 
 
   # where cond error localization
-  def selecionErr(method = 'n')
+  def selecionErr(method )
 
     whereErrList = []
     joinErrList = []
@@ -320,44 +320,46 @@ class LozalizeError
     # @unwanted_tuple_count = unWantedPK.count()
     tnTableCreation('tuple_node_test_result') if @is_new
 
-    if @unwanted_tuple_count >0
-      p "Unwanted Pk count #{unWantedPK.count()}"
-      # create unwanted_tuple_branch table
-      whereErrList = whereCondTest(unWantedPK,'U')
-      # joinErrList = jointypeErr(query,'U')
-    end
-
 
     # Missing rows
     query,res = find_missing_tuples()
 
     missinPK = pkArryGen(res)
-    # @missing_tuple_count = missinPK.count()
-    # Join type test
-    # Join condition test
-    # where clause test
+
+
+    if @unwanted_tuple_count >0
+      # p "Unwanted Pk count #{unWantedPK.count()}"
+      # create unwanted_tuple_branch table
+      whereErrList = whereCondTest(unWantedPK,'U')
+      # joinErrList = jointypeErr(query,'U')
+    end
+
     if @missing_tuple_count>0
-      p "Missing PK count #{missinPK.count()}"
+      # p "Missing PK count #{missinPK.count()}"
 
       whereErrList = whereCondTest(missinPK,'M')
       # joinErrList = jointypeErr(query,'M')
     end
 
-    #p joinErrList.to_a
-    #p whereErrList.to_a
-    # predicateArry = @predicateTree.predicateArrayGen(@pdtree)
-    # pp predicateArry
+    # create aggregated tuple_suspicious_nodes
+    query = "create materialized view tuple_node_test_result_aggr as "+
+            "select emp_no, from_date, string_agg(branch_name||'-'||node_name, ',' order by node_name) as suspicious_nodes from tuple_node_test_result group by emp_no, from_date"
+  
+    DBConn.exec(query)
+
     suspicious_score_upd(@predicateTree.branches)
+
     # exnorate algorithm
 
     case method
     when 'o'
       puts 'old exonerate algorithm'
+
       true_query_PT_construct()
       constraint_query = constraint_predicate_construct()
       # allcolumns_construct()
-      tuple_mutation_test(missinPK,'M',constraint_query)
-      tuple_mutation_test(unWantedPK,'U',constraint_query)
+      tuple_mutation_test(missinPK,'M',constraint_query,false)
+      tuple_mutation_test(unWantedPK,'U',constraint_query,false)
     when 'or'
       puts 'old exonerate algorithm with duplicate removal'
           # reset suspicious score
@@ -373,6 +375,9 @@ class LozalizeError
       puts 'new exonerate algorithm'
       true_query_PT_construct()
       constraint_query = constraint_predicate_construct()
+      tuple_mutation_test_reverse(missinPK,'M',constraint_query,false)
+      tuple_mutation_test_reverse(unWantedPK,'U',constraint_query,false)
+
     when 'b'
       puts 'baseline'
     else
@@ -396,7 +401,7 @@ class LozalizeError
   def constraint_predicate_construct()
 
     t_predicate_collist= @tPredicateTree.all_columns
-    pp "t_predicate_collist: #{t_predicate_collist}"
+    # pp "t_predicate_collist: #{t_predicate_collist}"
     # pp 't_predicate_tree.all_columns'
     # rename_where_pt = @tQueryObj.parseTree['SELECT']['whereClause']
     constraintPredicateQuery=ReverseParseTree.whereClauseConst(@tWherePT)
@@ -418,7 +423,7 @@ class LozalizeError
     #     @all_column_combinations << cc.to_set
     #   end
     # end
-    @column_combinations = Columns_Combination.new(all_columns) unless method == 'b'
+    @column_combinations = method.start_with?('o') ? Columns_Combination.new(all_columns) : all_columns
     # pp @allColumnList
     @allColumns_select = all_columns.map do |field|
       col = field.relname.nil? ? "#{field.relname}.#{field.colname}" : "#{field.relalias}.#{field.colname}"
@@ -429,7 +434,60 @@ class LozalizeError
     end.join(',')
   end
 
-  def tuple_mutation_test(pkArry,type,constraint_predicate)
+  def tuple_mutation_test_reverse(pkArry,type,constraint_predicate,duplicate_removal)
+
+    # tPredicateArry =tPredicateTree.predicateArrayGen(tPDTree)
+    pkArry.each do |pk|
+      # pp pk
+      # pp type
+      # @column_combinations.reset_processed()
+      # pkCond=QueryBuilder.pkCondConstr_strip_tbl_alias(pk)
+      pkCond = QueryBuilder.pkCondConstr_strip_tbl_alias_colalias(pk)
+      # pp "#{pkCond}: #{Time.now}"
+      # only need exonerating if multiple nodes in a branch are suspicious
+      branchQuery="select distinct branch_name from tuple_node_test_result where #{pkCond};"
+      res = DBConn.exec(branchQuery)
+      # pp "begin: #{Time.now}"
+      if type =='U'
+        # pp branchQuery
+        res.each do |branch_name|
+          # distinct_query = "select distinct node_name from node_query_mapping where branch_name = '#{branch_name['branch_name']}'"
+          # distinct_nodes =DBConn.exec(distinct_query)
+          # if distinct_nodes.count()>1
+            branch =[]
+            branch << @predicateTree.branches.find{ |br| br.name == branch_name['branch_name'] }
+            # pp "branch: #{Time.now}"
+            tupleMutationReverse = TupleMutationReverse.new(@test_id,pk,type,branch,@fQueryObj,constraint_predicate)
+            # pp "new: #{Time.now}"
+            tupleMutationReverse.allcolumns_construct( @column_combinations,@allColumns_select,@allColumns_renamed)
+            # pp "allcolumns_construct: #{Time.now}"
+            tupleMutationReverse.unwanted_to_satisfied(duplicate_removal)
+            # pp "unwanted_to_satisfied: #{Time.now}"
+          # end
+        end
+      elsif type == 'M'
+         # # only need exonerating if multiple branches are suspicious
+         #  branchQuery="select distinct branch_name from tuple_node_test_result where #{pkCond};"
+         #  # pp branchQuery
+         #  res = DBConn.exec(branchQuery)
+          # if res.count()>1
+          tupleMutationReverse = TupleMutationReverse.new(@test_id,pk,type,@predicateTree.branches,@fQueryObj,constraint_predicate)
+          # tupleMutation.allcolumns_construct(@all_column_combinations, @allColumns_select,@allColumns_renamed)
+          tupleMutationReverse.allcolumns_construct(@column_combinations, @allColumns_select,@allColumns_renamed)
+
+          tupleMutationReverse.missing_to_excluded(duplicate_removal)
+          # abort('missing')
+          # end
+      end
+
+
+    end
+
+  end
+
+
+
+  def tuple_mutation_test(pkArry,type,constraint_predicate,duplicate_removal)
 
     # tPredicateArry =tPredicateTree.predicateArrayGen(tPDTree)
     pkArry.each do |pk|
@@ -456,7 +514,7 @@ class LozalizeError
             # pp "new: #{Time.now}"
             tupleMutation.allcolumns_construct(@column_combinations, @allColumns_select,@allColumns_renamed)
             # pp "allcolumns_construct: #{Time.now}"
-            tupleMutation.unwanted_to_satisfied()
+            tupleMutation.unwanted_to_satisfied(duplicate_removal)
             # pp "unwanted_to_satisfied: #{Time.now}"
           # end
         end
@@ -470,7 +528,7 @@ class LozalizeError
           # tupleMutation.allcolumns_construct(@all_column_combinations, @allColumns_select,@allColumns_renamed)
           tupleMutation.allcolumns_construct(@column_combinations, @allColumns_select,@allColumns_renamed)
 
-          tupleMutation.missing_to_excluded()
+          tupleMutation.missing_to_excluded(duplicate_removal)
           # abort('missing')
           # end
       end
@@ -491,9 +549,10 @@ class LozalizeError
       puts cnt
       puts "begin: #{Time.now}"
       pkArry = pkArryGen(res)
+      # whereCondTest(pkArry,type)
       # pp pkArry
       # puts test
-      tuple_mutation_test(pkArry,type,constraint_predicate)
+      tuple_mutation_test(pkArry,type,constraint_predicate,true)
       res = DBConn.exec(query)
       # pp res
       # puts test
@@ -507,6 +566,7 @@ class LozalizeError
     predicate_tree_branches.each do |br|
       br.nodes.each do |nd|
         query = "suspicious_score = #{nd.suspicious_score}"
+
         @predicateTree.node_query_mapping_upd(br.name,nd.name,query)
       end
     end
@@ -571,18 +631,8 @@ class LozalizeError
         # pp pk
         nodeQuery = branchQuery
         pkVal = QueryBuilder.pkValConstr(pk)
-        # pp'branch'
-        # branch.print_tree
-        # pp'--------'
         currentNode = branch
         branch.nodes.each do |node|
-          # currentNode = currentNode.children[0]
-          # currentNode.print_tree
-          # # p currentNode.has_children?
-          # pp currentNode.name
-          # pp currentNode.content
-          # unless currentNode.name=~ /^PH*/
-          # content = node.content
           branchQuery = branchQuery+' AND ' + node.query
           nodeQuery_new = nodeQuery +' AND ' + node.query
           # suspicious score+ for each node fails missing tuple
@@ -633,6 +683,8 @@ class LozalizeError
         end
       end
     end
+
+
   end
 
 

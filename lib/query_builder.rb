@@ -61,7 +61,7 @@ module QueryBuilder
       # pp insertQuery
       insert = insertQuery.insert(insertQuery.downcase.index(' from '), " INTO #{tblName} ")
       pkCreate = pkList.to_s.empty? ? '' : "ALTER TABLE #{tblName} ADD PRIMARY KEY (#{pkList});" 
-      query =  "DROP TABLE IF EXISTS #{tblName}; #{insert}; #{pkCreate}"
+      query =  "DROP TABLE IF EXISTS #{tblName} CASCADE; #{insert}; #{pkCreate}"
     end
    # def QueryBuilder.satisfactionMap(tblName,fDataset,fPKList)
    #    query = "DROP TABLE if exists #{tblName}; "
