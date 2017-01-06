@@ -5,7 +5,8 @@
   	"pkList": "purchaseorderid,purchaseorderdetailid"
   },
 	"F":
-	[	{
+	[	
+		{
   		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where (p.safetystocklevel =1000 and pod.duedate='2011-04-30 00:00:00' ) or (p.listprice>50 and poh.status >2) or poh.shipmethodid=1 or (poh.orderdate>'2014-04-30 00:00:00' and poh.shipdate> '2014-07-25 00:00:00') or (poh.subtotal > 25000 and pod.orderqty=4 and pod.unitprice>50);",
 		"pkList": "purchaseorderid,purchaseorderdetailid",
 		"relevent": ["PH1-N4"]
@@ -20,6 +21,7 @@
 		"pkList": "purchaseorderid,purchaseorderdetailid",
 		"relevent": ["PH1-N4"]
 		},
+		
 		{
   		"query": "select pod.purchaseorderid,pod.purchaseorderdetailid from product p join purchaseorderdetail pod on p.productid = pod.productid join purchaseorderheader poh on pod.purchaseorderid = poh.purchaseorderid where (p.safetystocklevel =1000 and pod.duedate='2011-04-30 00:00:00' ) or (p.listprice>50 and poh.status >1) or poh.shipmethodid=1 or (poh.orderdate>'2014-04-30 00:00:00' and poh.shipdate> '2014-07-25 00:00:00') or (poh.subtotal > 25000 and pod.unitprice>50);",
 		"pkList": "purchaseorderid,purchaseorderdetailid",

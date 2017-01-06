@@ -226,7 +226,7 @@ class Tarantular
     pkList =  pkselect
 
     query=QueryBuilder.create_tbl('tarantular_execution',pkList,pk_selectquery)
-    # puts query
+    puts query
     DBConn.exec(query)
 
     t_pkselect = @pkSelect.gsub('f.','t.')
@@ -241,7 +241,7 @@ update tarantular_execution te
 set type = tc.type
 from tc
 where #{te_pkjoin} "
-    # pp query
+     pp query
     DBConn.exec(query)
   end
 

@@ -47,6 +47,7 @@ class LozalizeError
       # abort('test')
       h['alias'] = col['alias']
       h['col'] = col['col']
+      h['colname'] = col['col'].split('.').count() >1 ? col['col'].split('.')[1] : col['col']
       @pkFullList.push(h)
     end
 
@@ -342,9 +343,10 @@ class LozalizeError
     end
 
     # create aggregated tuple_suspicious_nodes
+    pk = @pkFullList.map{|pk| pk['colname']}.join(',')
     query = "create materialized view tuple_node_test_result_aggr as "+
-            "select emp_no, from_date, string_agg(branch_name||'-'||node_name, ',' order by node_name) as suspicious_nodes from tuple_node_test_result group by emp_no, from_date"
-  
+            "select #{pk}, string_agg(branch_name||'-'||node_name, ',' order by node_name,branch_name) as suspicious_nodes from tuple_node_test_result group by #{pk}"
+    pp query
     DBConn.exec(query)
 
     suspicious_score_upd(@predicateTree.branches)
@@ -594,7 +596,7 @@ class LozalizeError
       @pkFullList.each do |pkcol|
         h =  Hash.new
         # binding.pry
-        colname = pkcol['col'].split('.')[1]
+        colname = pkcol['colname']
         h['val'] = r[colname]
         h['alias'] = pkcol['alias']
         h['col'] = pkcol['col']
@@ -705,7 +707,8 @@ class LozalizeError
     targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_cols,'U'::varchar(1) as type,#{@allColumns_select}"
     val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
     pkjoin = @pkFullList.map do |c|
-                "tbl1.#{c['col'].split('.')[1]} = tbl2.#{c['alias']}_pk"
+
+                "tbl1.#{c['colname']} = tbl2.#{c['alias']}_pk"
             end.join(' AND ')
     query = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
 
@@ -732,7 +735,7 @@ class LozalizeError
     targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_cols,'M'::varchar(1) as type,#{@allColumns_select}"
     val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
     pkjoin = @pkFullList.map do |c|
-                "tbl1.#{c['col'].split('.')[1]} = tbl2.#{c['alias']}_pk"
+                "tbl1.#{c['colname']} = tbl2.#{c['alias']}_pk"
             end.join(' AND ')
     query = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
     query = "INSERT INTO ftuples #{query}"
