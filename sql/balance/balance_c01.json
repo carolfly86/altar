@@ -1,0 +1,46 @@
+{
+  "T":
+  {
+  	"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.number <> '' and d.study_id = 19 and d.id = 317 and i.status in (1,2,3,6)) or (md.name ='Depot5' and md.deleted='f' and d.study_id <500  and i.status in (1,2,3,6) and l.release_status = 2) ;",
+  	"pkList": "mdid, did, iid, aid"
+  },
+	"F":
+	[
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.number <> '' and d.study_id = 19 and d.id = 317 and i.status in (1,2,3)) or (md.name ='Depot5' and md.deleted='f' and d.study_id <500  and i.status in (1,2,3,6) and l.release_status = 2) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N4"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.number <> '' and d.study_id = 19 and d.id = 317 and i.status not in (1,2,3,6)) or (md.name ='Depot5' and md.deleted='f' and d.study_id <500  and i.status in (1,2,3,6) and l.release_status = 2) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N4"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.number <> '' and d.study_id = 19 and d.id = 317 and i.status in (1,2,3,6) and i.quantity <10) or (md.name ='Depot5' and md.deleted='f' and d.study_id <500  and i.status in (1,2,3,6) and l.release_status = 2) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N5"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.name <> '' and d.study_id = 19 and d.id = 317 and i.status in (1,2,3,6)) or (md.name ='Depot5' and md.deleted='f' and d.study_id <500  and i.status in (1,2,3,6) and l.release_status = 2) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.number <> '' and d.study_id = 19 and d.id = 317 ) or (md.name ='Depot5' and md.deleted='f' and d.study_id <500  and i.status in (1,2,3,6) and l.release_status = 2) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.number <> '' and d.study_id = 19 and d.id = 317 and i.status in (1,2,3,6)) or (md.name ='Depot5' and md.deleted='f' and d.study_id <500  and i.status in (1,2,3,6)) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": [ "PH1-missing_node1"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (md.number is not null and md.number <> '' and d.study_id = 19 and d.id = 317 and i.status not in (1,2,3,6)) or (md.name ='Depot5' and md.deleted='t' and d.study_id <500  and i.status in (1,2,3,6)) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N4","PH1-N6","PH1-missing_node1"]
+		}
+	]
+
+}
