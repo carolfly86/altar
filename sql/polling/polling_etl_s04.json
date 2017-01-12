@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  questionposition = 1 or externalsystemid <70",
+  	"pkList": "id,surveyid"
+  },
+	"F":
+	[
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'8') or  questionposition = 1 or externalsystemid <70",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >='7') or  questionposition = 1 or externalsystemid <70",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  questionposition = 1 or ( externalsystemid <70 and etl_time >'2016-12-10')",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH2-N5"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  questionposition = 1 or imageid <70",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH2-N4"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  questionposition = 1 ",
+  		"pkList": "id,surveyid",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'8') or  questionposition = 1 or externalsystemid <70",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N2","PH2-N4"]
+		}
+	]
+
+}

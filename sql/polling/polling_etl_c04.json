@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid >70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<1000 and c.etl_time  < '2017-02-01') or (c.imageid<1000 and c.choiceposition =3)",
+  	"pkList": "id,surveyid,questionid"
+  },
+	"F":
+	[
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid >70 and q.etl_time < '2016-12-08' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<1000 and c.etl_time  < '2017-02-01') or (c.imageid<1000 and c.choiceposition =3)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid >70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<1000 and c.etl_time  < '2017-02-01') or (c.imageid<1000 and c.choiceposition <=3)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH3-N9"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid >70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<1000 and c.etl_time  < '2017-02-01' and c.style is null) or (c.imageid<1000 and c.choiceposition =3)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH2-N8"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid >70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (c.active='t' and q.imageid<1000 and c.etl_time  < '2017-02-01') or (c.imageid<1000 and c.choiceposition =3)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH2-N5"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid >70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<1000 and c.etl_time  < '2017-02-01') or (c.imageid<1000 )",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH3-missing_node1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid >70 and q.etl_time < '2016-12-08' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<1000 and c.etl_time  < '2017-02-01') or (c.imageid<1000 )",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N2","PH3-missing_node1"]
+		}
+	]
+
+}

@@ -93,7 +93,6 @@ class TupleMutation
 			# pp "excluded_query2: #{Time.now}"
 			nd_combinations_set = nodes.combination(i).map{|nd| nd.to_set}.to_set
 			# binding.pry if @pk.any?{|pk| pk['col'] == 'e.emp_no' and pk['val'] == '248447'}
-			# binding.pry
 			# pp "nd_combinations_set: #{Time.now}"
 			if exluded.count() < nd_combinations_set.count
 				found = true
@@ -110,14 +109,15 @@ class TupleMutation
 						exluded_nodes << ex_nd
 						# pp "i=1 :#{Time.now}"
 					else
+						# binding.pry
 						nd_combinations_set.delete(e['mutation_nodes'].split(',').to_set)
 						(nodes - nd_combinations_set.flatten.to_a).each do |nd|
 							# pp "nd: #{nd} :#{Time.now}"
 							ex_nd = Hash.new()
 							ex_nd['branch_name'] = @branches[0].name
 							ex_nd['node_name'] = nd
-							ex_nd['columns'] = "{#{e['mutation_cols']}}"
-
+							# ex_nd['columns'] = "{#{e['mutation_cols']}}"
+							ex_nd['columns'] = @suspicious_nodes.find{|sn| sn['node_name'] == nd && sn['branch_name']==@branches[0].name}['columns']
 							exluded_nodes << ex_nd unless exluded_nodes.include?(ex_nd)
 						end
 					end
@@ -149,13 +149,14 @@ class TupleMutation
 				# pp "#{i}th column combination"
 				# pp ith_col_combinations
 				mutationTbl_upd(bn_pair,@updateTup,@pkCond)
-				# binding.pry if @pk.any?{|pk| pk['col'] == 'e.emp_no' and pk['val'] == '248447'}
+				# binding.pry #if @pk.any?{|pk| pk['col'] == 'e.emp_no' and pk['val'] == '248447'}
 
 				satisfied=DBConn.exec(@satisfiedQuery)
 				if satisfied.count() >0
 					# 1.upto(i) do |j|
 					blm_nodes = []
 					nd = Hash.new()
+					# binding.pry if satisfied.count()>1
 					nd['branch_name'] = @branches[0].name
 					nd['node_name'] = "missing_node#{i}"
 
@@ -225,7 +226,11 @@ class TupleMutation
 						# end
 						# binding.pry
 						s['mutation_branches'].split(',').each do |br|
-							unless excluded_branches.include?(br)
+							if uniq_branches.count > 1
+								unless excluded_branches.include?(br)
+									satisfied_nodes = satisfied_nodes + @suspicious_nodes.find_all{|nd| nd['branch_name'] == br}
+								end
+							else
 								satisfied_nodes = satisfied_nodes + @suspicious_nodes.find_all{|nd| nd['branch_name'] == br}
 							end
 						end
@@ -233,6 +238,7 @@ class TupleMutation
 					# query = "select branch_name,node_name from tuple_node_test_result where #{@pkCond_strip_tbl_alias} and branch_name in (#{satisfied_branches})"
 					# satisfied_nodes = DBConn.exec(query)
 					satisfied_nodes.uniq!
+					# binding.pry if @pk.any?{|pk| pk['col'] == 'stat_id' and pk['val'] == '77823'}
 					exnorate_nodes(satisfied_nodes,1,duplicate_removal)
 					return
 				end
@@ -258,7 +264,7 @@ class TupleMutation
 				bn_pair = remaining_col_combination_bn_pairs(ith_col_combinations)
 				# mutationTbl_create()
 				mutationTbl_upd(bn_pair,@updateTup,@pkCond)
-
+				# binding.pry
 				excluded=DBConn.exec(@excluded_query)
 				if excluded.count() >0
 					1.upto(i) do |j|
@@ -267,7 +273,7 @@ class TupleMutation
 						# binding.pry
 						nd['branch_name'] = "missing_branch#{i}"
 						nd['node_name'] = "missing_node#{i}"
-						nd['columns'] = "{#{excluded.map{|e| e['mutation_cols']}.join(',')}}"
+						nd['columns'] = "{#{excluded.map{|e| e['mutation_cols'].split(',')}.flatten.uniq.join(',')}}"
 						nd['query'] =''
 						nd['location'] = 0
 						nd['type'] = 'f'
@@ -282,12 +288,12 @@ class TupleMutation
 						old_cols = @branches.map{|b| b.columns}.flatten.map{|c| "#{c.relname}.#{c.colname}"}
 						new_cols = excluded.map{|e| e['mutation_cols'].split(',')}.flatten.uniq
 						# binding.pry
-						if @branches.count == 1 || old_cols.to_set==new_cols.to_set # @branches.count == 1 || (old_cols-new_cols).empty?
+						if @branches.count == 1 && old_cols.to_set==new_cols.to_set # @branches.count == 1 || (old_cols-new_cols).empty?
 							# binding.pry
 							# old_cols = @branches[0].columns.map{|c| "#{c.renamed_colname}"}.join(',')
 							puts 'No need to exonerate'
 							# binding.pry
-							eliminate_redundant_tuples(@suspicious_nodes, 'b')
+							eliminate_redundant_tuples(@suspicious_nodes, 'b') if duplicate_removal
 							found = true
 							# @remaining_cols.recover_processed(i)
 							return
@@ -467,7 +473,7 @@ class TupleMutation
 							column_set = nd.columns.to_set
 							bn1['cols'] = column_set
 							# pp nd
-							@remaining_cols.delete(column_set)
+							# @remaining_cols.delete(column_set)
 							bn_pairs << bn1
 						end
 					else
@@ -486,7 +492,7 @@ class TupleMutation
 			if bn['cols'].count() > 0
 			 	bn_pairs << bn
 			 	# pp 'delete again'
-				@remaining_cols.delete(bn['cols'])
+				# @remaining_cols.delete(bn['cols'])
 			end
 
 		end
@@ -536,6 +542,7 @@ class TupleMutation
 			# pp "nodes:"
 			# pp nodes
 			if @type == 'U'
+				# binding.pry
 
 				suspicious_nodes = @suspicious_nodes.select{|sn| sn['branch_name']== @branches[0].name}
 			else
@@ -790,6 +797,7 @@ class TupleMutation
 		# pp Time.now
 		res = DBConn.exec(eliminate)
 		# binding.pry if res.cmd_tuples == 0
+		# binding.pry
 		dup_cnt = res.cmd_tuples
 		puts "duplicate remove count #{dup_cnt}"
 		# # blame

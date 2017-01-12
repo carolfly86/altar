@@ -1,0 +1,43 @@
+{
+  "T":
+  {
+  	"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  ( s.instance_id =132 and s.relname like 'qrtz%' and  s.size_mb >10) or (s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production') or (i.platform='postgres' and i.cpu = 4 and s.bloat_ratio >0)",
+  	"pkList": "stat_id"
+  },
+	"F":
+	[
+
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  ( s.instance_id =132 and s.relname like 'qrtz%' and  s.size_mb >20) or (s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production') or (i.platform='postgres' and i.cpu = 4 and s.bloat_ratio >0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  ( s.instance_id =132 and s.relname like 'qrtz%' and  s.size_mb >=10) or (s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production') or (i.platform='postgres' and i.cpu = 4 and s.bloat_ratio >0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  ( s.instance_id =132 and s.relname like 'qrtz%' and  s.size_mb >10) or (s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production') or (i.platform='postgres' and i.cpu = 4 and s.bloat_ratio >0 and s.idx_scan = 0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH2-N10"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  ( s.instance_id =132 and s.relname like 'qrtz%' and  i.listen_port >10) or (s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production') or (i.platform='postgres' and i.cpu = 4 and s.bloat_ratio >0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  ( s.instance_id =132 and s.relname like 'qrtz%' ) or (s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production') or (i.platform='postgres' and i.cpu = 4 and s.bloat_ratio >0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  ( s.instance_id =132 and s.relname like 'qrtz%' ) or (s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't') or (i.platform='postgres' and i.cpu = 4 and s.bloat_ratio >0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-missing_node1","PH1-N6"]
+		}
+	]
+
+}
+

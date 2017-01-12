@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid <70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<300 )or (c.imageid<300 and c.choiceposition =3) or q.id = '5386f735-3830-418c-8694-63a473703748'",
+  	"pkList": "id,surveyid,questionid"
+  },
+	"F":
+	[
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid <90 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<300 )or (c.imageid<300 and c.choiceposition =3) or q.id = '5386f735-3830-418c-8694-63a473703748'",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid <70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<300 )or (c.imageid<300 and c.choiceposition <=3) or q.id = '5386f735-3830-418c-8694-63a473703748'",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH3-N8"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid <70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<300 and c.style is null)or (c.imageid<300 and c.choiceposition =3) or q.id = '5386f735-3830-418c-8694-63a473703748'",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH2-N7"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid <70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<300 )or (c.imageid<300 and c.choiceposition =3) or c.id = '5386f735-3830-418c-8694-63a473703748'",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH4-N9"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid <70 and q.etl_time < '2016-12-12' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<300 )or (c.imageid<300 and c.choiceposition =3)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where( q.externalsystemid <70 and q.etl_time < '2016-12-14' ) or( q.questioncode =4 and  q.maxresponses = 1 ) or (q.required='t' and q.imageid<300 )or (c.imageid<300 and c.choiceposition =3) ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N2","missing_branch1-missing_node1"]
+		}
+	]
+
+}

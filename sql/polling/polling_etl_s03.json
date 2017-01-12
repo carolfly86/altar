@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select id,surveyid from questions where (required = 't' and questioncode >'4') or (questionposition = 0 and maxresponses = 1)",
+  	"pkList": "id,surveyid"
+  },
+	"F":
+	[
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'3') or (questionposition = 0 and maxresponses = 1)",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >='4') or (questionposition = 0 and maxresponses = 1)",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'4' and surveyid>10) or (questionposition = 0 and maxresponses = 1)",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'4') or (questionposition = 0 and minresponses = 1)",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH1-N4"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (questioncode >'4') or (questionposition = 0)",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'4') and (questionposition = 0 and maxresponses = 1)",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N3","PH0-N4", "missing_branch1-missing_node1"]
+		}
+	]
+
+}

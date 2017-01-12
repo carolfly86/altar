@@ -1,4 +1,4 @@
 default:
-  database: 'adventureworks'
+  database: 'data_collector'
   user: 'myuser'
   password: 'password'

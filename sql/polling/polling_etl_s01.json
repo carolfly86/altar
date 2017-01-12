@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select id,surveyid from questions where required = 't' and questioncode >'4' and questionposition = 0",
+  	"pkList": "id,surveyid"
+  },
+	"F":
+	[
+		{
+  		"query": "select id,surveyid from questions where required = 'f' and questioncode >'4' and questionposition = 0",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select id,surveyid from questions where required = 't' and questioncode <'4' and questionposition = 0",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select id,surveyid from questions where required = 't' and questioncode >'4' and questionposition = 0 and externalsystemid >'70'",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N4"]
+		},
+		{
+  		"query": "select id,surveyid from questions where required = 't' and externalsystemid >'4' and questionposition = 0",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select id,surveyid from questions where required = 't' and questioncode >'4' ",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select id,surveyid from questions where required = 'f' and questioncode >'4' and questionposition = 1",
+  		"pkList": "id,surveyid",
+		"relevent": ["PH0-N1","PH0-N3"]
+		}
+	]
+
+}

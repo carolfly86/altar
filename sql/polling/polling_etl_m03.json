@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where ( q.externalsystemid >75 and q.etl_time > '2016-12-28') or (c.active = 't' and q.questioncode >8 ) or (  c.choiceposition <2  and  q.maxresponses = -1)",
+  	"pkList": "id,surveyid,questionid"
+  },
+	"F":
+	[
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where ( q.externalsystemid >80 and q.etl_time > '2016-12-28') or (c.active = 't' and q.questioncode >8 ) or (  c.choiceposition <2  and  q.maxresponses = -1)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where ( q.externalsystemid >75 and q.etl_time > '2016-12-28') or (c.active = 't' and q.questioncode >8 ) or (  c.choiceposition <=2  and  q.maxresponses = -1)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH2-N5"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where ( q.externalsystemid >75 and q.etl_time > '2016-12-28') or (c.active = 't' and q.questioncode >8 ) or (  c.choiceposition <2  and  q.maxresponses = -1 and c.etl_time >'2017-02-01' )",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH2-N7"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where ( q.externalsystemid >75 and q.etl_time > '2016-12-28') or (q.required = 't' and q.questioncode >8 ) or (  c.choiceposition <2  and  q.maxresponses = -1)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH1-N3"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where ( q.externalsystemid >75 and q.etl_time > '2016-12-28') or (q.questioncode >8 ) or (  q.maxresponses = -1)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH2-missing_node1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where ( q.externalsystemid >75 and q.etl_time > '2016-12-30') or (c.active = 't' and q.questioncode >8 ) or (  c.choiceposition <3  and  q.maxresponses = -1)",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N2","PH2-N5"]
+		}
+	]
+
+}

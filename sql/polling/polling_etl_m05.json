@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid <70  or q.etl_time <'2016-12-10' or q.questioncode >8 or c.etl_time < '2017-02-01' or q.surveyid <=3 or q.imageid < 100 ",
+  	"pkList": "id,surveyid,questionid"
+  },
+	"F":
+	[
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid <70  or q.etl_time <'2016-12-08' or q.questioncode >8 or c.etl_time < '2017-02-01' or q.surveyid <=3 or q.imageid < 100 ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH1-N2"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid <70  or q.etl_time <'2016-12-10' or q.questioncode >8 or c.etl_time < '2017-02-01' or q.surveyid <3 or q.imageid < 100 ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH4-N5"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid <70  or q.etl_time <'2016-12-10' or q.questioncode >8 or (c.etl_time < '2017-02-01' and q.required='f') or q.surveyid <=3 or q.imageid < 100 ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH3-N5"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where c.imageid <70 or q.etl_time <'2016-12-10' or q.questioncode >8 or c.etl_time < '2017-02-01' or q.surveyid <=3 or q.imageid < 100 ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH1-N3"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid <70 or q.etl_time <'2016-12-10' or q.questioncode >8 or c.etl_time < '2017-02-01' or q.imageid < 100 ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid <70  or q.etl_time <'2016-12-08' or q.questioncode >8 or c.etl_time < '2017-02-01'or q.imageid < 100 ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH1-N2","missing_branch1-missing_node1"]
+		}
+	]
+
+}

@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >75 and q.etl_time > '2016-12-14' and c.active = 't' and q.questioncode >4 and  q.maxresponses = 1",
+  	"pkList": "id,surveyid,questionid"
+  },
+	"F":
+	[
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >76 and q.etl_time > '2016-12-14' and c.active = 't' and q.questioncode >4 and  q.maxresponses = 1",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >75 and q.etl_time > '2016-12-14' and c.active = 't' and q.questioncode >=4 and  q.maxresponses = 1",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N4"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >75 and q.etl_time > '2016-12-14' and c.active = 't' and q.questioncode >4 and  q.maxresponses = 1 and c.imageid > 500",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N6"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >75 and q.etl_time > '2016-12-14' and q.required  = 't' and q.questioncode >4 and  q.maxresponses = 1",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N4"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >75 and q.etl_time > '2016-12-14' and q.questioncode >4 and  q.maxresponses = 1 ",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >76 and q.etl_time > '2016-12-18' and c.active = 't' and q.questioncode >3 and q.maxresponses = 1",
+  		"pkList": "id,surveyid,questionid",
+		"relevent": ["PH0-N1","PH0-N2","PH0-N4"]
+		}
+	]
+
+}
