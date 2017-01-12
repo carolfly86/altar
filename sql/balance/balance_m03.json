@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where sg.parent_id = 239 or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.close_date>'2015-01-01' or s.study_design_id =657 or s.name = 'NandanStudy' or s.file_upload_rules='1'  or sg.is_production = 't';",
+  	"pkList": "sgid, sid, did"
+  },
+	"F":
+	[
+		{
+  		"query": "select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where sg.parent_id = 284 or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.close_date>'2015-01-01' or s.study_design_id =657 or s.name = 'NandanStudy' or s.file_upload_rules='1'  or sg.is_production = 't';",
+		"pkList": "sgid, sid, did",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where sg.parent_id != 239 or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.close_date>'2015-01-01' or s.study_design_id =657 or s.name = 'NandanStudy' or s.file_upload_rules='1'  or sg.is_production = 't';",
+		"pkList": "sgid, sid, did",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where (sg.parent_id = 239 and sg.oid='dce') or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.close_date>'2015-01-01' or s.study_design_id =657 or s.name = 'NandanStudy' or s.file_upload_rules='1'  or sg.is_production = 't';",
+		"pkList": "sgid, sid, did",
+		"relevent": ["PH0-N2"]
+		},
+		{
+ 	 	"query": "select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where sg.parent_id = 239 or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.live_date>'2015-01-01' or s.study_design_id =657 or s.name = 'NandanStudy' or s.file_upload_rules='1'  or sg.is_production = 't';",
+		"pkList": "sgid, sid, did",
+		"relevent": ["PH3-N4"]
+		},
+		{
+  		"query": "select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where sg.parent_id = 239 or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.close_date>'2015-01-01' or s.study_design_id =657 or s.name = 'NandanStudy' or s.file_upload_rules='1';",
+		"pkList": "sgid, sid, did",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  		"query": "select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where sg.parent_id = 239 or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.live_date>'2015-01-01' or s.study_design_id !=657 or s.name = 'NandanStudy' or s.file_upload_rules='1' or sg.is_production = 't';",
+		"pkList": "sgid, sid, did",
+		"relevent": ["PH3-N4","PH4-N5","missing_branch1-missing_node1"]
+		}
+	]
+
+}
