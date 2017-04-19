@@ -9,32 +9,32 @@
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where md.id = 317 or d.id = 530 or i.quantity =75 or d.emails = 'hvardhinedi@mdsol.com'or i.study_id = 382 or l.id = 1060 or l.expiry_date > '2025-01-01' or l.released_at ='2015-06-02' or a.name = 'Un1' and l.article_type_id =1264 ;",
 		"pkList": "mdid, did, iid, aid",
-		"relevent": ["PH1-N1"]
+		"relevent": ["PH1-N2"]
 		},
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where md.id = 317 or d.id <> 531 or i.quantity =75 or d.emails = 'hvardhinedi@mdsol.com'or i.study_id = 382 or l.id = 1060 or l.expiry_date > '2025-01-01' or l.released_at ='2015-06-02' or a.name = 'Un1' and l.article_type_id =1264 ;",
 		"pkList": "mdid, did, iid, aid",
-		"relevent": ["PH1-N1"]
+		"relevent": ["PH1-N2"]
 		},
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where md.id = 317 or (d.id = 531 and d.active_for_drug_shipping = 'f') or i.quantity =75 or d.emails = 'hvardhinedi@mdsol.com'or i.study_id = 382 or l.id = 1060 or l.expiry_date > '2025-01-01' or l.released_at ='2015-06-02' or a.name = 'Un1' and l.article_type_id =1264 ;",
 		"pkList": "mdid, did, iid, aid",
-		"relevent": ["PH1-N2"]
+		"relevent": ["PH1-N3"]
 		},
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where md.id = 317 or d.study_id = 531 or i.quantity =75 or d.emails = 'hvardhinedi@mdsol.com'or i.study_id = 382 or l.id = 1060 or l.expiry_date > '2025-01-01' or l.released_at ='2015-06-02' or a.name = 'Un1' and l.article_type_id =1264 ;",
 		"pkList": "mdid, did, iid, aid",
-		"relevent": ["PH1-N1"]
+		"relevent": ["PH1-N2"]
 		},
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where md.id = 317 or d.id = 531 or d.emails = 'hvardhinedi@mdsol.com'or i.study_id = 382 or l.id = 1060 or l.expiry_date > '2025-01-01' or l.released_at ='2015-06-02' or a.name = 'Un1' and l.article_type_id =1264 ;",
 		"pkList": "mdid, did, iid, aid",
-		"relevent": [ "PH2-missing_node1"]
+		"relevent": [ "missing_branch1-missing_node1"]
 		},
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where md.id = 317 or d.id = 530 or d.emails = 'hvardhinedi@mdsol.com'or i.study_id = 382 or l.id = 1060 or l.expiry_date > '2025-01-01' or l.released_at ='2015-06-02' or a.name = 'Un1' and l.article_type_id =1264 ;",
 		"pkList": "mdid, did, iid, aid",
-		"relevent": ["PH1-N1","PH2-missing_node1"]
+		"relevent": ["PH1-N2","missing_branch1-missing_node1"]
 		}
 	]
 

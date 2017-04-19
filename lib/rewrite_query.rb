@@ -27,6 +27,7 @@ module RewriteQuery
   def RewriteQuery.rewrite_predicate_query(query, column_list)
     # pp column_list
     column_list.each do |col|
+      # binding.pry
       query=RewriteQuery.replace_fullname_with_renamed_colname(query,col)
     end
     # query="SELECT mutation_branches,mutation_nodes, mutation_cols "+

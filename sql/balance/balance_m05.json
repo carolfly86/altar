@@ -17,13 +17,12 @@
 		"relevent": ["PH0-N2"]
 		},
 		{
- 	 	"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id > 1 and su.random_regime_selector is not null and ms.country='USA') or (su.regime_id = 14 and su.remove_from_rand ='f' and su.randomized_at <'2013-10-09' and s.supply_plan_id = 3)
- 	 	or su.randomized_at '2013-10-09 01:20:26-04';",
+ 	 	"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id > 1 and su.random_regime_selector is not null and ms.country='USA') or (su.regime_id = 14 and su.remove_from_rand ='f' and su.randomized_at <'2013-10-09' and s.supply_plan_id = 3 and su.site_id > 10);",
 		"pkList": "suid, sid, msid",
-		"relevent": ["PH3-N8"]
+		"relevent": ["PH1-N8"]
 		},
 		{
-  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where (s.study_id > 1 and su.random_regime_selector is not null and ms.country='USA') or (su.external_id = 14 and su.remove_from_rand ='f' and su.randomized_at <'2013-10-09' and s.supply_plan_id = 3);",
+  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where (s.study_id > 1 and su.random_regime_selector is not null and ms.country='USA') or (s.external_id = 14 and su.remove_from_rand ='f' and su.randomized_at <'2013-10-09' and s.supply_plan_id = 3);",
 		"pkList": "suid, sid, msid",
 		"relevent": ["PH1-N4"]
 		},

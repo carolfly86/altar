@@ -120,29 +120,18 @@ class Tarantular
           DBConn.exec(query)
         end
       end
-    # update tarantular_score
-    # pkjoin = "t.branch_name = f.branch_name and t.node_name = f.node_name and t.test_id = f.test_id"
-    # query = "update #{@tarantular_tbl} t set total_passed_cnt = f.total_passed_cnt, total_failed_cnt = f.total_failed_cnt "+
-    #         "FROM
-    #         (
-    #             SELECT sum(passed_cnt) AS total_passed_cnt,
-    #             sum(failed_cnt) AS total_failed_cnt,
-    #             branch_name,node_name, test_id
-    #             FROM #{@tarantular_tbl}
-    #             group by branch_name,node_name,test_id
-    #         ) as f
-    #         where #{pkjoin}"
-    # # puts query
-    # DBConn.exec(query)
 
     # tarantular score
-    query = "update #{@tarantular_tbl} set tarantular_score = case when failed_cnt = 0 and passed_cnt = 0 then 0 "+
+    query = "update #{@tarantular_tbl} set tarantular_score = case when failed_cnt + passed_cnt = 0 or total_failed_cnt = 0 then 0 "+
     "else (failed_cnt::float(2)/total_failed_cnt::float(2))/(failed_cnt::float(2)/total_failed_cnt::float(2) + passed_cnt::float(2)/total_passed_cnt::float(2)) end "+
-    ", ochihai_score = case when failed_cnt + passed_cnt = 0 then 0 "+
+    ", ochihai_score = case when failed_cnt + passed_cnt = 0 or total_failed_cnt = 0 then 0 "+
     "else failed_cnt::float(2)/(|/(total_failed_cnt*(failed_cnt + passed_cnt)::bigint))::float(2) end " +
-    ", naish2_score = case when failed_cnt = 0 then 0 else failed_cnt::float(2) - passed_cnt::float(2)/(total_passed_cnt+1)::float(2) end"+
+    # ", naish2_score = case when failed_cnt = 0 then 0 else failed_cnt::float(2) - passed_cnt::float(2)/(total_passed_cnt+1)::float(2) end"+
+    ", naish2_score =  failed_cnt::float(2) - passed_cnt::float(2)/(total_passed_cnt+1)::float(2) "+
     ", kulczynski2_score = case when failed_cnt = 0 then 0 else "+
-    "  (failed_cnt::float(2)/total_failed_cnt::float(2) + failed_cnt::float(2)/(failed_cnt + passed_cnt)::float(2))/2 end "
+    "  (failed_cnt::float(2)/total_failed_cnt::float(2) + failed_cnt::float(2)/(failed_cnt + passed_cnt)::float(2))/2 end "+
+    # ", kulczynski2_score = (failed_cnt::float(2)/total_failed_cnt::float(2) + failed_cnt::float(2)/(failed_cnt + passed_cnt)::float(2))/2 "+
+    ", wong1_score = failed_cnt "
 
     puts query
     DBConn.exec(query)
@@ -153,15 +142,98 @@ class Tarantular
    " sum(ochihai_score) as sum_ochihai_score, rank() over(order by sum(ochihai_score) desc) AS ochihai_rank"+
    ", sum(naish2_score) as sum_naish2_score, rank() over(order by sum(naish2_score) desc) AS naish2_score"+
    ", sum(kulczynski2_score) as sum_kulczynski2_score, rank() over(order by sum(kulczynski2_score) desc) AS kulczynski2_score"+
+   ", sum(wong1_score) as sum_wong1_score, rank() over(order by sum(wong1_score) desc) AS wong1_score"+
    " from tarantular_tbl group by branch_name,node_name, test_id;"
     # puts query
     DBConn.exec(query)
+
+
+   # statistical score
+   query = "with stats as ( select branch_name||'-'||node_name as bn_name 
+   ,sober_score(passed_cnt::numeric, total_passed_cnt::numeric,failed_cnt::numeric, total_failed_cnt::numeric) as sober_score
+   ,liblit_score(passed_cnt::numeric, total_passed_cnt::numeric,failed_cnt::numeric, total_failed_cnt::numeric) as liblit_score
+   from tarantular_tbl where eval_result = 't') 
+   update tarantular_result as ts "+
+   " SET sober_score = s.sober_score, "+
+   " liblit_score = s.liblit_score "+
+   " FROM stats s "+
+   " where s.bn_name = ts.bn_name"
+
+    puts query
+    DBConn.exec(query)
+
+    # Mann_whitney ranking
+    query = "with true_stat as (select passed_cnt+failed_cnt as total_true, passed_cnt as passed_true, branch_name||'-'||node_name as bn_name   from tarantular_tbl where eval_result = 't'), 
+false_stat as (select passed_cnt+failed_cnt as total_false, passed_cnt as passed_false, branch_name||'-'||node_name as bn_name  from tarantular_tbl where eval_result = 'f')
+select t.bn_name, f.total_false, f.passed_false, t.total_true,t.passed_true from true_stat t
+join false_stat f
+on f.bn_name = t.bn_name ;
+"
+    puts query
+    mw_set = DBConn.exec(query)
+    mw_result = Hash.new()
+    mw_set.each do |r|
+      ms_score = Mann_whitney.ranking_score(r['total_true'].to_i, r['total_false'].to_i, r['passed_true'].to_i, r['passed_false'].to_i)
+      # query = "update tarantular_result set mw_score = #{ms_score} where bn_name = '#{r['bn_name']}'"
+      puts r['bn_name']
+      puts ms_score
+      mw_result[r['bn_name']] = ms_score
+    end
+
+    if mw_result.values.uniq.length==1
+      # all ms_scores are same, not able to rank
+      query = "update tarantular_result set mw_rank = 0"
+      DBConn.exec(query)
+    else
+      i =1
+      mw_result.sort_by {|_key, value| value}.to_h.each do |k,v|
+        puts k
+        puts v
+        query = "update tarantular_result set mw_rank = #{i} where bn_name = '#{k}'"
+        puts query
+        DBConn.exec(query)
+        i = i +1
+      end
+    end
+
+
+    query = " with rank as (select bn_name, rank() over(order by sober_score desc) as sober_rank,
+ rank() over(order by liblit_score desc) as liblit_rank
+ from tarantular_result
+ )
+  update tarantular_result as ts
+  SET sober_rank = r.sober_rank,
+   liblit_rank = r.liblit_rank
+   FROM rank r  where r.bn_name = ts.bn_name;"
+    puts query
+    DBConn.exec(query)
+
+
+    # update liblit and sober rank if they fail to rank
+    query = "select count(1) as cnt from (select distinct sober_score from tarantular_result) as t;"
+    res =  DBConn.exec(query)
+    if res[0]['cnt'].to_i == 1
+      query = "update tarantular_result SET sober_rank = 0"
+    end
+
+
+    query = "select count(1) as cnt from (select distinct liblit_score from tarantular_result) as t;"
+    res =  DBConn.exec(query)
+    if res[0]['cnt'].to_i == 1
+      query = "update tarantular_result SET liblit_rank = 0"
+    end
   end
   # end
 
+  def harmonic_mean(rank)
+    return 0 if rank.to_i == 0
+
+    2/(rank.to_f+1)
+  end
+
   def relevence(relevent_set)
     relevent_bn = relevent_set.map{|r| "'#{r}'"}.join(',')
-    query = "select tarantular_rank,ochihai_rank,naish2_rank,kulczynski2_rank from tarantular_result where bn_name in (#{relevent_bn})"
+    query = "select tarantular_rank,ochihai_rank,naish2_rank,kulczynski2_rank,wong1_rank,sober_rank,liblit_rank,mw_rank from tarantular_result where bn_name in (#{relevent_bn})"
     # puts query
     res = DBConn.exec(query)
     @ranks={}
@@ -169,19 +241,66 @@ class Tarantular
     olist =[]
     nlist=[]
     klist = []
+    slist=[]
+    llist = []
+    wlist = []
+    mwlist = []
+    t_hm = 0
+    o_hm = 0
+    n_hm = 0
+    k_hm = 0
+    s_hm = 0
+    l_hm = 0
+    mw_hm = 0
     if res.count>0
       res.each do |r|
         tlist<< r['tarantular_rank'].to_s
+        t_hm = t_hm + harmonic_mean(r['tarantular_rank'])
         olist<<r['ochihai_rank'].to_s
+        o_hm = o_hm + harmonic_mean(r['ochihai_rank'])
         nlist<< r['naish2_rank'].to_s
+        n_hm = n_hm + harmonic_mean(r['naish2_rank'])
         klist<<r['kulczynski2_rank'].to_s
+        k_hm = k_hm + harmonic_mean(r['kulczynski2_rank'])
+        slist<<r['sober_rank'].to_s
+        s_hm = s_hm + harmonic_mean(r['sober_rank'])
+        llist<<r['liblit_rank'].to_s
+        l_hm = l_hm + harmonic_mean(r['liblit_rank'])
+        wlist<<r['wong1_rank'].to_s
+
+        mwlist<<r['mw_rank'].to_s
+        mw_hm = mw_hm + harmonic_mean(r['mw_rank'])
       end
+      t_hm = t_hm/relevent_set.count
+      o_hm = o_hm/relevent_set.count
+      n_hm = n_hm/relevent_set.count
+      k_hm = k_hm/relevent_set.count
+      s_hm = s_hm/relevent_set.count
+      l_hm = l_hm/relevent_set.count
+      mw_hm = mw_hm/relevent_set.count
       @ranks['tarantular_rank'] = tlist.join(',')
       @ranks['ochihai_rank'] = olist.join(',')
       @ranks['naish2_rank'] = nlist.join(',')
       @ranks['kulczynski2_rank'] = klist.join(',')
+      @ranks['wong1_rank'] = wlist.join(',')
+      @ranks['sober_rank'] = slist.join(',')
+      @ranks['liblit_rank'] = llist.join(',')
+      @ranks['mw_rank'] = mwlist.join(',')
+
+
+      @ranks['tarantular_hm'] = t_hm
+      @ranks['ochihai_hm'] = o_hm
+      @ranks['naish2_hm'] = n_hm
+      @ranks['kulczynski2_hm'] = k_hm
+      @ranks['wong1_hm'] = 0
+      @ranks['sober_hm'] = s_hm
+      @ranks['liblit_hm'] = l_hm
+      @ranks['mw_hm'] = mw_hm
     else
-      @ranks = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0' }
+      @ranks = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0', 
+        'wong1_rank'=>'0', 'sober_rank'=>'0', 'liblit_rank'=>'0','mw_rank'=>'0',
+        'tarantular_hm'=>'0', 'ochihai_hm'=>'0', 'naish2_hm'=>'0', 'kulczynski2_hm'=>'0', 
+        'wong1_hm'=>'0', 'sober_hm'=>'0', 'liblit_hm'=>'0','mw_hm'=>'0'}
     end
     @ranks
   end
@@ -196,7 +315,7 @@ class Tarantular
     query = "select #{@test_id} as test_id, branch_name, node_name, query,location, "+
     " 't'::boolean as eval_result, 0 as passed_cnt, 0 as total_passed_cnt, "+
     " 0 as failed_cnt, 0 as total_failed_cnt, 0::float(2) as tarantular_score, 0::float(2) as ochihai_score "+
-    " , 0::float(2) as naish2_score, 0::float(2) as kulczynski2_score "+
+    " , 0::float(2) as naish2_score, 0::float(2) as kulczynski2_score , 0::float(2) as wong1_score "+
 
     " from node_query_mapping"
     pkList = 'test_id, branch_name, node_name,eval_result'
@@ -213,7 +332,15 @@ class Tarantular
     # create node based tarantular_tbl
       query =  %Q(DROP TABLE if exists tarantular_result;
   CREATE TABLE tarantular_result
-  (test_id int, bn_name varchar(90), sum_tarantular_score float(2), tarantular_rank int, sum_ochihai_score float(2), ochihai_rank int, sum_naish2_score float(2), naish2_rank int, sum_kulczynski2_score float(2), kulczynski2_rank int);)
+  (test_id int, bn_name varchar(90)
+  ,sum_tarantular_score float(2),tarantular_rank int
+  ,sum_ochihai_score float(2), ochihai_rank int
+  ,sum_naish2_score float(2),naish2_rank int
+  ,sum_kulczynski2_score float(2), kulczynski2_rank int
+  ,sum_wong1_score float(2), wong1_rank int
+  ,sober_score numeric null , sober_rank int null
+  ,liblit_score numeric null, liblit_rank int null
+  , mw_rank int null);)
     DBConn.exec(query)
 
   end

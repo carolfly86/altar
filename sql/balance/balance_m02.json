@@ -34,7 +34,7 @@
 		{
  	 	"query": "SELECT ms.id as msid, s.id as sid, sh.id as shid FROM medidata_sites ms JOIN sites s ON ms.id = s.external_id JOIN shipments sh ON s.id = sh.destination_site_id where ms.country = 'USA' and  ms.id > 900 and s.study_id > 15 and s.active_for_drug_shipping = 't' and s.activation_date > '2013-01-01' and sh.id is not null;",
 		"pkList": "msid, sid, shid",
-		"relevent": ["PH0-N2","PH1-N4"]
+		"relevent": ["PH0-N2","PH0-N4"]
 		}
 	]
 }

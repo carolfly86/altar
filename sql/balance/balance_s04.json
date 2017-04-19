@@ -17,9 +17,9 @@
 		"relevent": ["PH2-N3"]
 		},
 		{
-  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where ms.name like 'SmokeTest%' or ms.is_production='f' or s.can_generate_blocks='t' or s.external_id > 45235 or ms.id = 159 ;",
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where ms.name like 'SmokeTest%' or ms.is_production='f' or s.can_generate_blocks='t' or (s.external_id > 45235 and ms.id = 159 );",
 		"pkList": "msid, sid",
-		"relevent": ["PH4-N5"]
+		"relevent": ["PH3-N5"]
 		},
 		{
   		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where ms.name like 'SmokeTest%' or ms.is_production='f' or s.can_generate_blocks='t' or s.id > 45235;",

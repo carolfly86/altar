@@ -9,23 +9,35 @@ require 'pry'
 require 'set'
 Dir["lib/*.rb","lib/*/*.rb"].each {|file|  require_relative file }
 # pg_ctl start -D/usr/local/var/postgres
-#./test_parse.rb -s employees_c05 -o t -g i -b y
+#./test_parse.rb -a y -o t -g i -m b
+#./test_parse.rb -s employees_m06 -o t -g i -m b
 #./test_parse.rb -s employees_m06 -o t -g i -m o
 # Dir.glob("lib/*.rb").each {|file| puts file; require_relative file }
 opts = Trollop::options do
   banner "Usage: " + $0 + " --script [script] "
   opt :script, "location of sql script", :type => :string
+  opt :allscripts, "process all scripts in folder", :type => :string
   opt :operation, "m(utate)|t(est)", :type => :string
   opt :golden_record, "c(reate)|i(mport)", :type => :string
   opt :method, "o(ld)|o(ld)r(emoval)|n(ew)|b(aseline SBFL)", :type => :string
   # opt :expectation, "location of expectation file", :type => :string
 end
-#cfg = YAML.load_file( File.join(File.dirname(__FILE__), "config/default.yml") )
+cfg = YAML.load_file( File.join(File.dirname(__FILE__), "config/default.yml") )
 #conn = PG::Connection.open(dbname: cfg['default']['database'], user: cfg['default']['user'], password: cfg['default']['password'])
 
 script = opts[:script]
 if opts[:operation] =='t'
-	queryTest(script,  opts[:golden_record],  opts[:method])
+	if opts[:allscripts] =='y'
+		dbname = cfg['default']['database']
+		create_all_script_result_tbl()
+		Dir["sql/#{dbname}/*.json"].each do |file|  
+			script = File.basename file, '.json'
+			queryTest(script,  opts[:golden_record],  opts[:method]) 
+			dump_result(script)
+		end
+	else
+		queryTest(script,  opts[:golden_record],  opts[:method])
+	end
 elsif opts[:operation] =='m'
 	randomMutation(script)
 end

@@ -1,0 +1,27 @@
+s1:
+
+Find from lots that are "CWStudy1" studies not at status 1
+or "Recycled 425208" study at status 1
+
+select l.id as lid, l.study_id, l.name, i.id as iid, i.status, i.lot_id 
+from lots as l join inventory_items i on l.id = i.lot_id where (l.study_id = 46 and i.status = 1) or (l.study_id = 10);
+
+m03_6:
+(Assume external_id in studies is the FK for id in medidata_studies)
+(Assume a study is depotted means a record for that id exists in depots)
+Find from medidata_studies that have been "depotted" and has name "Mediflexs" or closed after '2015-01-01' or study name is "NandanStudy" or the parent study is 'Recycled 356087' or study design id is 657 or is in production or the file upload rules is 1 or the protocal is "Mediflex UAT Protocol"
+
+
+select sg.id as sgid, s.id as sid, d.id as did from medidata_studies as sg join studies as s on sg.id = s.external_id JOIN depots d on d.study_id = s.id  where sg.parent_id = 239 or sg.name ='Mediflexs' or sg.protocol='Mediflex UAT Protocol' or sg.live_date>'2015-01-01' or s.study_design_id >657 or s.name = 'NandanStudy' or s.file_upload_rules='1' or sg.is_production = 't';
+
+
+c1:
+Find from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id
+that has article type name 'Un AT2' and medidata depots name at 'Depot2'
+or lot relase status is 3 and at medidate depots 709
+
+or medidata depots that is not deleted and at depots with study id less than 500 and lot released before '2014-06-29' and inventory status in (1,2,3,6) and article types is_open_lable is false and medidata depots name is 'Depot1' and article type name 'Un AT1' and lot release status is 2 and depots id is 531 and medidata depots is not deleted 
+
+select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id 
+
+where (a.id = 538 and dp.id = 531 and i.status in (1,2,3)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and md.name ='Depot1' and md.deleted='f' and dp.study_id <500 and l.release_status = 2) or (md.id = 709 and l.release_status = 3) or (a.id = 551 and md.name = 'Depot2');

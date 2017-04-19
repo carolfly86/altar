@@ -331,19 +331,20 @@ class LozalizeError
     if @unwanted_tuple_count >0
       # p "Unwanted Pk count #{unWantedPK.count()}"
       # create unwanted_tuple_branch table
+      # binding.pry
       whereErrList = whereCondTest(unWantedPK,'U')
       # joinErrList = jointypeErr(query,'U')
     end
 
     if @missing_tuple_count>0
       # p "Missing PK count #{missinPK.count()}"
-
+      # binding.pry
       whereErrList = whereCondTest(missinPK,'M')
       # joinErrList = jointypeErr(query,'M')
     end
 
     # create aggregated tuple_suspicious_nodes
-    pk = @pkFullList.map{|pk| pk['colname']}.join(',')
+    pk = @pkFullList.map{|pk| pk['alias']}.join(',')
     query = "create materialized view tuple_node_test_result_aggr as "+
             "select #{pk}, string_agg(branch_name||'-'||node_name, ',' order by node_name,branch_name) as suspicious_nodes from tuple_node_test_result group by #{pk}"
     pp query
@@ -406,6 +407,7 @@ class LozalizeError
     # pp "t_predicate_collist: #{t_predicate_collist}"
     # pp 't_predicate_tree.all_columns'
     # rename_where_pt = @tQueryObj.parseTree['SELECT']['whereClause']
+    # binding.pry
     constraintPredicateQuery=ReverseParseTree.whereClauseConst(@tWherePT)
     # pp 'before'
     # pp @constraintPredicateQuery
@@ -597,7 +599,7 @@ class LozalizeError
         h =  Hash.new
         # binding.pry
         colname = pkcol['colname']
-        h['val'] = r[colname]
+        h['val'] = r[colname].nil? ? r[pkcol['alias']] : r[colname]
         h['alias'] = pkcol['alias']
         h['col'] = pkcol['col']
         pk.push(h)
@@ -641,6 +643,7 @@ class LozalizeError
           if type =='M'
             # puts 'nodeQuery_new'
             # pp nodeQuery_new
+            # binding.pry
             res = DBConn.exec(nodeQuery_new)
             #pp res[0]['count']
             if res[0]['count'].to_i==0
@@ -708,7 +711,7 @@ class LozalizeError
     val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
     pkjoin = @pkFullList.map do |c|
 
-                "tbl1.#{c['colname']} = tbl2.#{c['alias']}_pk"
+                "tbl1.#{c['alias']} = tbl2.#{c['alias']}_pk"
             end.join(' AND ')
     query = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
 
@@ -735,7 +738,7 @@ class LozalizeError
     targetList ="#{renamedPKCol},'none'::varchar(300) as mutation_cols,'M'::varchar(1) as type,#{@allColumns_select}"
     val_query =  ReverseParseTree.reverseAndreplace(@fPS, targetList,'1=1')
     pkjoin = @pkFullList.map do |c|
-                "tbl1.#{c['colname']} = tbl2.#{c['alias']}_pk"
+                "tbl1.#{c['alias']} = tbl2.#{c['alias']}_pk"
             end.join(' AND ')
     query = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
     query = "INSERT INTO ftuples #{query}"

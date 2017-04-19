@@ -1,3 +1,37 @@
+def create_all_script_result_tbl()
+	query =  %Q(DROP TABLE if exists all_test_result;
+	CREATE TABLE all_test_result
+	(script_name varchar(100), test_id int, m_u_tuple_count bigint, duration bigint, total_score bigint,
+	harmonic_mean float(2), jaccard float(2), column_cnt int, 
+	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
+	sober_hm float(2), liblit_hm float(2),mw_hm float(2),
+	tarantular_duration int, total_test_cnt int);)
+  	 # pp query
+    DBConn.exec(query)
+end
+def dump_result(script)
+	query = " insert into all_test_result
+	select '#{script}', 
+	test_id,
+	m_u_tuple_count ,
+	duration , 
+	total_score ,
+	harmonic_mean , 
+	jaccard , 
+	column_cnt , 
+	tarantular_hm , 
+	ochihai_hm , 
+	kulczynski2_hm , 
+	naish2_hm ,
+	wong1_hm,
+	sober_hm , 
+	liblit_hm ,
+	mw_hm ,
+	tarantular_duration , 
+	total_test_cnt 
+	from test_result"
+	DBConn.exec(query)
+end
 def queryTest(script,golden_record_opr,method)
 # method: b --- baseline SBFL methods
 #         o --- original 
@@ -67,7 +101,10 @@ def queryTest(script,golden_record_opr,method)
 			duration = tarantular_duration
 		else
 			tarantular_duration = 0
-			tarantular_rank = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0' }
+			tarantular_rank = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0', 
+        'wong1_rank'=>'0', 'sober_rank'=>'0', 'liblit_rank'=>'0',
+        'tarantular_hm'=>'0', 'ochihai_hm'=>'0', 'naish2_hm'=>'0', 'kulczynski2_hm'=>'0', 
+        'wong1_hm'=>'0', 'sober_hm'=>'0', 'liblit_hm'=>'0'}
 			total_test_cnt = 0
 
 			puts "begin test"
@@ -160,6 +197,21 @@ def create_golden_record(tQueryObj)
 
 	DBConn.tblCreation('golden_record', '', excluded_query)
 
+	query = "select count(1) as cnt from golden_record where type = 'excluded'"
+	res = DBConn.exec(query)
+	if res[0]['cnt'].to_i == 0
+			# binding.pry
+	    null_target_list = col_list.map do |col|
+					"null as #{col.renamed_colname}"
+				end.join(', ')
+		null_target_list = " #{null_target_list} , 'excluded' as type, '' as branch"
+		null_query = ReverseParseTree.reverseAndreplace(parseTree, null_target_list, '')
+		null_query = "INSERT INTO golden_record #{null_query} limit 1"
+		DBConn.exec(null_query)
+		# binding.pry
+
+	end
+
 	br_queries.each do |q|
 		q.each_pair do |key,val|
 			satisfied_target_list = "#{new_target_list} , 'satisfied'::varchar(30) as type, '#{key}'::varchar(30) as branch"
@@ -178,7 +230,11 @@ def create_test_result_tbl()
 	CREATE TABLE test_result
 	(test_id int, fquery text, tquery text, m_u_tuple_count bigint, duration bigint, total_score bigint,
 	harmonic_mean float(2), jaccard float(2), column_cnt int, 
-	tarantular_rank varchar(50), ochihai_rank varchar(50), kulczynski2_rank varchar(50), naish2_rank varchar(50),tarantular_duration int, total_test_cnt int);)
+	tarantular_rank varchar(50), ochihai_rank varchar(50), kulczynski2_rank varchar(50), naish2_rank varchar(50),wong1_rank varchar(50),
+	sober_rank varchar(50), liblit_rank varchar(50),mw_rank varchar(50),
+	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
+	sober_hm float(2), liblit_hm float(2),mw_hm float(2),
+	tarantular_duration int, total_test_cnt int);)
   	 # pp query
     DBConn.exec(query)
 
@@ -206,10 +262,23 @@ def update_test_result_tbl(test_id,fquery,tquery,m_u_tuple_count,duration,total_
 				'#{rank['ochihai_rank']}',
 				'#{rank['kulczynski2_rank']}',
 				'#{rank['naish2_rank']}',
+				'#{rank['wong1_rank']}',
+				'#{rank['sober_rank']}',
+				'#{rank['liblit_rank']}',
+				'#{rank['mw_rank']}',
+				'#{rank['tarantular_hm']}',
+				'#{rank['ochihai_hm']}',
+				'#{rank['kulczynski2_hm']}',
+				'#{rank['naish2_hm']}',
+				'#{rank['wong1_hm']}',
+				'#{rank['sober_hm']}',
+				'#{rank['liblit_hm']}',
+				'#{rank['mw_hm']}',
 				#{tarantular_duration},
 				#{total_test_cnt}
 
 			)
+	pp query
     DBConn.exec(query)
 
     query =  %Q(INSERT INTO test_result_detail
