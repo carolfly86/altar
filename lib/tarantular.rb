@@ -138,10 +138,10 @@ class Tarantular
 
   # rank tarantular score
    query = "INSERT INTO tarantular_result SELECT test_id,  branch_name||'-'||node_name,"+
-   " sum(tarantular_score) as sum_tarantular_score, rank() over(order by sum(tarantular_score) desc) AS tarantular_rank , "+
-   " sum(ochihai_score) as sum_ochihai_score, rank() over(order by sum(ochihai_score) desc) AS ochihai_rank"+
+   " sum(tarantular_score) as tarantular_score, rank() over(order by sum(tarantular_score) desc) AS tarantular_rank , "+
+   " sum(ochihai_score) as ochihai_score, rank() over(order by sum(ochihai_score) desc) AS ochihai_rank"+
    ", sum(naish2_score) as sum_naish2_score, rank() over(order by sum(naish2_score) desc) AS naish2_score"+
-   ", sum(kulczynski2_score) as sum_kulczynski2_score, rank() over(order by sum(kulczynski2_score) desc) AS kulczynski2_score"+
+   ", sum(kulczynski2_score) as kulczynski2_score, rank() over(order by sum(kulczynski2_score) desc) AS kulczynski2_score"+
    ", sum(wong1_score) as sum_wong1_score, rank() over(order by sum(wong1_score) desc) AS wong1_score"+
    " from tarantular_tbl group by branch_name,node_name, test_id;"
     # puts query
@@ -163,38 +163,10 @@ class Tarantular
     DBConn.exec(query)
 
     # Mann_whitney ranking
-    query = "with true_stat as (select passed_cnt+failed_cnt as total_true, passed_cnt as passed_true, branch_name||'-'||node_name as bn_name   from tarantular_tbl where eval_result = 't'), 
-false_stat as (select passed_cnt+failed_cnt as total_false, passed_cnt as passed_false, branch_name||'-'||node_name as bn_name  from tarantular_tbl where eval_result = 'f')
-select t.bn_name, f.total_false, f.passed_false, t.total_true,t.passed_true from true_stat t
-join false_stat f
-on f.bn_name = t.bn_name ;
-"
-    puts query
-    mw_set = DBConn.exec(query)
-    mw_result = Hash.new()
-    mw_set.each do |r|
-      ms_score = Mann_whitney.ranking_score(r['total_true'].to_i, r['total_false'].to_i, r['passed_true'].to_i, r['passed_false'].to_i)
-      # query = "update tarantular_result set mw_score = #{ms_score} where bn_name = '#{r['bn_name']}'"
-      puts r['bn_name']
-      puts ms_score
-      mw_result[r['bn_name']] = ms_score
-    end
+    # Mann_whitney.ranking_calculation()
 
-    if mw_result.values.uniq.length==1
-      # all ms_scores are same, not able to rank
-      query = "update tarantular_result set mw_rank = 0"
-      DBConn.exec(query)
-    else
-      i =1
-      mw_result.sort_by {|_key, value| value}.to_h.each do |k,v|
-        puts k
-        puts v
-        query = "update tarantular_result set mw_rank = #{i} where bn_name = '#{k}'"
-        puts query
-        DBConn.exec(query)
-        i = i +1
-      end
-    end
+    # crosstab ranking
+    Crosstab.ranking_calculation()
 
 
     query = " with rank as (select bn_name, rank() over(order by sober_score desc) as sober_rank,
@@ -208,20 +180,10 @@ on f.bn_name = t.bn_name ;
     puts query
     DBConn.exec(query)
 
-
-    # update liblit and sober rank if they fail to rank
-    query = "select count(1) as cnt from (select distinct sober_score from tarantular_result) as t;"
-    res =  DBConn.exec(query)
-    if res[0]['cnt'].to_i == 1
-      query = "update tarantular_result SET sober_rank = 0"
+    ['tarantular','ochihai','kulczynski2','sober','liblit'].each do |name|
+      SFL_Ranking.tie_check(name)
     end
 
-
-    query = "select count(1) as cnt from (select distinct liblit_score from tarantular_result) as t;"
-    res =  DBConn.exec(query)
-    if res[0]['cnt'].to_i == 1
-      query = "update tarantular_result SET liblit_rank = 0"
-    end
   end
   # end
 
@@ -233,7 +195,7 @@ on f.bn_name = t.bn_name ;
 
   def relevence(relevent_set)
     relevent_bn = relevent_set.map{|r| "'#{r}'"}.join(',')
-    query = "select tarantular_rank,ochihai_rank,naish2_rank,kulczynski2_rank,wong1_rank,sober_rank,liblit_rank,mw_rank from tarantular_result where bn_name in (#{relevent_bn})"
+    query = "select tarantular_rank,ochihai_rank,naish2_rank,kulczynski2_rank,wong1_rank,sober_rank,liblit_rank,mw_rank,crosstab_rank from tarantular_result where bn_name in (#{relevent_bn})"
     # puts query
     res = DBConn.exec(query)
     @ranks={}
@@ -245,6 +207,8 @@ on f.bn_name = t.bn_name ;
     llist = []
     wlist = []
     mwlist = []
+    cbtlist = []
+
     t_hm = 0
     o_hm = 0
     n_hm = 0
@@ -252,6 +216,9 @@ on f.bn_name = t.bn_name ;
     s_hm = 0
     l_hm = 0
     mw_hm = 0
+    cbt_hm =0
+
+
     if res.count>0
       res.each do |r|
         tlist<< r['tarantular_rank'].to_s
@@ -270,6 +237,9 @@ on f.bn_name = t.bn_name ;
 
         mwlist<<r['mw_rank'].to_s
         mw_hm = mw_hm + harmonic_mean(r['mw_rank'])
+
+        cbtlist<<r['crosstab_rank'].to_s
+        cbt_hm = cbt_hm + harmonic_mean(r['crosstab_rank'])
       end
       t_hm = t_hm/relevent_set.count
       o_hm = o_hm/relevent_set.count
@@ -278,6 +248,8 @@ on f.bn_name = t.bn_name ;
       s_hm = s_hm/relevent_set.count
       l_hm = l_hm/relevent_set.count
       mw_hm = mw_hm/relevent_set.count
+      cbt_hm = cbt_hm/relevent_set.count
+
       @ranks['tarantular_rank'] = tlist.join(',')
       @ranks['ochihai_rank'] = olist.join(',')
       @ranks['naish2_rank'] = nlist.join(',')
@@ -286,6 +258,7 @@ on f.bn_name = t.bn_name ;
       @ranks['sober_rank'] = slist.join(',')
       @ranks['liblit_rank'] = llist.join(',')
       @ranks['mw_rank'] = mwlist.join(',')
+      @ranks['crosstab_rank'] = cbtlist.join(',')
 
 
       @ranks['tarantular_hm'] = t_hm
@@ -296,11 +269,12 @@ on f.bn_name = t.bn_name ;
       @ranks['sober_hm'] = s_hm
       @ranks['liblit_hm'] = l_hm
       @ranks['mw_hm'] = mw_hm
+      @ranks['crosstab_hm'] = cbt_hm
     else
       @ranks = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0', 
-        'wong1_rank'=>'0', 'sober_rank'=>'0', 'liblit_rank'=>'0','mw_rank'=>'0',
+        'wong1_rank'=>'0', 'sober_rank'=>'0', 'liblit_rank'=>'0','mw_rank'=>'0','crosstab_rank'=>'0',
         'tarantular_hm'=>'0', 'ochihai_hm'=>'0', 'naish2_hm'=>'0', 'kulczynski2_hm'=>'0', 
-        'wong1_hm'=>'0', 'sober_hm'=>'0', 'liblit_hm'=>'0','mw_hm'=>'0'}
+        'wong1_hm'=>'0', 'sober_hm'=>'0', 'liblit_hm'=>'0','mw_hm'=>'0','crosstab_hm'=>'0'}
     end
     @ranks
   end
@@ -333,14 +307,15 @@ on f.bn_name = t.bn_name ;
       query =  %Q(DROP TABLE if exists tarantular_result;
   CREATE TABLE tarantular_result
   (test_id int, bn_name varchar(90)
-  ,sum_tarantular_score float(2),tarantular_rank int
-  ,sum_ochihai_score float(2), ochihai_rank int
+  ,tarantular_score float(2),tarantular_rank int
+  ,ochihai_score float(2), ochihai_rank int
   ,sum_naish2_score float(2),naish2_rank int
-  ,sum_kulczynski2_score float(2), kulczynski2_rank int
+  ,kulczynski2_score float(2), kulczynski2_rank int
   ,sum_wong1_score float(2), wong1_rank int
   ,sober_score numeric null , sober_rank int null
   ,liblit_score numeric null, liblit_rank int null
-  , mw_rank int null);)
+  , mw_rank int null
+  , crosstab_rank int null);)
     DBConn.exec(query)
 
   end

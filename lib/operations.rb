@@ -4,7 +4,7 @@ def create_all_script_result_tbl()
 	(script_name varchar(100), test_id int, m_u_tuple_count bigint, duration bigint, total_score bigint,
 	harmonic_mean float(2), jaccard float(2), column_cnt int, 
 	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
-	sober_hm float(2), liblit_hm float(2),mw_hm float(2),
+	sober_hm float(2), liblit_hm float(2),mw_hm float(2),crosstab_hm float(2),
 	tarantular_duration int, total_test_cnt int);)
   	 # pp query
     DBConn.exec(query)
@@ -27,6 +27,7 @@ def dump_result(script)
 	sober_hm , 
 	liblit_hm ,
 	mw_hm ,
+	crosstab_hm ,
 	tarantular_duration , 
 	total_test_cnt 
 	from test_result"
@@ -36,7 +37,8 @@ def queryTest(script,golden_record_opr,method)
 # method: b --- baseline SBFL methods
 #         o --- original 
 #         n --- new
-	dbname = script.split('_')[0]
+	# dbname = script.split('_')[0]
+	dbname = script[0...-4]
 	query_json = JSON.parse(File.read("sql/#{dbname}/#{script}.json"))
 	create_test_result_tbl()
 	f_options_list = []
@@ -102,9 +104,9 @@ def queryTest(script,golden_record_opr,method)
 		else
 			tarantular_duration = 0
 			tarantular_rank = {'tarantular_rank'=>'0', 'ochihai_rank'=>'0', 'naish2_rank'=>'0', 'kulczynski2_rank'=>'0', 
-        'wong1_rank'=>'0', 'sober_rank'=>'0', 'liblit_rank'=>'0',
+        'wong1_rank'=>'0', 'sober_rank'=>'0', 'liblit_rank'=>'0','mw_rank'=>'0','crosstab_rank'=>'0',
         'tarantular_hm'=>'0', 'ochihai_hm'=>'0', 'naish2_hm'=>'0', 'kulczynski2_hm'=>'0', 
-        'wong1_hm'=>'0', 'sober_hm'=>'0', 'liblit_hm'=>'0'}
+        'wong1_hm'=>'0', 'sober_hm'=>'0', 'liblit_hm'=>'0', 'mw_hm'=>'0', 'crosstab_hm'=>'0'}
 			total_test_cnt = 0
 
 			puts "begin test"
@@ -233,7 +235,7 @@ def create_test_result_tbl()
 	tarantular_rank varchar(50), ochihai_rank varchar(50), kulczynski2_rank varchar(50), naish2_rank varchar(50),wong1_rank varchar(50),
 	sober_rank varchar(50), liblit_rank varchar(50),mw_rank varchar(50),
 	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
-	sober_hm float(2), liblit_hm float(2),mw_hm float(2),
+	sober_hm float(2), liblit_hm float(2),mw_hm float(2),crosstab_hm float(2),
 	tarantular_duration int, total_test_cnt int);)
   	 # pp query
     DBConn.exec(query)
@@ -274,6 +276,7 @@ def update_test_result_tbl(test_id,fquery,tquery,m_u_tuple_count,duration,total_
 				'#{rank['sober_hm']}',
 				'#{rank['liblit_hm']}',
 				'#{rank['mw_hm']}',
+				'#{rank['crosstab_hm']}',
 				#{tarantular_duration},
 				#{total_test_cnt}
 
