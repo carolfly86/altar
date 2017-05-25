@@ -12,8 +12,15 @@ Currently it supports PostgresSQL.
 
 1. Create a directory in `/sql` directory, the name of the directory should be the database name.
 2. Create a JSON file in the same format as `/sql/adventureworks/adventureworks_s01.json`
-3. Execute ALTAR with this command `./test_parse.rb -s #json_file_name# -o t -g c -b y`
+3. Execute ALTAR with this command `./test_parse.rb -s #json_file_name# -o t -g c -m r`
 4. Result of ALTAR will be store in a table name `test_result` in your database.
+
+## Experiment Result
+1. Employees_AdventureWorks.xlsx contains experiment result for Employees and AdventureWorks
+2. data_collector.xlsx, polling_etl.xlsx contians experiment result for data_collector and polling_etl database
+3. balance.xlsx contains experiment result for MSDB database
+4. Combined result of the 5 databases are stored in Overall.xlsx
+
 
 ## Contributing
 
