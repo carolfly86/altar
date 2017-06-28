@@ -33,7 +33,9 @@ def dump_result(script)
 	from test_result"
 	DBConn.exec(query)
 end
-def queryTest(script,golden_record_opr,method)
+
+
+def faultLocalization(script,golden_record_opr,method,auto_fix)
 # method: b --- baseline SBFL methods
 #         o --- original 
 #         n --- new
@@ -70,22 +72,8 @@ def queryTest(script,golden_record_opr,method)
 	tqueryObj = QueryObj.new(t_options)
 	# pp tqueryObj.parseTree
 	# return
-	if golden_record_opr == 'c'
-		create_golden_record(tqueryObj)
-		puts "Please verify golden record: verified (Y), not verified(N)"
-		verified = STDIN.gets.chomp
-		if verified == 'Y'
-			DBConn.dump_golden_record(script)
-		else
-			abort('not verified')
-		end
-	elsif golden_record_opr == 'i'
-		query = 'drop table IF EXISTS golden_record;'
-		DBConn.exec(query)
-		# gr_script = "sql/golden_record/#{script}_gr.sql"
-		DBConn.exec_script(script)
-		# abort('test')
-	end
+	# create Golden record
+	createGR(golden_record_opr,script,tqueryObj)
 	# pp 'test'
 	f_options_list.each_with_index do |f_options,idx|
 
@@ -109,17 +97,43 @@ def queryTest(script,golden_record_opr,method)
         'wong1_hm'=>'0', 'sober_hm'=>'0', 'liblit_hm'=>'0', 'mw_hm'=>'0', 'crosstab_hm'=>'0'}
 			total_test_cnt = 0
 
-			puts "begin test"
-
+			puts "begin fault localization"
 			beginTime = Time.now
-			puts "test start time: #{beginTime}"
+			puts "fault localization start time: #{beginTime}"
 
 			localizeErr = LozalizeError.new(fqueryObj,tqueryObj)
-			selectionErrList = localizeErr.selecionErr(method)
-			puts 'test end'
+			# # Join type error localization
+			puts 'fault localize: Join Type Errors'
+			joinErrList = localizeErr.joinErr()
+			if joinErrList.count>0
+				# fix join type error
+				pp 'fixing join type error'
+				pp "join type error list"
+				pp joinErrList
+
+				psNew = AutoFix.JoinTypeFix(joinErrList,fqueryObj.parseTree)
+				fQueryNew = ReverseParseTree.reverse(psNew)
+				p 'New query after fixing join type error'
+				p fQueryNew
+				fqueryObj = QueryObj.new({:query=> fQueryNew, :pkList =>fqueryObj.pkList,  :table =>'f_result' })
+				# Reinitialize LocalizeErr with fixed query
+				localizeErr = LozalizeError.new(fqueryObj,tqueryObj)
+			else
+				puts 'No Join Type Error'
+			end
+
+			# Where condition fault localization
+			localizeErr.selecionErr(method)
+
+
+			puts 'fault localization end'
 			endTime = Time.now
-			puts "test end time: #{endTime}"
+			puts "fault localization end time: #{endTime}"
 			m_u_tuple_count = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count
+
+			# Projection error localization
+			prjErrList = localizeErr.projErr()
+
 			fqueryObj.score = localizeErr.getSuspiciouScore()
 			puts 'fquery score:'
 			pp fqueryObj.score
@@ -133,33 +147,63 @@ def queryTest(script,golden_record_opr,method)
 		# tarantular_rank = tarantular.relevence(f_options[:relevent])
 		# return
 		update_test_result_tbl(idx,fqueryObj.query,tqueryObj.query,m_u_tuple_count,duration,totalScore,f_options[:relevent],tarantular_rank,tarantular_duration,total_test_cnt)
+		if auto_fix
+			puts "begin fix"
+			# create t_result stats table
+			tqueryObj.create_stats_tbl
+			fqueryObj.score.each do |k,v|
+				unless k == 'totalScore'
+					if v.to_i >0
+						puts "fixing location #{k}"
+						neighborQueryObj = fqueryObj.generate_neighbor_program(k,1)
+						# binding.pry
+						puts 'neighborQueryObj query:'
+						pp neighborQueryObj.query
+						puts 'neighborQueryObj score:'
+						pp neighborQueryObj.score
+						# hc=HillClimbingAlg.new(fqueryObj,tqueryObj)
+						# hc.hill_climbing(k)
+						# hc.create_stats_tbl
+					end
+				end
+			end
+		end
+		exit 0
 	end
 
-	# puts "begin fix"
-	# fqueryObj.score.each do |k,v|
-	# 	unless k == 'totalScore'
-	# 		if v.to_i >0
-	# 			puts "fixing location #{k}"
-	# 			hc=HillClimbingAlg.new(fqueryObj,tqueryObj)
-	# 			hc.hill_climbing(k)
-	# 			# hc.create_stats_tbl
-	# 		end
-	# 	end
-	# end
+
 
 end
-def randomMutation(script)
-	options = {:script=> script, :table =>'f_result' }
-	fqueryObj = QueryObj.new(options)
-	pp fqueryObj
 
-	t_options = {:script=> 'true', :table =>'t_result' }
-	tqueryObj = QueryObj.new(t_options)
-	pp tqueryObj
+def randomMutation(fqueryObj,tqueryObj)
+	# options = {:script=> script, :table =>'f_result' }
+	# fqueryObj = QueryObj.new(options)
+	# pp fqueryObj
+
+	# t_options = {:script=> 'true', :table =>'t_result' }
+	# tqueryObj = QueryObj.new(t_options)
+	# pp tqueryObj
 	tqueryObj.create_stats_tbl
-	return
-	newQ = fqueryObj. generate_neighbor_program(127,0)
+	newQ = fqueryObj.generate_neighbor_program(127,0)
 
+end
+def createGR(golden_record_opr,script,tqueryObj)
+	if golden_record_opr == 'c'
+		create_golden_record(tqueryObj)
+		puts "Please verify golden record: verified (Y), not verified(N)"
+		verified = STDIN.gets.chomp
+		if verified == 'Y'
+			DBConn.dump_golden_record(script)
+		else
+			abort('not verified')
+		end
+	elsif golden_record_opr == 'i'
+		# import golden record
+		query = 'drop table IF EXISTS golden_record;'
+		DBConn.exec(query)
+		DBConn.exec_golden_record_script(script)
+		# abort('test')
+	end
 end
 def create_golden_record(tQueryObj)
 	# tQueryObj.parseTree
@@ -281,7 +325,7 @@ def update_test_result_tbl(test_id,fquery,tquery,m_u_tuple_count,duration,total_
 				#{total_test_cnt}
 
 			)
-	pp query
+	# pp query
     DBConn.exec(query)
 
     query =  %Q(INSERT INTO test_result_detail
@@ -309,7 +353,7 @@ def update_test_result_tbl(test_id,fquery,tquery,m_u_tuple_count,duration,total_
     puts 'result:'
     answer = Set.new
     res.each do |r|
-    	pp r
+    	# pp r
     	predicate = "#{r['branch_name']}-#{r['node_name']}"
     	answer.add(predicate)
     end

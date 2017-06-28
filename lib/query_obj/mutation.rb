@@ -1,7 +1,7 @@
 class QueryObj
 	# given a parse tree, generate a new predicate to replace the predicate at predicatePath
 	def generate_neighbor_program(location,optimized=1)
-		predicatePath = @parseTree.get_jsonpath_from_location(location)
+		predicatePath = @parseTree.get_jsonpath_from_val('location',location)
 		predicate = JsonPath.new(predicatePath).on(@parseTree)
 
 		fromPT = @parseTree['SELECT']['fromClause']
@@ -227,12 +227,12 @@ class QueryObj
 		pkquery = "select #{@pkList} from t_result"
 		# parseTree= @fQueryJson['parseTree']
 		fromPT = @parseTree['SELECT']['fromClause']
-		fields = DBConn.getAllRelFieldList(fromPT)
+		# fields = DBConn.getAllRelFieldList(fromPT)
 		# remove the where clause in query
 		whereClauseReplacement = Array.new()
 		query_with_no_whereClause =  ReverseParseTree.reverseAndreplace(@parseTree, '',whereClauseReplacement)
 		# rewrite the query to return all fields
-		query_with_no_whereClause,rewriteCols = RewriteQuery.return_all_fields(query_with_no_whereClause)
+		query_with_no_whereClause,rewriteCols = RewriteQuery.return_all_fields(query_with_no_whereClause , @allCols)
 		pkjoin = @pkList.split(',').map do |pkcol| 
 					if rewriteCols.has_key?(pkcol) 
 						t_pkcol = "t.#{pkcol}"

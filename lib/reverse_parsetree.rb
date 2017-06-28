@@ -106,18 +106,19 @@ module ReverseParseTree
   def self.joinClauseConstr(join)
       #pp join
       #p join['JOINEXPR']['jointype']
-      jointype = joinTypeConvert( join['JOINEXPR']['jointype'].to_s, join['JOINEXPR']['quals'] )
+      has_quals = !join['JOINEXPR']['quals'].nil?
+      jointype = joinTypeConvert( join['JOINEXPR']['jointype'].to_s, has_quals )
       #p jointype
       larg = recursiveJoinArg(join['JOINEXPR']['larg'])
       rarg = recursiveJoinArg(join['JOINEXPR']['rarg'])
-      quals = join['JOINEXPR']['quals'].nil? ?  "" : "ON "+ whereClauseConst(join['JOINEXPR']['quals'])
+      quals = has_quals ? "ON "+ whereClauseConst(join['JOINEXPR']['quals']) : ""
       joinClause = "#{larg} #{jointype} #{rarg} #{quals}"
   end
 
-  def ReverseParseTree.joinTypeConvert(joinType, quals)
+  def ReverseParseTree.joinTypeConvert(joinType, has_quals)
     case joinType
         when '0'
-          quals.nil? ? 'CROSS JOIN' : 'JOIN'
+          has_quals ? 'JOIN' : 'CROSS JOIN'
         when '1'
           'LEFT JOIN'
         when '2'
@@ -251,6 +252,10 @@ module ReverseParseTree
       end
     end
     node
+  end
+  def ReverseParseTree.find_relname_by_relalias(fromClause, relalias)
+    relpath = fromClause.get_jsonpath_from_val('aliasname','relalias').gsub('alias','relname')
+    JsonPath.new(relpath).on(fromClause)
   end
   # def ReverseParseTree.predicate_tree_const(wherePT)
   #   # if cnt ==0

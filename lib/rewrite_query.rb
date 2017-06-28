@@ -4,11 +4,11 @@ module RewriteQuery
   # for example, updated_date column is in both customer table and address table, 
   # then the updated_date in customer table will be selected as customer_updated_date, 
   # and the one in address table will be address_updated_date
-  def RewriteQuery.return_all_fields(query)
+  def RewriteQuery.return_all_fields(query,fields)
     parseTree = PgQuery.parse(query).parsetree[0]
   #distinct = parseTree['SELECT']['distinctClause']||''
     fromPT = parseTree['SELECT']['fromClause']
-    fields = DBConn.getAllRelFieldList(fromPT)
+    # fields = DBConn.getAllRelFieldList(fromPT)
     newTargetList = []
     rewriteCols =Hash.new()
     fields.group_by{|f| f.colname}.each do |key, val|

@@ -11,8 +11,13 @@ module QueryBuilder
     end
     #test if tbl1 is subset of tbl2
     def QueryBuilder.subset_test(tbl1, tbl2)
-    	query = 'SELECT CASE WHEN (SELECT COUNT(*) FROM ( '+tbl1+' ) as tbl1 )=0 OR (SELECT COUNT(*) FROM ( '+tbl2+' ) as tbl2 )=0'+
-                           ' THEN \'EMPTYSET\''+
+    	query = 'SELECT CASE WHEN (SELECT COUNT(*) FROM ( '+tbl1+' ) as tbl1 )=0 '+
+                           ' THEN '+
+                             " case when "+
+                              " (SELECT COUNT(*) FROM ( "+tbl2+" ) as tbl2 )>0"+
+                              " then 'IS NOT SUBSET'"+
+                              " else 'EMPTYSET'"+
+                              " end "+
                            ' ELSE CASE WHEN  EXISTS ( ( '+tbl1+' ) except ( '+tbl2 +' ) )'+
                            ' THEN \'IS NOT SUBSET\' ELSE \'IS SUBSET\' END '+
                            ' END as result;'
@@ -26,6 +31,27 @@ module QueryBuilder
               " CASE  WHEN tbl1.column_name = tbl2.column_name then 1 else 0 end AS is_matching "+
               " from tbl1 full outer join tbl2 on tbl1.column_name = tbl2.column_name;"
     end
+
+        #find cols for tbl
+    def QueryBuilder.group_cols_by_data_typcategory(tbl_list)
+      # query = "SELECT column_name,data_type
+      #         FROM information_schema.columns
+      #         WHERE table_name   = '#{tbl}'" 
+      # puts "'#{col}'"
+      query = "SELECT string_agg( c.relname||'.'||a.attname  ,',') as col_list,
+pg_catalog.format_type(a.atttypid, a.atttypmod) as data_type,
+count(1) as count
+FROM pg_catalog.pg_attribute a
+join pg_type p
+on a.atttypid = p.oid
+join pg_catalog.pg_class c
+on a.attrelid = c.oid
+where c.relname in (#{tbl_list}) AND a.attnum > 0 AND NOT a.attisdropped
+group by data_type"
+
+      query
+    end
+
     #find cols for tbl
     def QueryBuilder.find_cols_by_data_typcategory(tbl, data_type = '',col ='')
       # query = "SELECT column_name,data_type
@@ -56,6 +82,19 @@ module QueryBuilder
       end
       query
     end
+
+    # from a list of table (tblList) find the one table that contains column colname
+    def QueryBuilder.find_rel_by_colname(tblList,colname)
+      query = "SELECT a.attname as column_name ,c.relname
+        FROM pg_catalog.pg_attribute a
+        join pg_catalog.pg_class c
+        on a.attrelid = c.oid
+        WHERE c.relname in (#{tblList}) AND a.attnum > 0 AND NOT a.attisdropped and a.attname='#{colname}'"
+
+      query
+
+    end
+
     def QueryBuilder.create_tbl(tblName, pkList, selectQuery)
       insertQuery = selectQuery.dup
       # pp insertQuery

@@ -9,7 +9,7 @@ module DBConn
 	def DBConn.exec(query)
 		@conn.exec(query)  
 	end
-  def DBConn.exec_script(script)
+  def DBConn.exec_golden_record_script(script)
     # file = File.open(script, "r")
     # contents = file.read
     # pp contents
@@ -80,8 +80,8 @@ module DBConn
       return fieldsList.compact
       #pp fieldsList
     end
-
-    # Given a column in the format of ['relalias','colname'] or ['colname'], Find all the relations(tbls) in FROM Clause with matching data type category
+    # Given a column in the format of ['relalias','colname'] or ['colname'], 
+    # Find all the relations(tbls) in FROM Clause with matching data type category
     def DBConn.findRelFieldListByCol(fromPT, column)
       colRelName = ''
       if column.length >1
