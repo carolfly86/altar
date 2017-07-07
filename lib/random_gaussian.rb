@@ -1,5 +1,5 @@
 class RandomGaussian
-  def initialize(mean, stddev, rand_helper = lambda { Kernel.rand })
+  def initialize(mean, stddev, rand_helper = -> { Kernel.rand })
     @rand_helper = rand_helper
     @mean = mean
     @stddev = stddev
@@ -8,24 +8,25 @@ class RandomGaussian
   end
 
   def rand
-    if @valid then
+    if @valid
       @valid = false
-      return @next
+      @next
     else
       @valid = true
       x, y = self.class.gaussian(@mean, @stddev, @rand_helper)
       @next = y
-      return x
+      x
     end
   end
 
   private
+
   def self.gaussian(mean, stddev, rand)
     theta = 2 * Math::PI * rand.call
     rho = Math.sqrt(-2 * Math.log(1 - rand.call))
     scale = stddev * rho
     x = mean + scale * Math.cos(theta)
     y = mean + scale * Math.sin(theta)
-    return x, y
+    [x, y]
   end
 end

@@ -17,10 +17,10 @@ require_relative 'lib/db_connection'
 require_relative 'lib/sql_mutation'
 require_relative 'lib/utils'
 require_relative 'lib/column'
-opts = Trollop::options do
-  banner "Usage: " + $0 + " --script [script] "
-  opt :script, "location of sql script", :type => :string
-  opt :expectation, "location of expectation file", :type => :string
+opts = Trollop.options do
+  banner 'Usage: ' + $PROGRAM_NAME + ' --script [script] '
+  opt :script, 'location of sql script', type: :string
+  opt :expectation, 'location of expectation file', type: :string
 end
 # query = File.read("sql/#{opts[:script]}")
 # parseTree = PgQuery.parse(query).parsetree[0]
