@@ -6,14 +6,12 @@ GEM
     distribution (0.7.3)
     fortune (0.0.3)
     hashie (3.4.3)
-    json (1.8.2)
+    json (1.8.6)
     jsonpath (0.5.7)
       multi_json
     method_source (0.8.2)
     multi_json (1.11.2)
     pg (0.18.2)
-    pg_query (0.5.0)
-      json (~> 1.8)
     pry (0.10.3)
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
@@ -31,7 +29,11 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.3.0)
     rspec-support (3.3.0)
+    rubytree (0.9.7)
+      json (~> 1.8)
+      structured_warnings (~> 0.2)
     slop (3.6.0)
+    structured_warnings (0.3.0)
     trollop (2.1.1)
 
 PLATFORMS
@@ -43,10 +45,10 @@ DEPENDENCIES
   hashie
   jsonpath
   pg
-  pg_query
   pry
   rspec
+  rubytree
   trollop
 
 BUNDLED WITH
-   1.11.2
+   1.15.1

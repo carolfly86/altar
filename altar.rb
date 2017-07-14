@@ -19,7 +19,7 @@ opts = Trollop.options do
   opt :allscripts, 'process all scripts in folder (y|n)', type: :string, default: 'n'
   # opt :operation, "m(utate)|t(est)", :type => :string
   opt :golden_record, 'c(reate)|i(mport)', type: :string
-  opt :method, 'o(ld)|o(ld)r(emoval)|n(ew)|b(aseline SBFL)', type: :string
+  opt :method, 'o(ld)r(emoval)|b(aseline SBFL)', type: :string
   opt :autofix, 'y|n', type: :string, default: 'y'
   # opt :expectation, "location of expectation file", :type => :string
 end

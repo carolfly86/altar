@@ -144,10 +144,10 @@ module ReverseParseTree
   end
 
   def self.whereClauseConstr_sub(where)
-    logicOpr = where.keys[0].to_s
+    logicOpr = where.keys[0]
     lexpr = where[logicOpr]['lexpr']
     rexpr = where[logicOpr]['rexpr']
-    if logicOpr == 'AEXPR'
+    if logicOpr == 'AEXPR' or logicOpr.nil?
       op = where[logicOpr]['name'][0]
       lexpr = lexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(lexpr) : exprConstr(lexpr)
       rexpr = rexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(rexpr) : exprConstr(rexpr)
@@ -166,6 +166,17 @@ module ReverseParseTree
       expr = lexpr.to_s + ' ' + op + ' (' + rexpr.to_s + ' )'
     elsif logicOpr == 'A_CONST'
       exprConstr(where)
+    elsif logicOpr == 'BOOLEXPR'
+      bool_opr = where[logicOpr]['boolop'] == 0 ? 'AND' : 'OR'
+      where[logicOpr]['args'].map do |arg|
+        # binding.pry
+        expr = whereClauseConst(arg)
+        expr = case  when bool_opr =='OR'
+                then'( '+ expr+' )'
+                else expr
+                end
+
+      end.join(" #{bool_opr} ")
     else
       lexpr = whereClauseConst(lexpr)
       rexpr = whereClauseConst(rexpr)
@@ -249,10 +260,10 @@ module ReverseParseTree
     node
   end
 
-  def self.find_relname_by_relalias(fromClause, _relalias)
-    relpath = fromClause.get_jsonpath_from_val('aliasname', 'relalias').gsub('alias', 'relname')
-    JsonPath.new(relpath).on(fromClause)
-  end
+  # def self.find_relname_by_relalias(fromClause, _relalias)
+  #   relpath = fromClause.get_jsonpath_from_val('aliasname', 'relalias').gsub('alias', 'relname')
+  #   JsonPath.new(relpath).on(fromClause)
+  # end
   # def ReverseParseTree.predicate_tree_const(wherePT)
   #   # if cnt ==0
   #   #   nodeName= 'root'

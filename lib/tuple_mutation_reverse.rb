@@ -21,7 +21,7 @@ class TupleMutationReverse
      f_fromPT = @fParseTree['SELECT']['fromClause']
      @constraintPredicate = constraintPredicateQuery
 
-   @satisfiedQuery = 'SELECT mutation_branches,mutation_nodes, mutation_cols '\
+    @satisfiedQuery = 'SELECT mutation_branches,mutation_nodes, mutation_cols '\
                    ' FROM mutation_tuple '\
                    " WHERE mutation_branches <> 'none' and mutation_cols <>'none' and " +
                    @constraintPredicate
@@ -52,7 +52,7 @@ class TupleMutationReverse
   def allcolumns_construct(remaining_cols, allColumns_select, allColumns_renamed)
     # @all_column_combinations = all_column_combinations
     # @remaining_cols=all_column_combinations
-     @remaining_cols = remaining_cols
+    @remaining_cols = remaining_cols
     @allColumns_select = allColumns_select
     @allColumns_renamed = allColumns_renamed
     @allCols_renamed_array = @allColumns_renamed.split(',').map { |v| v.delete(' ') }
@@ -73,19 +73,19 @@ class TupleMutationReverse
       # uniq_branches = satisfied.to_a.uniq{|s| s['mutation_branches']}
       # if uniq_branches.count < @branches.combination(i).count
       # found = true
-       unless satisfied.count == @branches[0].nodes.count
-         found = true
-         satisfied_nodes = satisfied.map do |s|
+      unless satisfied.count == @branches[0].nodes.count
+        found = true
+        satisfied_nodes = satisfied.map do |s|
                    sn = {}
                    sn['branch_name'] = s['mutation_branches']
                    sn['node_name'] = s['mutation_nodes']
                    sn['columns'] = s['mutation_cols']
                    sn
  				end
-         exnorate_nodes(satisfied_nodes, 1, duplicate_removal)
-       else
-         found = false
-       end
+        exnorate_nodes(satisfied_nodes, 1, duplicate_removal)
+      else
+        found = false
+      end
     end
     unless found
 
@@ -134,7 +134,7 @@ class TupleMutationReverse
     mutationTbl_upd(@bn_pairs, @updateTup, @pkCond)
     # after mutation, if the tuple is excluded then it's innocent
     excluded = DBConn.exec(@excluded_query)
-if @pk.any? { |pk| (pk['col'] == 'e.emp_no') && (pk['val'] == '94968')}
+# if @pk.any? { |pk| (pk['col'] == 'e.emp_no') && (pk['val'] == '94968')}
 
     if excluded.count > 0
        uniq_branches = []
@@ -280,7 +280,6 @@ if @pk.any? { |pk| (pk['col'] == 'e.emp_no') && (pk['val'] == '94968')}
       # replace all columns except the column in bn
       # puts "bn['columns']"
       # pp bn['columns']
-if bn['columns'].nil?
       insert_tup = @allCols_renamed_array.map do |col|
                if bn['columns'].any? { |bn_col| bn_col.renamed_colname == col }
                  # find=true
@@ -421,6 +420,8 @@ if bn['columns'].nil?
          # pp query
          res = DBConn.exec(query)
          if res.cmd_tuples == 0
+          binding.pry
+         end
            # insert_query = 'INSERT INTO node_query_mapping '
            insert_query = nodes.map do |nd|
              %(INSERT INTO node_query_mapping select #{@test_id} as test_id,

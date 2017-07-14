@@ -64,32 +64,29 @@ class Column
     # column has no relalias or relname
     relNames.each do |rel|
       tblName = rel['relname']
-          tblAlias = rel['alias'].nil? ? nil : rel['alias']['ALIAS']['aliasname']
-          # pp tblName
-          # pp tblAlias
-          # if @relaias already exists, we only query on matching relialia
-          if !@relalias.to_s.empty? && (tblName != @relalias) && (tblAlias != @relalias)
-            # pp 'searching for matching @relalias'
-            # binding.pry
-            next
-          end
-          query = QueryBuilder.find_cols_by_data_typcategory(tblName, '', @colname)
-          res = DBConn.exec(query)
-          # pp res
-          if res.count > 0
-            # pp res[0]
-            r = res[0]
-              @relname = tblName
-              @datatype = r['data_type']
-              @typcategory = r['typcategory']
-              # puts 'rel'
-              # pp rel
-              if rel.key?('alias')
-                @relalias = unless rel['alias'].nil?
-                              rel['alias']['ALIAS']['aliasname']
-                            end
-              return
-          end
+      tblAlias = rel['alias'].nil? ? nil : rel['alias']['ALIAS']['aliasname']
+      # pp tblName
+      # pp tblAlias
+      # if @relaias already exists, we only query on matching relialia
+      if !@relalias.to_s.empty? && (tblName != @relalias) && (tblAlias != @relalias)
+        # pp 'searching for matching @relalias'
+        # binding.pry
+        next
+      end
+      query = QueryBuilder.find_cols_by_data_typcategory(tblName, '', @colname)
+      res = DBConn.exec(query)
+      # pp res
+      if res.count > 0
+        # pp res[0]
+        r = res[0]
+        @relname = tblName
+        @datatype = r['data_type']
+        @typcategory = r['typcategory']
+        if rel.key?('alias')
+          @relalias = rel['alias'].nil? ? nil : rel['alias']['ALIAS']['aliasname']
+        end
+        
+      end
     end
   end
 end

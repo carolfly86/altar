@@ -1,11 +1,11 @@
 require 'json'
 require 'pg'
 require 'pg_query'
-
+require 'jsonpath'
 # require_relative 'db_connection'
 
 class QueryObj
-  attr_reader :query, :pkList, :table, :parseTree, :allCols
+  attr_reader :query, :pkList, :table, :parseTree, :all_cols
   attr_accessor :score
   OPR_SYMBOLS = [['='], ['<>'], ['>'], ['<'], ['>='], ['<=']].freeze
 
@@ -29,6 +29,84 @@ class QueryObj
     DBConn.tblCreation(@table, @pkList, @query)
 
     @all_cols = DBConn.getAllRelFieldList(parseTree['SELECT']['fromClause'])
+  end
+  def pk_list
+    if @pk_list.nil?
+      pkListQuery = QueryBuilder.find_pk_cols(@table)
+      res = DBConn.exec(pkListQuery)
+
+      @pk_list = []
+      res.each do |r|
+        @pk_list << r['attname']
+      end
+    end
+    @pk_list
+  end
+
+  def pk_full_list
+    self.pk_list
+    self.rel_names
+    if @pk_full_list.nil?
+      @pk_full_list = []
+
+      @pk_list.each do |pk_col|
+        h = {}
+        col = ReverseParseTree.find_col_by_name(@parseTree['SELECT']['targetList'], pk_col)
+        h['alias'] = col['alias']
+        h['col'] = col['col']
+        if col['col'].split('.').count > 1
+          h['colname'] = col['col'].split('.')[1]
+          rel = col['col'].split('.')[0]
+          @rel_names.each do |r|
+            relname = JsonPath.new('$..relname').on(r)
+            relalias = JsonPath.new('$..aliasname').on(r)
+            if relname.include?(rel) || relalias.include?(rel)
+              h['relname'] = relname[0]
+              h['relalias'] = relalias.count == 0 ? rel : relalias[0]
+            end
+          end
+
+        else
+          h['colname'] = col['col']
+          relList = @rel_names.map { |rel| '"' + rel['relname'] + '"' }.join(',')
+          query = QueryBuilder.find_rel_by_colname(relList, h['colname'])
+          res = DBConn.exec(query)
+          h['relname'] = res[0]['relname']
+          h['relalias'] = h['relname']
+        end
+        @pk_full_list.push(h)
+      end
+    end
+    @pk_full_list
+  end
+
+  def rel_names
+    @rel_names ||= JsonPath.on(@parseTree['SELECT']['fromClause'].to_json, '$..RANGEVAR')
+  end
+
+  def create_full_rst_tbl
+    self.all_cols_select
+    self.pk_full_list
+    renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+    targetListReplacement = "#{renamed_pk_col},#{@all_cols_select}"
+    query =  ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, '')
+    query = QueryBuilder.create_tbl("#{@table}_full_rst", @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', '), query)
+    DBConn.exec(query)
+
+    return "#{@table}_full_rst"
+  end
+
+  def all_cols_select
+    @all_cols_select ||= @all_cols.map do |field|
+      col = field.relalias.nil? ? "#{field.relname}.#{field.colname}" : "#{field.relalias}.#{field.colname}"
+      "#{col} as #{field.renamed_colname}"
+    end.join(',')
+  end
+
+  def all_cols_renamed
+    @all_cols_renamed ||= @all_cols.map do |field|
+      "#{field.renamed_colname} "
+    end.join(',')
   end
 
   def create_stats_tbl

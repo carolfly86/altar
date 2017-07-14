@@ -63,13 +63,12 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       # tqueryObj = QueryObj.new(t_options)
     end
   end
-  # f_options = {:script=> fqueryScript, :table =>'f_result' }
-  # fqueryObj = QueryObj.new(f_options)
-  # # pp fqueryObj
-  # t_options = {:script=> 'true', :table =>'t_result' }
-  # tqueryObj = QueryObj.new(t_options)
-  # #
+
   tqueryObj = QueryObj.new(t_options)
+
+  t_jk = JoinKeyIdent.new(tqueryObj)
+  t_jk_from_tbl = t_jk.extract_from_table
+
   # pp tqueryObj.parseTree
   # return
   # create Golden record
@@ -99,6 +98,20 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       puts 'begin fault localization'
       beginTime = Time.now
       puts "fault localization start time: #{beginTime}"
+
+      f_jk = JoinKeyIdent.new(fqueryObj)
+      f_jk_from_ps = f_jk.extract_from_parse_tree
+      join_key_error = []
+      if f_jk_from_ps.subset?(t_jk_from_tbl)
+        # if any unwanted tupls does not satisfy extra key
+        # then it's confirmed join_key error
+        unless f_jk_from_ps - t_jk_from_tbl =[]
+        end
+      else
+        unwanted_join_keys = f_jk_from_ps - t_jk_from_tbl
+        missing_join_keys = t_jk_from_tbl - f_jk_from_ps
+        # add each key in missing_join_keys to existing keys with Graph.add_edge_acyclic
+      end
 
       localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
       # # Join type error localization

@@ -38,10 +38,10 @@ module Crosstab
     return -1 if (n_f == 0) || (n_c == 0)
     return 0 if (n_f == n_cf) || (n_s == n_cs)
 
-if (n_f == 0) ||\
-                  (n_s == 0) ||\
-                  (n_u == 0) ||\
-                  (n_c == 0)
+# if (n_f == 0) ||\
+#                   (n_s == 0) ||\
+#                   (n_u == 0) ||\
+#                   (n_c == 0)
 
     e_cf = (n_c * n_f) / n
     e_cs = (n_c * n_s) / n

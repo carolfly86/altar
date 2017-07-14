@@ -141,7 +141,7 @@ class PredicateTree
 
       return curNode
     else
-      @node_count+ = 1
+      @node_count+= 1
       nodeName = "N#{@node_count}"
       h = {}
       h['query'] = ReverseParseTree.whereClauseConst(wherePT)
@@ -189,7 +189,7 @@ class PredicateTree
       currentNode = currentNode.children[0]
     end
 
-    @branch_count+ = 1
+    @branch_count+= 1
 
     ph = Tree::TreeNode.new(phName, '')
     ph << subtree

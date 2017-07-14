@@ -15,10 +15,10 @@ module Comb_Calculator
   end
 
   def self.sum_of_comnibations(dominator, s, e)
-    puts "dominator: #{dominator}"
-    puts "s: #{s}"
-    puts "e: #{e}"
-if e < 0 || s < 0 || s > e
+    # puts "dominator: #{dominator}"
+    # puts "s: #{s}"
+    # puts "e: #{e}"
+    # if e < 0 || s < 0 || s > e
     initial = (e - s + 1).even? ? 0 : num_of_combination(dominator, e)
     # puts initial
     sum = (s + 1..e).step(2).reduce(initial) { |sum, n| sum + num_of_combination(dominator + 1, n) }

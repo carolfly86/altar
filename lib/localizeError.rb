@@ -6,7 +6,7 @@ require_relative 'reverse_parsetree'
 require_relative 'string_util'
 require_relative 'hash_util'
 require_relative 'array_helper'
-require_relative 'association_rules'
+require_relative 'join_key_ident'
 
 require_relative 'query_builder'
 require_relative 'db_connection'
@@ -35,13 +35,13 @@ class LozalizeError
     @missingQuery = nil
     @unwantedQuery = nil
 
-    @pkListQuery = QueryBuilder.find_pk_cols(@tTable)
-    res = DBConn.exec(@pkListQuery)
+    # @pkListQuery = QueryBuilder.find_pk_cols(@tTable)
+    # res = DBConn.exec(@pkListQuery)
 
-    @pkList = []
-    res.each do |r|
-      @pkList << r['attname']
-    end
+    @pkList = tQueryObj.pk_list
+    # res.each do |r|
+    #   @pkList << r['attname']
+    # end
 
     # pp "@pkList: #{@pkList}"
     # pp @ps
@@ -58,41 +58,42 @@ class LozalizeError
 
     @wherePT = @fPS['SELECT']['whereClause']
     @fromPT =  @fPS['SELECT']['fromClause']
-    @relNames = JsonPath.on(@fromPT.to_json, '$..RANGEVAR')
+    # @relNames = JsonPath.on(@fromPT.to_json, '$..RANGEVAR')
+    @relNames = tQueryObj.rel_names
 
-    @pkFullList = []
+    @pkFullList = tQueryObj.pk_full_list
 
-    @pkList.each do |pk_col|
-      h = {}
-      # binding.pry
-      # col = ReverseParseTree.find_col_by_name(@ps['SELECT']['targetList'], c)['fullname']
-      col = ReverseParseTree.find_col_by_name(@fPS['SELECT']['targetList'], pk_col)
-      # pp @fPS['SELECT']['targetList']
-      # abort('test')
-      h['alias'] = col['alias']
-      h['col'] = col['col']
-      if col['col'].split('.').count > 1
-        h['colname'] = col['col'].split('.')[1]
-        rel = col['col'].split('.')[0]
-        @relNames.each do |r|
-          relname = JsonPath.new('$..relname').on(r)
-          relalias = JsonPath.new('$..aliasname').on(r)
-          if relname.include?(rel) || relalias.include?(rel)
-            h['relname'] = relname[0]
-            h['relalias'] = relalias.count == 0 ? rel : relalias[0]
-          end
-        end
+    # @pkList.each do |pk_col|
+    #   h = {}
+    #   # binding.pry
+    #   # col = ReverseParseTree.find_col_by_name(@ps['SELECT']['targetList'], c)['fullname']
+    #   col = ReverseParseTree.find_col_by_name(@fPS['SELECT']['targetList'], pk_col)
+    #   # pp @fPS['SELECT']['targetList']
+    #   # abort('test')
+    #   h['alias'] = col['alias']
+    #   h['col'] = col['col']
+    #   if col['col'].split('.').count > 1
+    #     h['colname'] = col['col'].split('.')[1]
+    #     rel = col['col'].split('.')[0]
+    #     @relNames.each do |r|
+    #       relname = JsonPath.new('$..relname').on(r)
+    #       relalias = JsonPath.new('$..aliasname').on(r)
+    #       if relname.include?(rel) || relalias.include?(rel)
+    #         h['relname'] = relname[0]
+    #         h['relalias'] = relalias.count == 0 ? rel : relalias[0]
+    #       end
+    #     end
 
-      else
-        h['colname'] = col['col']
-        relList = @relNames.map { |rel| '"' + rel['relname'] + '"' }.join(',')
-        query = QueryBuilder.find_rel_by_colname(relList, h['colname'])
-        res = DBConn.exec(query)
-        h['relname'] = res[0]['relname']
-        h['relalias'] = h['relname']
-      end
-      @pkFullList.push(h)
-    end
+    #   else
+    #     h['colname'] = col['col']
+    #     relList = @relNames.map { |rel| '"' + rel['relname'] + '"' }.join(',')
+    #     query = QueryBuilder.find_rel_by_colname(relList, h['colname'])
+    #     res = DBConn.exec(query)
+    #     h['relname'] = res[0]['relname']
+    #     h['relalias'] = h['relname']
+    #   end
+    #   @pkFullList.push(h)
+    # end
     # generate predicate tree from where clause
     root = Tree::TreeNode.new('root', '')
     @predicateTree = PredicateTree.new('f', @is_new, @test_id)
@@ -524,13 +525,8 @@ class LozalizeError
     # end
 
     # pp @allColumnList
-    @allColumns_select = @all_columns.map do |field|
-      col = field.relalias.nil? ? "#{field.relname}.#{field.colname}" : "#{field.relalias}.#{field.colname}"
-      "#{col} as #{field.renamed_colname}"
-    end.join(',')
-    @allColumns_renamed = @all_columns.map do |field|
-      "#{field.renamed_colname} "
-    end.join(',')
+    @allColumns_select = tQueryObj.all_cols_select
+    @allColumns_renamed = tQueryObj.all_cols_renamed
   end
 
   def column_combinations_construct
