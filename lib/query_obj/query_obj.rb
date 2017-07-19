@@ -5,7 +5,7 @@ require 'jsonpath'
 # require_relative 'db_connection'
 
 class QueryObj
-  attr_reader :query, :pkList, :table, :parseTree, :all_cols
+  attr_reader :query, :pkList, :table, :parseTree, :all_cols, :full_rst_tbl
   attr_accessor :score
   OPR_SYMBOLS = [['='], ['<>'], ['>'], ['<'], ['>='], ['<=']].freeze
 
@@ -92,8 +92,8 @@ class QueryObj
     query =  ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, '')
     query = QueryBuilder.create_tbl("#{@table}_full_rst", @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', '), query)
     DBConn.exec(query)
-
-    return "#{@table}_full_rst"
+    @full_rst_tbl = "#{@table}_full_rst"
+    return @full_rst_tbl
   end
 
   def all_cols_select

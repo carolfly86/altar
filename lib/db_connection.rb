@@ -28,7 +28,7 @@ module DBConn
 
   def self.tblCreation(tblName, pkList, query)
     q = QueryBuilder.create_tbl(tblName, pkList, query)
-    # puts q
+    puts q
     exec(q)
   end
 

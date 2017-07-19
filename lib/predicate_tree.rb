@@ -321,6 +321,7 @@ class PredicateTree
   #   end
   # end
   def transfer_child_to_node(child)
+    # pp child
     nd = Node.new
       nd.name = child.name
       nd.query = child.content['query']

@@ -5,7 +5,7 @@ describe AcyclicGraph do
     @c_access_path = [[1,2,3,4,5,6]]
     @c_graph = AcyclicGraph.new(@c_graph_edges)
 
-    @ac_graph_edges = [[1, 2], [2, 3]]
+    @ac_graph_edges = [[1, 2],[3, 4]]
     @ac_graph = AcyclicGraph.new(@ac_graph_edges)
 
   end
@@ -27,18 +27,20 @@ describe AcyclicGraph do
   end
 
   describe '#add_edge' do
-    it 'should add [3,4]' do
-        edge = [3,4]
+    it 'should add [2,3]' do
+        edge = [2, 3]
         @ac_graph.add_edge(edge)
-        expect(@ac_graph.edges).to match_array([[1, 2], [2, 3], [3,4]])
+        expect(@ac_graph.edges).to match_array([[1, 2], [3, 4], [2, 3]])
         expect(@ac_graph.access_paths).to match_array([[1,2,3,4]])
     end
 
     it 'should NOT add [3,1]' do
-        edge = [3,1]
+        edge = [2, 3]
         @ac_graph.add_edge(edge)
-        expect(@ac_graph.edges).to match_array ([[1, 2], [2, 3]])
-        expect(@ac_graph.access_paths).to match_array([[1,2,3]])
+        edge = [3, 1]
+        @ac_graph.add_edge(edge)
+        expect(@ac_graph.edges).to match_array ([[1, 2], [3, 4], [2, 3]])
+        expect(@ac_graph.access_paths).to match_array([[1,2,3,4]])
 
     end
   end

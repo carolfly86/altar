@@ -1,5 +1,8 @@
 require 'jsonpath'
 require 'pp'
+require_relative 'acyclic_graph'
+require_relative 'reverse_parsetree'
+
 module AutoFix
   # Find all the relations(tbls) from FROM Clause including their columns
   def self.JoinTypeFix(joinErrList, parseTree)
@@ -64,5 +67,30 @@ module AutoFix
     predicateList.each do |predicate|
       location = predicate['location']
     end
+  end
+
+  def self.join_key_fix(join_key_list,parse_tree)
+    # join_rels = JsonPath.on(parse_tree['SELECT']['fromClause'][0]['JOINEXPR'].to_json, '$..relname')
+    join_rels = ReverseParseTree.rel_in_from(parse_tree['SELECT']['fromClause'])
+    binding.pry
+    from_query = 'FROM '
+    ag = AcyclicGraph.new([])
+
+    0.upto(join_rels.count-2) do |i|
+      l_rel = join_rels[i]
+      r_rel = join_rels[i+1]
+      from_query = from_query + (i==0 ? "#{l_rel['relname']} #{l_rel['relalias']}" : "")+ " JOIN #{r_rel['relname']} #{r_rel['relalias']} on "
+      jk =  join_key_list.select do |kp|
+                          rels = kp.map{|k| k.relname}
+                          col_id_list = kp.map{|k| k.object_id}
+                          rels.include?(l_rel['relname']) && rels.include?(r_rel['relname']) && ag.add_edge(col_id_list)
+                        end
+      q = jk.map do |kp|
+                        kp.map{|k| "#{k.fullname}"}.join(" = ")
+          end.join(" AND ")
+      from_query = from_query + q
+    end
+    # pp from_query
+    from_query
   end
 end

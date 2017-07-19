@@ -49,7 +49,7 @@ class Column
       (@relname == other.relname) && (@colname == other.colname)
     else
       false
-      end
+    end
   end
 
   def hash
@@ -85,7 +85,6 @@ class Column
         if rel.key?('alias')
           @relalias = rel['alias'].nil? ? nil : rel['alias']['ALIAS']['aliasname']
         end
-        
       end
     end
   end

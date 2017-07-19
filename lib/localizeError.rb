@@ -25,7 +25,7 @@ class LozalizeError
     @fTable = fQueryObj.table
     @tTable = tQueryObj.table
 
-    @all_columns = fQueryObj.allCols
+    @all_columns = fQueryObj.all_cols
 
     @fPS = fQueryObj.parseTree
     @tPS = tQueryObj.parseTree
@@ -156,49 +156,7 @@ class LozalizeError
     puts query
     DBConn.exec(query)
   end
-  # def similarityBitMap()
-  #   colList = @pkSelect.gsub(/f\./,'').split(',').map{|c| "t.#{c} as #{c}_pk, CASE WHEN t.#{c} is null or f.#{c} is null then 0 else 1 END as #{c}"}.join(',')
-  #   colCnt = ''
-  #   sumCnt = ''
-  #   matchingColQuery = QueryBuilder.find_matching_cols(@tTable, @fTable)
-  #  # p matchingColQuery
-  #   matchingCol = DBConn.exec(matchingColQuery)
-  #   matchingCol.each do |r|
-  #     unless @pkList.include? r['col1']
-  #       if (r['is_matching'] == '1')
-  #         colList += " , CASE WHEN t.#{r['col1']} = f.#{r['col1']} then 1 else 0 end as #{r['col1']}"
-  #         colCnt += " sum(#{r['col1']}) as #{r['col1']}_cnt,"
-  #         sumCnt += "#{r['col1']}_cnt+"
-  #       else
-  #         colList += r['col1'].nil? ? " , 0 as #{r['col2']}" : " , 0 as #{r['col1']}"
-  #       end
-  #     end
-  #   end
-  #   query = "drop table if exists similarityBitMap; select #{colList} into similarityBitMap from #{@fTable} f FULL OUTER JOIN #{@tTable} t ON #{@pkJoin}"
-  #   # p query
-  #   DBConn.exec(query)
-  #   query = "select count(1) as total_cnt from similarityBitMap"
-  #   res = DBConn.exec(query)
-  #   total_cnt = res[0]['total_cnt'].to_f
-  #   # puts "total_cnt: #{total_cnt}"
-  #   colNum = (matchingCol.count - @pkList.count).to_f
-  #   # puts "colNum: #{colNum}"
 
-  #   total_field = total_cnt*colNum
-  #   # puts "total_field: #{total_field}"
-  #   colCnt = colCnt[0...-1]
-  #   sumCnt = sumCnt[0...-1]
-  #   query = "with t as(select #{colCnt} from similarityBitMap) select #{sumCnt} as sum from t;"
-  #   # puts query
-  #   res = DBConn.exec(query)
-  #   sum = res[0]['sum'].to_f
-
-  #   # puts "sum: #{sum}"
-
-  #   puts "similarity: "
-  #   puts (sum/total_field).to_f
-  #   (sum/total_field).to_f
-  # end
   # projection error localization
   def projErr
     projErrList = []
@@ -239,8 +197,8 @@ class LozalizeError
       p 'no failed rows found. There is no Join Error'
       return []
     end
-    joinKeyErrList = joinKeyTest
-    exit
+    # joinKeyErrList = joinKeyTest
+    # exit
     tbl2PK = @pkList.map do |c|
       "tbl2.#{c}_pk"
     end.join(',')
@@ -265,26 +223,53 @@ class LozalizeError
     unwanted_joinErrList + missing_joinErrList
   end
 
-  def joinKeyTest
-    pkList = @pkFullList.map { |pk| pk['col'] }.join(',')
+  # def joinKeyTest()
+  #   pkList = @pkFullList.map { |pk| pk['col'] }.join(',')
 
-    query = "SELECT #{pkList} FROM #{@fromCondStr}"
-    tQuery = ReverseParseTree.reverseAndreplace(@tPS, pkList, '')
-    # test if tquery is subset of test query without where condition
-    testQuery = QueryBuilder.subset_test(query, tQuery)
-    pp testQuery
-    res = DBConn.exec(testQuery)
-    # p testQuery
-    result = res[0]['result']
-    table_list = @relNames.map { |rel| '"' + rel['relname'] + '"' }.join(',')
-    pp table_list
-    join_keys = []
-    unless result == 'IS SUBSET'
-      assoc_rules = Association_Rules(table_list)
-      pp assoc_rules
-      join_keys = assoc_rules.verify_rules(@tTable, @allColumns_select, @tQueryObj.query)
+  #   query = "SELECT #{pkList} FROM #{@fromCondStr}"
+  #   tQuery = ReverseParseTree.reverseAndreplace(@tPS, pkList, '')
+  #   # test if tquery is subset of test query without where condition
+  #   testQuery = QueryBuilder.subset_test(query, tQuery)
+  #   pp testQuery
+  #   res = DBConn.exec(testQuery)
+  #   # p testQuery
+  #   result = res[0]['result']
+  #   table_list = @relNames.map { |rel| '"' + rel['relname'] + '"' }.join(',')
+  #   pp table_list
+  #   join_keys = []
+  #   unless result == 'IS SUBSET'
+  #     assoc_rules = Association_Rules(table_list)
+  #     pp assoc_rules
+  #     join_keys = assoc_rules.verify_rules(@tTable, @allColumns_select, @tQueryObj.query)
+  #   end
+  #   join_keys
+  # end
+  def join_key_test(f_key_list,t_key_list)
+    join_key_err_list = {}
+    unwanted_keys = f_key_list - t_key_list
+    candidate_missing_keys = t_key_list - f_key_list
+    missing_keys = []
+    result_keys = []
+    if candidate_missing_keys.count >0 
+      # if any unwanted tupls satisfy the missing key
+      # then it's confirmed join_key error
+      candidate_missing_keys.each do |kp|
+        joinkey = kp.map{|k| "#{k.renamed_colname}"}.join(' = ')
+        query = " select count(1) as cnt from ftuples "+
+                " where type ='U' and #{joinkey}"
+        pp query
+        res = DBConn.exec(query)
+        result = res[0]['cnt']
+        if result.to_i > 0
+          # binding.pry
+          missing_keys << kp
+        end
+      end
     end
-    join_keys
+    if unwanted_keys.count + missing_keys.count>0
+      result_keys = f_key_list - unwanted_keys + missing_keys
+    end
+    return result_keys
   end
 
   def jointypeTest(pkQuery, testDataType)
@@ -511,22 +496,8 @@ class LozalizeError
   end
 
   def allcolumns_construct
-    # all_columns = DBConn.getAllRelFieldList(@fromPT)
-
-    # @allColumnList = all_columns
-    # pp @allColumnList
-    # @all_column_combinations = []
-
-    # max = all_columns.count()
-    # 1.upto(max) do |i|
-    #   all_columns.combination(i).each do |cc|
-    #     @all_column_combinations << cc.to_set
-    #   end
-    # end
-
-    # pp @allColumnList
-    @allColumns_select = tQueryObj.all_cols_select
-    @allColumns_renamed = tQueryObj.all_cols_renamed
+    @allColumns_select = @tQueryObj.all_cols_select
+    @allColumns_renamed = @tQueryObj.all_cols_renamed
   end
 
   def column_combinations_construct

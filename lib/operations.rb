@@ -68,7 +68,6 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
   t_jk = JoinKeyIdent.new(tqueryObj)
   t_jk_from_tbl = t_jk.extract_from_table
-
   # pp tqueryObj.parseTree
   # return
   # create Golden record
@@ -101,19 +100,18 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
       f_jk = JoinKeyIdent.new(fqueryObj)
       f_jk_from_ps = f_jk.extract_from_parse_tree
-      join_key_error = []
-      if f_jk_from_ps.subset?(t_jk_from_tbl)
-        # if any unwanted tupls does not satisfy extra key
-        # then it's confirmed join_key error
-        unless f_jk_from_ps - t_jk_from_tbl =[]
-        end
-      else
-        unwanted_join_keys = f_jk_from_ps - t_jk_from_tbl
-        missing_join_keys = t_jk_from_tbl - f_jk_from_ps
-        # add each key in missing_join_keys to existing keys with Graph.add_edge_acyclic
-      end
-
+      puts 'fault localize: Join Key Errors'
       localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
+      new_join_key = localizeErr.join_key_test(f_jk_from_ps,t_jk_from_tbl)
+      if new_join_key.count >0
+        puts 'fixing join key error'
+        pp new_join_key
+        new_where = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
+        pp new_where
+      else
+        puts 'No Join Key Error'
+      end
+      return
       # # Join type error localization
       puts 'fault localize: Join Type Errors'
       joinErrList = localizeErr.joinErr

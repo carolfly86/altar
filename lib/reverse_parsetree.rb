@@ -216,28 +216,43 @@ module ReverseParseTree
   #   #pp result.to_a
   #   result
   # end
+
+  # def self.columnsInPredicate(expr)
+  #   columns = []
+  #   # pp wherePT
+  #   logicOpr = expr.keys[0].to_s
+  #   if logicOpr == 'AEXPR'
+  #     columns += columnsInPredicate(expr[logicOpr]['lexpr'])
+  #     columns += columnsInPredicate(expr[logicOpr]['rexpr'])
+  #   # or operator are tested as a whole
+  #   elsif logicOpr == 'AEXPR IN'
+  #     columns += columnsInPredicate(expr[logicOpr]['lexpr'])
+  #   elsif logicOpr == 'NULLTEST'
+  #     columns += columnsInPredicate(expr[logicOpr]['arg'])
+  #   else
+  #     unless expr['COLUMNREF'].nil?
+  #       # col = expr['COLUMNREF']['fields'].join('.')
+  #       columns << expr['COLUMNREF']['fields']
+  #     end
+  #   end
+  #   # pp columns
+  #   columns
+  # end
   def self.columnsInPredicate(expr)
-    columns = []
-    # pp wherePT
-    logicOpr = expr.keys[0].to_s
-    if logicOpr == 'AEXPR'
-      columns += columnsInPredicate(expr[logicOpr]['lexpr'])
-      columns += columnsInPredicate(expr[logicOpr]['rexpr'])
-    # or operator are tested as a whole
-    elsif logicOpr == 'AEXPR IN'
-      columns += columnsInPredicate(expr[logicOpr]['lexpr'])
-    elsif logicOpr == 'NULLTEST'
-      columns += columnsInPredicate(expr[logicOpr]['arg'])
-    else
-      unless expr['COLUMNREF'].nil?
-        # col = expr['COLUMNREF']['fields'].join('.')
-        columns << expr['COLUMNREF']['fields']
-      end
-    end
-    # pp columns
-    columns
+    JsonPath.on(expr.to_json,'$..COLUMNREF.fields')
   end
 
+  def self.rel_in_from(from_parse_tree)
+    rels = JsonPath.on(from_parse_tree[0].to_json, '$..RANGEVAR')
+    rst_rels = []
+    rels.map do |r|
+      h = {}
+      h['relname'] = r['relname']
+      h['relalias'] = r.keys.include?('alias') ? r['alias']['ALIAS']['aliasname'] : ''
+      rst_rels << h
+    end
+    rst_rels
+  end
   def self.fromClauseConstr(fromPT)
     # pp fromPT
     # abort('test')

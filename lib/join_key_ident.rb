@@ -1,5 +1,6 @@
 require_relative 'db_connection'
 require_relative 'query_builder'
+require_relative 'acyclic_graph'
 class JoinKeyIdent
   def initialize(query_obj)
     # candidates are list of columns of the same data type
@@ -34,7 +35,9 @@ class JoinKeyIdent
     example_pk = DBConn.exec(query)[0]
     pk_cond = example_pk.map { |k,v|  k + ' = ' + v.to_s.str_int_rep }.join(' AND ')
     join_key_list =[]
-    pp pk_cond
+    # pp pk_cond
+    # acyclic_graph = AcyclicGraph.new([])
+
     @candidates.each do |list|
 
       # list = @candidates.split(',')
@@ -71,11 +74,17 @@ class JoinKeyIdent
           pp query
           res = DBConn.exec(query)
           satisfactory = res[0]['sat']
-          join_key_list << col_pair.to_set if satisfactory.to_i >= thresh_hold
+
+          if satisfactory.to_i >= thresh_hold
+            # edge = col_pair.map{|c| c.hash }
+            # # binding.pry
+            # added = acyclic_graph.add_edge(edge)
+            join_key_list << col_pair.to_set
+          end
         end
       end
     end
-    pp join_key_list
+    # pp join_key_list
     join_key_list.to_set
   end
 
@@ -92,7 +101,7 @@ class JoinKeyIdent
       end
       join_key_list << cp.to_set
     end
-    pp join_key_list
+    # pp join_key_list
     join_key_list.to_set
   end
 
