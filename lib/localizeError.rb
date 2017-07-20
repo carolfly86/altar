@@ -15,9 +15,8 @@ class LozalizeError
   # attr_accessor :fPS
   # def initialize(fQuery, tQuery, parseTree)
   attr_reader :missing_tuple_count, :unwanted_tuple_count
+
   def initialize(fQueryObj, tQueryObj, is_new = true)
-    # @fQuery=fqueryObj['query']
-    # @tQuery=tqueryObj['query']
 
     @fQueryObj = fQueryObj
     @tQueryObj = tQueryObj
@@ -35,16 +34,8 @@ class LozalizeError
     @missingQuery = nil
     @unwantedQuery = nil
 
-    # @pkListQuery = QueryBuilder.find_pk_cols(@tTable)
-    # res = DBConn.exec(@pkListQuery)
-
     @pkList = tQueryObj.pk_list
-    # res.each do |r|
-    #   @pkList << r['attname']
-    # end
 
-    # pp "@pkList: #{@pkList}"
-    # pp @ps
     @pkJoin = ''
     pkSelectArry = []
     pkJoinArry = []
@@ -63,52 +54,14 @@ class LozalizeError
 
     @pkFullList = tQueryObj.pk_full_list
 
-    # @pkList.each do |pk_col|
-    #   h = {}
-    #   # binding.pry
-    #   # col = ReverseParseTree.find_col_by_name(@ps['SELECT']['targetList'], c)['fullname']
-    #   col = ReverseParseTree.find_col_by_name(@fPS['SELECT']['targetList'], pk_col)
-    #   # pp @fPS['SELECT']['targetList']
-    #   # abort('test')
-    #   h['alias'] = col['alias']
-    #   h['col'] = col['col']
-    #   if col['col'].split('.').count > 1
-    #     h['colname'] = col['col'].split('.')[1]
-    #     rel = col['col'].split('.')[0]
-    #     @relNames.each do |r|
-    #       relname = JsonPath.new('$..relname').on(r)
-    #       relalias = JsonPath.new('$..aliasname').on(r)
-    #       if relname.include?(rel) || relalias.include?(rel)
-    #         h['relname'] = relname[0]
-    #         h['relalias'] = relalias.count == 0 ? rel : relalias[0]
-    #       end
-    #     end
-
-    #   else
-    #     h['colname'] = col['col']
-    #     relList = @relNames.map { |rel| '"' + rel['relname'] + '"' }.join(',')
-    #     query = QueryBuilder.find_rel_by_colname(relList, h['colname'])
-    #     res = DBConn.exec(query)
-    #     h['relname'] = res[0]['relname']
-    #     h['relalias'] = h['relname']
-    #   end
-    #   @pkFullList.push(h)
-    # end
     # generate predicate tree from where clause
     root = Tree::TreeNode.new('root', '')
     @predicateTree = PredicateTree.new('f', @is_new, @test_id)
     # pp @wherePT
     @predicateTree.build_full_pdtree(@fromPT[0], @wherePT, root)
     @pdtree = @predicateTree.pdtree
-    # @pdtree.print_tree
-    # pp 'branches'
-    # pp @predicateTree.branches
-    # pp 'nodes'
-    # pp @predicateTree.nodes
-
     # @predicateTree.node_query_mapping_insert()
 
-    # pp whereCondArry.to_a
     @fromCondStr = ReverseParseTree.fromClauseConstr(@fromPT)
     @whereStr = ReverseParseTree.whereClauseConst(@wherePT)
 
@@ -119,6 +72,9 @@ class LozalizeError
     # create_t_f_intersect_table
     # create_t_f_all_table
     allcolumns_construct
+
+    ftuples_tbl_create
+    find_failed_tuples
   end
 
   def generate_new_testid
@@ -182,23 +138,17 @@ class LozalizeError
   end
 
   # join error localization : Join Type, Join condition
-  def joinErr
+  def join_type_err
     # joinErrList = []
     unwanted_joinErrList = []
     missing_joinErrList = []
     return joinErrList if @fPS['SELECT']['fromClause'][0]['JOINEXPR'].nil?
-    if @missingQuery.nil? && @unwantedQuery.nil?
-
-      ftuples_tbl_create
-      find_failed_tuples
-    end
 
     if @unwanted_tuple_count + @missing_tuple_count == 0
       p 'no failed rows found. There is no Join Error'
       return []
     end
-    # joinKeyErrList = joinKeyTest
-    # exit
+
     tbl2PK = @pkList.map do |c|
       "tbl2.#{c}_pk"
     end.join(',')
@@ -223,53 +173,24 @@ class LozalizeError
     unwanted_joinErrList + missing_joinErrList
   end
 
-  # def joinKeyTest()
-  #   pkList = @pkFullList.map { |pk| pk['col'] }.join(',')
+  def join_key_err
 
-  #   query = "SELECT #{pkList} FROM #{@fromCondStr}"
-  #   tQuery = ReverseParseTree.reverseAndreplace(@tPS, pkList, '')
-  #   # test if tquery is subset of test query without where condition
-  #   testQuery = QueryBuilder.subset_test(query, tQuery)
-  #   pp testQuery
-  #   res = DBConn.exec(testQuery)
-  #   # p testQuery
-  #   result = res[0]['result']
-  #   table_list = @relNames.map { |rel| '"' + rel['relname'] + '"' }.join(',')
-  #   pp table_list
-  #   join_keys = []
-  #   unless result == 'IS SUBSET'
-  #     assoc_rules = Association_Rules(table_list)
-  #     pp assoc_rules
-  #     join_keys = assoc_rules.verify_rules(@tTable, @allColumns_select, @tQueryObj.query)
-  #   end
-  #   join_keys
-  # end
-  def join_key_test(f_key_list,t_key_list)
+    t_jk = JoinKeyIdent.new(@tQueryObj)
+    t_key_list = t_jk.extract_from_table
+
+    f_jk = JoinKeyIdent.new(@fQueryObj)
+    f_key_list = f_jk.extract_from_parse_tree
+
     join_key_err_list = {}
     unwanted_keys = f_key_list - t_key_list
-    candidate_missing_keys = t_key_list - f_key_list
-    missing_keys = []
+    # candidate_missing_keys = t_key_list - f_key_list
+    # missing_keys = []
+    missing_keys = t_key_list - f_key_list
     result_keys = []
-    if candidate_missing_keys.count >0 
-      # if any unwanted tupls satisfy the missing key
-      # then it's confirmed join_key error
-      candidate_missing_keys.each do |kp|
-        joinkey = kp.map{|k| "#{k.renamed_colname}"}.join(' = ')
-        query = " select count(1) as cnt from ftuples "+
-                " where type ='U' and #{joinkey}"
-        pp query
-        res = DBConn.exec(query)
-        result = res[0]['cnt']
-        if result.to_i > 0
-          # binding.pry
-          missing_keys << kp
-        end
-      end
-    end
     if unwanted_keys.count + missing_keys.count>0
       result_keys = f_key_list - unwanted_keys + missing_keys
     end
-    return result_keys
+    return result_keys,f_key_list
   end
 
   def jointypeTest(pkQuery, testDataType)
@@ -388,11 +309,11 @@ class LozalizeError
     whereErrList = []
     # joinErrList = []
 
-    if @missingQuery.nil? && @unwantedQuery.nil?
-      # allcolumns_construct('or',true)
-      ftuples_tbl_create
-      find_failed_tuples
-    end
+    # if @missingQuery.nil? && @unwantedQuery.nil?
+    #   # allcolumns_construct('or',true)
+    #   ftuples_tbl_create
+    #   find_failed_tuples
+    # end
 
     # allcolumns_construct(method,true)
     # ftuples_tbl_create
@@ -806,6 +727,7 @@ class LozalizeError
     query =  ReverseParseTree.reverseAndreplace(@fPS, targetListReplacement, '1=2')
     pkList = @pkFullList.map { |pk| "#{pk['alias']}_pk" }.join(', ') + ',mutation_cols, type'
     query = QueryBuilder.create_tbl('ftuples', pkList, query)
+    # pp query
     DBConn.exec(query)
   end
 end

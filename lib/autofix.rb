@@ -72,25 +72,47 @@ module AutoFix
   def self.join_key_fix(join_key_list,parse_tree)
     # join_rels = JsonPath.on(parse_tree['SELECT']['fromClause'][0]['JOINEXPR'].to_json, '$..relname')
     join_rels = ReverseParseTree.rel_in_from(parse_tree['SELECT']['fromClause'])
-    binding.pry
-    from_query = 'FROM '
+    from_query = ''
     ag = AcyclicGraph.new([])
-
+    new_join_key_list = Set.new()
     0.upto(join_rels.count-2) do |i|
       l_rel = join_rels[i]
       r_rel = join_rels[i+1]
       from_query = from_query + (i==0 ? "#{l_rel['relname']} #{l_rel['relalias']}" : "")+ " JOIN #{r_rel['relname']} #{r_rel['relalias']} on "
+
       jk =  join_key_list.select do |kp|
                           rels = kp.map{|k| k.relname}
-                          col_id_list = kp.map{|k| k.object_id}
+                          col_id_list = kp.map{|k| k.hash}
                           rels.include?(l_rel['relname']) && rels.include?(r_rel['relname']) && ag.add_edge(col_id_list)
                         end
+      new_join_key_list = new_join_key_list + jk
+      join_key_list = join_key_list - jk
+
       q = jk.map do |kp|
                         kp.map{|k| "#{k.fullname}"}.join(" = ")
           end.join(" AND ")
       from_query = from_query + q
     end
+    # append remaining keys
+    q = ""
+    if join_key_list.count>0
+      jk =  join_key_list.select do |kp|
+                          rels = kp.map{|k| k.relname}
+                          col_id_list = kp.map{|k| k.hash}
+                          ag.add_edge(col_id_list)
+                        end
+
+      q = jk.map do |kp|
+                        kp.map{|k| "#{k.fullname}"}.join(" = ")
+          end.join(" AND ")
+      new_join_key_list = new_join_key_list + jk
+    end
+    from_query = from_query + (q == "" ? "": " AND ") + q
     # pp from_query
-    from_query
+    return from_query, new_join_key_list
+  end
+  def self.fix_from_query(query,new_from)
+    old_from = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\swhere\s/i.match(query)[1]
+    query.gsub(old_from,new_from)
   end
 end

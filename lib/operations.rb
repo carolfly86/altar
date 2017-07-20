@@ -65,9 +65,6 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   end
 
   tqueryObj = QueryObj.new(t_options)
-
-  t_jk = JoinKeyIdent.new(tqueryObj)
-  t_jk_from_tbl = t_jk.extract_from_table
   # pp tqueryObj.parseTree
   # return
   # create Golden record
@@ -98,23 +95,31 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       beginTime = Time.now
       puts "fault localization start time: #{beginTime}"
 
-      f_jk = JoinKeyIdent.new(fqueryObj)
-      f_jk_from_ps = f_jk.extract_from_parse_tree
+
       puts 'fault localize: Join Key Errors'
       localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
-      new_join_key = localizeErr.join_key_test(f_jk_from_ps,t_jk_from_tbl)
+      new_join_key,old_join_key = localizeErr.join_key_err
       if new_join_key.count >0
-        puts 'fixing join key error'
-        pp new_join_key
-        new_where = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
-        pp new_where
+        puts 'finding candidate join key list'
+        # pp new_join_key
+        new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
+        unless (candidate_join_key - old_join_key).empty?
+          # pp new_from
+          puts 'Fixing join key'
+          fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
+          pp fQueryNew
+          fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
+          LozalizeError.new(fqueryObj, tqueryObj)
+        else
+          puts 'No Join Key Error'
+        end
       else
         puts 'No Join Key Error'
       end
-      return
+
       # # Join type error localization
       puts 'fault localize: Join Type Errors'
-      joinErrList = localizeErr.joinErr
+      joinErrList = localizeErr.join_type_err
       if joinErrList.count > 0
         # fix join type error
         pp 'fixing join type error'
@@ -131,7 +136,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       else
         puts 'No Join Type Error'
       end
-
+      return
       # Where condition fault localization
       localizeErr.selecionErr(method)
 

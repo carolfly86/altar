@@ -25,7 +25,7 @@ class JoinKeyIdent
     thresh_hold = 1
     res = DBConn.exec("select count(1) as cnt from #{t_full_table}")
     total_cnt = res[0]['cnt']
-    pp total_cnt
+    # pp total_cnt
     if total_cnt.to_i <= 0
       puts "#{t_full_table} is empty! can not verify association rules"
       return []
@@ -53,7 +53,7 @@ class JoinKeyIdent
               " select string_agg( t.colname ,',') as col_list from t "+
               " group by colval "+
               " having count(1) >1"
-      pp query
+      # pp query
       grouped_col_list = DBConn.exec(query)
       grouped_col_list.each do |cl|
         # binding.pry
@@ -71,7 +71,7 @@ class JoinKeyIdent
 
           eq_cols_cond = cp.join(' = ')
           query = "select count(1)::float/#{total_cnt}::float as sat from #{t_full_table} where #{eq_cols_cond}"
-          pp query
+          # pp query
           res = DBConn.exec(query)
           satisfactory = res[0]['sat']
 
@@ -94,7 +94,7 @@ class JoinKeyIdent
     join_exprs.each do |k|
       cols = JsonPath.on(k, '$..fields')
       cp = []
-      cols.each do |c| 
+      cols.each do |c|
         cp << @query_obj.all_cols.find do |col|
                                           col.relalias == c[0] && col.colname == c[1]
                                         end
