@@ -16,6 +16,14 @@
 # users commonly want.
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+require 'pg_query'
+require 'trollop'
+require 'pp'
+require 'pg'
+require 'yaml'
+require 'json'
+require 'pry'
+require 'set'
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest

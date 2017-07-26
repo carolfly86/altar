@@ -1,9 +1,46 @@
 class QueryObj
+  
+  def add_missing_branch(branches,columns)
+
+    # if branches =~ /missing_branch/
+    #   num_of_branches = branches.gsub('missing_branch','').to_i
+    #   new_clause = 1.upto(num_of_branches).map do |_i|
+    #     add_missing_node(columns)
+    #   end.join(' OR ')
+
+    # else
+    new_clause = add_missing_node(columns)
+    # end
+    new_query = @query + " OR #{new_clause}"
+    neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
+    return neighborObj
+  end
+  def add_missing_node(columns)
+    columns.map do |col|
+                  opr = nil
+                  opr = rand_operator(opr, candidateList)
+                  const = optimized_rand_constant(col, opr)
+                  "#{col.fullname} #{opr} #{const}" 
+                end.join(' AND ')
+  end
+
+  def remove_node(location)
+    predicatePath = @parseTree.get_jsonpath_from_val('location', location)
+    newPS = JsonPath.for(@parseTree).delete(predicatePath) 
+    newQuery = ReverseParseTree.reverse(newPS.obj)
+    options = { query: newQuery, parseTree: newPS.obj, pkList: pkList, table: 'neighbor' }
+    newQueryObj = QueryObj.new(options)
+    pp 'new query'
+    pp newQuery
+    newQueryObj
+
+  end
   # given a parse tree, generate a new predicate to replace the predicate at predicatePath
   def generate_neighbor_program(location, optimized = 1)
-    predicatePath = @parseTree.get_jsonpath_from_val('location', location)
-    predicate = JsonPath.new(predicatePath).on(@parseTree)
-
+    whereClause = @parseTree['SELECT']['whereClause']
+    predicatePath = whereClause.get_jsonpath_from_val('location', location)
+    binding.pry
+    predicate = JsonPath.new(predicatePath).on(whereClause).first
     fromPT = @parseTree['SELECT']['fromClause']
 
     # all columns of the same data type
@@ -25,6 +62,7 @@ class QueryObj
       # type ='col'
       #   	path = '$..COLUMNREF.fields'
       # candidateList=candidateColList
+      puts 'mutate column'
       oldVal = target['column']
       element['col'] = rand_column(oldVal, candidateColList)
       end
@@ -33,6 +71,7 @@ class QueryObj
       # type ='opr'
       #  		path = '$..AEXPR.name'
       # candidateList=OPR_SYMBOLS
+      puts 'mutate operator'
       oldVal = target['opr']
       element['opr'] = rand_operator(oldVal, OPR_SYMBOLS)
       end
@@ -40,6 +79,7 @@ class QueryObj
     if (mutateType & 4).to_s(2) != '0'
       # type ='const'
       #  		path ='$..A_CONST.val'
+      puts 'mutate constant'
       oldVal = target['const']
       col = element['col'] || target['column']
       opr = element['opr'] || target['opr']
@@ -57,8 +97,11 @@ class QueryObj
     puts 'element'
     pp element
     element.keys.each do |key|
+      binding.pry
       newPredicate = mutatePredicate(key, element[key], predicate)
     end
+    predicatePath = "$..SELECT.whereClause.#{predicatePath.gsub('$..','')}"
+    binding.pry
     newPS = JsonPath.for(@parseTree).gsub(predicatePath) { |_v| newPredicate }
     newQuery = ReverseParseTree.reverse(newPS.obj)
     options = { query: newQuery, parseTree: newPS.obj, pkList: pkList, table: 'neighbor' }
@@ -69,6 +112,7 @@ class QueryObj
   end
 
   def mutatePredicate(type, newVal, predicate)
+    # binding.pry
     path = case type
            when 'const'
              '$..A_CONST.val'
@@ -76,9 +120,9 @@ class QueryObj
              '$..COLUMNREF.fields'
            when 'opr'
              '$..AEXPR.name'
-        end
-    JsonPath.for(predicate).gsub!(path) { |_v| newVal }
-    predicate[0]
+           end
+    JsonPath.for(predicate).gsub(path) { |_v| newVal }
+    # predicate
   end
 
   # given a col in the format of ['relalias','colname'] or ['colname'] return the Column object in candidateColList

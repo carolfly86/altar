@@ -149,21 +149,31 @@ module ReverseParseTree
     rexpr = where[logicOpr]['rexpr']
     if logicOpr == 'AEXPR' or logicOpr.nil?
       op = where[logicOpr]['name'][0]
+      # binding.pry
       lexpr = lexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(lexpr) : exprConstr(lexpr)
-      rexpr = rexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(rexpr) : exprConstr(rexpr)
+      # if rexpr is Array then operator is IN or NOT IN
+      if rexpr.kind_of?(Array)
+        op = where[logicOpr]['name'][0] == '<>' ? 'NOT IN' : 'IN'
+        rexpr = rexpr.map do |val|
+                  exprConstr(val)
+                end.join(',')
+        rexpr = ' ( ' + rexpr + ' )'
+      else
+        rexpr = rexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(rexpr) : exprConstr(rexpr)
+      end
       expr = lexpr.to_s + ' ' + op + ' ' + rexpr.to_s
     elsif logicOpr == 'NULLTEST'
       # binding.pry
       colname = exprConstr(where[logicOpr]['arg'])
       op = where[logicOpr]['nulltesttype'] == 1 ? ' IS NOT NULL' : ' IS NULL'
       expr = colname + op
-    elsif logicOpr == 'AEXPR IN'
-      op = where[logicOpr]['name'][0] == '<>' ? 'NOT IN' : 'IN'
-      lexpr = lexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(lexpr) : exprConstr(lexpr)
-      rexpr = rexpr.map do |val|
-        exprConstr(val)
-      end.join(',')
-      expr = lexpr.to_s + ' ' + op + ' (' + rexpr.to_s + ' )'
+    # elsif logicOpr == 'AEXPR IN'
+    #   op = where[logicOpr]['name'][0] == '<>' ? 'NOT IN' : 'IN'
+    #   lexpr = lexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(lexpr) : exprConstr(lexpr)
+    #   rexpr = rexpr.map do |val|
+    #     exprConstr(val)
+    #   end.join(',')
+    #   expr = lexpr.to_s + ' ' + op + ' (' + rexpr.to_s + ' )'
     elsif logicOpr == 'A_CONST'
       exprConstr(where)
     elsif logicOpr == 'BOOLEXPR'

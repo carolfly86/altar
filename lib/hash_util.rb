@@ -43,11 +43,25 @@ class Hash
   def constr_jsonpath_to_val(key, val, current_path = [])
     keys.each do |k|
       value = self[k]
-      next unless value.is_a? Hash
-      next unless JsonPath.new("$..#{key}").on(value).any? { |v| v.to_s == val.to_s }
-      # if value.is_a? Hash
-      current_path << k
-      value.constr_jsonpath_to_val(key, val, current_path)
+      if value.is_a? Array
+        value.each_with_index do |element,idx|
+          # binding.pry
+          next unless element.is_a? Hash 
+          next unless JsonPath.new("$..#{key}").on(element).any? { |v| v.to_s == val.to_s }
+          current_path << "#{k}[#{idx}]"
+          element.constr_jsonpath_to_val(key, val, current_path)
+        end
+      elsif value.is_a? Hash
+        next unless JsonPath.new("$..#{key}").on(value).any? { |v| v.to_s == val.to_s }
+        current_path << k
+        value.constr_jsonpath_to_val(key, val, current_path)
+      else
+        next
+      end
+      # next unless value.is_a? Hash
+      # next unless JsonPath.new("$..#{key}").on(value).any? { |v| v.to_s == val.to_s }
+      # # if value.is_a? Hash
+      # current_path << k
       # end
     end
     current_path
@@ -58,6 +72,6 @@ class Hash
     raise "Can't find val #{val} for key #{key} in #{self}" if rst.count == 0
     last = rst.count - 1
     rst.delete_at(last)
-    predicatePath = '$..' + rst.map { |x| "'#{x}'" }.join('.')
+    predicatePath = '$..' + rst.join('.')
   end
 end

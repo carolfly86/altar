@@ -60,8 +60,9 @@ class LozalizeError
     # pp @wherePT
     @predicateTree.build_full_pdtree(@fromPT[0], @wherePT, root)
     @pdtree = @predicateTree.pdtree
+    # binding.pry 
+    # puts tes
     # @predicateTree.node_query_mapping_insert()
-
     @fromCondStr = ReverseParseTree.fromClauseConstr(@fromPT)
     @whereStr = ReverseParseTree.whereClauseConst(@wherePT)
 
@@ -142,7 +143,7 @@ class LozalizeError
     # joinErrList = []
     unwanted_joinErrList = []
     missing_joinErrList = []
-    return joinErrList if @fPS['SELECT']['fromClause'][0]['JOINEXPR'].nil?
+    return [] if @fPS['SELECT']['fromClause'][0]['JOINEXPR'].nil?
 
     if @unwanted_tuple_count + @missing_tuple_count == 0
       p 'no failed rows found. There is no Join Error'
@@ -183,9 +184,24 @@ class LozalizeError
 
     join_key_err_list = {}
     unwanted_keys = f_key_list - t_key_list
-    # candidate_missing_keys = t_key_list - f_key_list
-    # missing_keys = []
     missing_keys = t_key_list - f_key_list
+    # binding.pry
+    missing_keys.each do |kp|
+      # if any unwanted tuple does not satisfy the missing key
+      # then this missing key is neccessary
+      # otherwise the missing key is not neccessary
+       joinkey = kp.map{|k| "#{k.renamed_colname}"}.join(' <> ')
+       query = " select count(1) as cnt from ftuples "+
+               " where type ='U' and #{joinkey}"
+       pp query
+       res = DBConn.exec(query)
+       result = res[0]['cnt']
+       if result.to_i ==  0
+         # binding.pry
+         missing_keys.delete(kp)
+       end
+    end
+    # binding.pry
     result_keys = []
     if unwanted_keys.count + missing_keys.count>0
       result_keys = f_key_list - unwanted_keys + missing_keys
@@ -354,15 +370,16 @@ class LozalizeError
 
     # exnorate algorithm
     # binding.pry
+    @column_combinations = method.start_with?('o') ? Columns_Combination.new(@all_columns) : @all_columns
     case method
     when 'o'
       puts 'old exonerate algorithm'
 
       true_query_PT_construct
       constraint_query = constraint_predicate_construct
-      column_combinations_construct
-      tuple_mutation_test(missinPK, 'M', constraint_query, false)
-      tuple_mutation_test(unWantedPK, 'U', constraint_query, false)
+      # column_combinations_construct
+      tuple_mutation_test(@missingPK, 'M', constraint_query, false)
+      tuple_mutation_test(@unWantedPK, 'U', constraint_query, false)
     when 'or'
       puts 'old exonerate algorithm with duplicate removal'
       # reset suspicious score
@@ -378,8 +395,8 @@ class LozalizeError
       puts 'new exonerate algorithm'
       true_query_PT_construct
       constraint_query = constraint_predicate_construct
-      tuple_mutation_test_reverse(missinPK, 'M', constraint_query, false)
-      tuple_mutation_test_reverse(unWantedPK, 'U', constraint_query, false)
+      tuple_mutation_test_reverse(@missingPK, 'M', constraint_query, false)
+      tuple_mutation_test_reverse(@unWantedPK, 'U', constraint_query, false)
 
     when 'b'
       puts 'baseline'
@@ -413,6 +430,8 @@ class LozalizeError
     constraintPredicateQuery = ReverseParseTree.whereClauseConst(@tWherePT)
     # pp 'before'
     # pp @constraintPredicateQuery
+    # pp constraintPredicateQuery
+    # binding.pry
     constraintPredicateQuery = RewriteQuery.rewrite_predicate_query(constraintPredicateQuery, t_predicate_collist)
   end
 
@@ -422,7 +441,7 @@ class LozalizeError
   end
 
   def column_combinations_construct
-    @column_combinations = method.start_with?('o') && compute_cc ? Columns_Combination.new(all_columns) : all_columns
+    @column_combinations = Columns_Combination.new(@all_columns) #: @all_columns
   end
 
   def tuple_mutation_test_reverse(pkArry, type, constraint_predicate, duplicate_removal)
@@ -485,6 +504,7 @@ class LozalizeError
       branchQuery = "select distinct branch_name from tuple_node_test_result where #{pkCond};"
       res = DBConn.exec(branchQuery)
       # pp "begin: #{Time.now}"
+      # binding.pry
       if type == 'U'
         # pp branchQuery
         res.each do |branch_name|
@@ -587,7 +607,7 @@ class LozalizeError
   end
 
   def getSuspiciouScore
-    query = "select location, sum(suspicious_score) as suspicious_score, array_agg(DISTINCT c ORDER BY c) as cols from node_query_mapping, unnest(columns) c where test_id = #{@test_id} group by location"
+    query = "select location, sum(suspicious_score) as suspicious_score from node_query_mapping where test_id = #{@test_id} group by location"
     rst = DBConn.exec(query)
     score = {}
     score['totalScore'] = 0
@@ -598,7 +618,32 @@ class LozalizeError
     end
     score
   end
-
+  def get_test_result
+    query = "select location,branch_name,node_name, "+
+    "sum(suspicious_score) as suspicious_score, array_agg(DISTINCT c ORDER BY c) as cols "+
+    "from node_query_mapping, unnest(columns) c where test_id = #{@test_id} and suspicious_score >0"+
+    " group by location, branch_name,node_name "+
+    # last process missing nodes
+    " order by location desc"
+    rst = DBConn.exec(query)
+    test_result = []
+    # test_result['totalScore'] = 0
+    # test_result['nodes'] = []
+    rst.each do |t|
+      trd = Test_Result_Detail.new()
+      trd.branch_name = t['branch_name']
+      trd.node_name = t['node_name']
+      trd.location = t['location']
+      trd.columns = []
+      t['cols'].gsub('{', '').gsub('}','').split(',').each do |c|
+        trd.columns << @tQueryObj.all_cols.find{|col| col.hash == c.hash }
+      end
+      trd.suspicious_score = t['suspicious_score']
+      test_result << trd
+      # test_result['totalScore'] += trd.suspicious_score.to_i
+    end
+    test_result
+  end
   def whereCondTest(pkArry, type)
     return if @wherePT.nil?
     # whereCondArry = ReverseParseTree.whereCondSplit(@wherePT)

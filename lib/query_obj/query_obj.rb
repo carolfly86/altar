@@ -68,7 +68,7 @@ class QueryObj
 
         else
           h['colname'] = col['col']
-          relList = @rel_names.map { |rel| '"' + rel['relname'] + '"' }.join(',')
+          relList = @rel_names.map { |rel| "'" + rel['relname'] + "'" }.join(',')
           query = QueryBuilder.find_rel_by_colname(relList, h['colname'])
           res = DBConn.exec(query)
           h['relname'] = res[0]['relname']

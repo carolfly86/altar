@@ -2,7 +2,7 @@ require 'jsonpath'
 require 'pp'
 require_relative 'acyclic_graph'
 require_relative 'reverse_parsetree'
-
+require_relative 'test_result_detail'
 module AutoFix
   # Find all the relations(tbls) from FROM Clause including their columns
   def self.JoinTypeFix(joinErrList, parseTree)

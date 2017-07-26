@@ -1,5 +1,10 @@
 require 'rubytree'
+
 require_relative 'reverse_parsetree'
+require_relative 'db_connection'
+require_relative 'column'
+require_relative 'node'
+require_relative 'branch'
 
 class PredicateTree
   # def initialize(support,behavior)
@@ -32,32 +37,44 @@ class PredicateTree
       root << @pdtree
       @pdtree = root
     end
-    # @pdtree.print_tree
+    # 
+    
+
     @pdtree.children.each do |subtree|
+      # binding.pry
       unless subtree.name =~ /^PH*/
         branch = add_branch(subtree)
         @pdtree << branch
       end
     end
-
+    @pdtree.print_tree
     node_query_mapping_insert
   end
 
   def pdtree_construct(fromPT, wherePT, curNode, depth = 0)
-    logicOpr = wherePT.keys[0].to_s
-    lexpr = wherePT[logicOpr]['lexpr']
-    rexpr = wherePT[logicOpr]['rexpr']
+
+    boolexpr = wherePT.keys[0].to_s
+    if boolexpr == 'BOOLEXPR'
+      logicOpr = wherePT['BOOLEXPR']['boolop'].to_s
+      args = wherePT['BOOLEXPR']['args']
+      # lexpr = wherePT['BOOLEXPR']['args'][0]
+      # rexpr = wherePT['BOOLEXPR']['args'][1]
+    else
+      logicOpr = wherePT.keys[0]
+      # lexpr = wherePT[logicOpr]['lexpr']
+      # rexpr = wherePT[logicOpr]['rexpr']
+    end
     depth += 1
 
     # puts "depth: #{depth}"
     # p logicOpr
-    if logicOpr == 'AEXPR AND'
+    # if logicOpr == 'AEXPR AND'
+    # puts logicOpr
+    if logicOpr == '0'
       # pp 'lexpr'
       # pp lexpr
       # pp 'rexpr'
       # pp rexpr
-      lexprNode = pdtree_construct(fromPT, lexpr, curNode, depth)
-      rexprNode = pdtree_construct(fromPT, rexpr, curNode, depth)
       # p 'c'
       # curNode.print_tree
       # p 'l'
@@ -69,50 +86,114 @@ class PredicateTree
       # p lexprNode.out_degree
       # p rexprNode.out_degree
       # pp rexprNode
-      if lexprNode.out_degree > 1 || rexprNode.out_degree > 1
-        # puts 'reform'
-        structure_reform(lexprNode, rexprNode, curNode)
-        # puts 'after reform'
-        # p 'c'
-        # curNode.print_tree
-        # p 'l'
-        # lexprNode.print_tree
-        # p 'r'
-        # rexprNode.print_tree
-        return curNode
-      else
-        append_to_end(lexprNode, rexprNode)
-        # append_to_end(curNode,lexprNode)
-        # return curNode
-        # puts 'after'
-        # lexprNode.print_tree
-        # puts "current depth #{depth}"
-        # p '-------------'
-        if depth == 1
-          # lexprNode = add_branch(lexprNode)
-          curNode << lexprNode unless curNode == lexprNode
-          return curNode
+      copy = curNode.dup
+      args.each_with_index do |expr,idx|
+        # binding.pry
+        exprNode = pdtree_construct(fromPT, expr, copy, depth)
+        # puts 'AND'
+        # puts expr
+        # puts 'before'
+        # puts 'e'
+        # exprNode.print_tree
+        # puts 'c'
+        # curNode.print_tree unless curNode.nil?
+
+        # binding.pry
+        # exprNode = extract_child_from(copy,exprNode)
+        if curNode.out_degree > 1 || exprNode.out_degree > 1
+          # puts 'reform'
+          structure_reform(curNode, exprNode)
+          # return curNode
         else
-          return lexprNode
+          # if depth == 1
+          #   curNode << exprNode
+          # else
+          exprNode = exprNode.children[0] if exprNode.has_children?
+          append_to_end(curNode, exprNode)
+          # end
+          # return curNode
+          # curNode<<lexprNode unless curNode==lexprNode
         end
-        # curNode<<lexprNode unless curNode==lexprNode
+        # puts 'after'
+        # curNode.print_tree unless curNode.nil?
       end
+      return curNode
+      # lexprNode = pdtree_construct(fromPT, lexpr, curNode, depth)
+      # rexprNode = pdtree_construct(fromPT, rexpr, curNode, depth)
+      # if lexprNode.out_degree > 1 || rexprNode.out_degree > 1
+      #   # puts 'reform'
+      #   structure_reform(lexprNode, rexprNode, curNode)
+      #   # puts 'after reform'
+      #   # p 'c'
+      #   # curNode.print_tree
+      #   # p 'l'
+      #   # lexprNode.print_tree
+      #   # p 'r'
+      #   # rexprNode.print_tree
+      #   return curNode
+      # else
+      #   append_to_end(lexprNode, rexprNode)
+      #   # append_to_end(curNode,lexprNode)
+      #   # return curNode
+      #   # puts 'after'
+      #   # lexprNode.print_tree
+      #   # puts "current depth #{depth}"
+      #   # p '-------------'
+      #   if depth == 1
+      #     # lexprNode = add_branch(lexprNode)
+      #     curNode << lexprNode unless curNode == lexprNode
+      #     return curNode
+      #   else
+      #     return lexprNode
+      #   end
+        # curNode<<lexprNode unless curNode==lexprNode
+      # end
     # or operator are tested as a whole
-    elsif logicOpr == 'AEXPR OR'
+    # elsif logicOpr == 'AEXPR OR'
+    elsif logicOpr == '1'
       # puts 'OR'
       # pp 'lexpr'
       # pp lexpr
       # pp 'rexpr'
       # pp rexpr
-      # puts 'before'
       # p 'c'
-      # curNode.print_tree
       # p 'l'
       # lexprNode.print_tree unless lexprNode.nil?
       # p 'r'
       # rexprNode.print_tree unless rexprNode.nil?
-      lexprNode = pdtree_construct(fromPT, lexpr, curNode, depth)
-      rexprNode = pdtree_construct(fromPT, rexpr, curNode, depth)
+      branches = []
+
+      args.each_with_index do |expr,idx|
+        # binding.pry
+        copy = curNode.dup
+        # branch = Tree::TreeNode.new("branch_#{idx}", '')
+        exprNode = pdtree_construct(fromPT, expr, copy, depth)
+        # puts 'OR'
+        # puts expr
+        # exprNode.print_tree 
+        branches.push(exprNode)
+        # curNode << exprNode # if curNode.root.name != 'root'
+      end
+      # if branches.count >1
+        0.upto(branches.count-1).each do |i|
+          # puts 'before'
+          # puts 'e'
+          # branches[i].print_tree
+          # puts 'c'
+          # curNode.print_tree unless curNode.nil?
+          if branches[i].root.name == curNode.root.name
+            curNode = curNode.merge(branches[i])
+          else
+            curNode << branches[i]
+          end
+          # puts 'after'
+          # curNode.print_tree unless curNode.nil?
+        end
+      # else
+      #   curNode = branches[0]
+      # end
+      # lexprNode = pdtree_construct(fromPT, lexpr, curNode, depth)
+      # rexprNode = pdtree_construct(fromPT, rexpr, curNode, depth)
       # puts 'after'
       # p 'c'
       # curNode.print_tree
@@ -125,11 +206,11 @@ class PredicateTree
       # puts "rroot: #{rexprNode.root.name}"
         #
       # lexprNode = add_branch(lexprNode)
-      curNode << lexprNode if lexprNode.root.name != 'root'
+      # curNode << lexprNode if lexprNode.root.name != 'root'
       # end #unless curNode==lexprNode
       # if rexprNode.root.name != 'root'
       #   rexprNode = add_branch(rexprNode)
-      curNode << rexprNode if rexprNode.root.name != 'root'
+      # curNode << rexprNode if rexprNode.root.name != 'root'
       # end
       # curNode<<rexprNode unless curNode==rexprNode
       # p 'l after'
@@ -141,15 +222,19 @@ class PredicateTree
 
       return curNode
     else
+      # binding.pry
       @node_count+= 1
       nodeName = "N#{@node_count}"
       h = {}
       h['query'] = ReverseParseTree.whereClauseConst(wherePT)
+      # binding.pry
       h['location'] = logicOpr == 'NULLTEST' ? wherePT[logicOpr]['arg']['COLUMNREF']['location'] : wherePT[logicOpr]['location']
+      # h['location'] = JsonPath.on(wherePT, '$..location').first
       h['columns'] = []
       cols = ReverseParseTree.columnsInPredicate(wherePT)
       # convert string to Column object
       cols.each do |col|
+        # binding.pry if @type =='t'
         column = Column.new
         column.colname = col.count > 1 ? col[1] : col[0]
         column.relalias = col.count > 1 ? col[0] : nil
@@ -160,6 +245,7 @@ class PredicateTree
       end
       h['suspicious_score'] = 0
       # pp h
+      # binding.pry
       curNode = Tree::TreeNode.new(nodeName, h)
       # p @nqTblName
 
@@ -195,7 +281,27 @@ class PredicateTree
     ph << subtree
     ph
   end
+  # # extract child from Node that are not in base
+  # def extract_child_from(base,node)
+  #   # return node unless node.has_children?
+  #   result = []
+  #   if base.root.name != node.root.name
+  #     result  << node
+  #   elsif base.name == node.name && !base.has_children? &&!node.has_children
+  #     result = []
+  #   else
+      
+  #   end
+  #   return 
+  #   n_childre_name = node.children.map{|c| c.name}.to_set
+  #   b_childre_name = base.children.map{|c| c.name}.to_set
 
+  #   if n_childre_name -b_childre_name = []
+  #     extract_child_from(base.chil,node)
+  #   else
+      
+  #   end
+  # end
   def get_all_columns
     columns = []
     @branches.each do |br|
@@ -210,9 +316,12 @@ class PredicateTree
 
   # def node_query_mapping_insert( nodeName,query,loc,columns, suspicious_score)
   def node_query_mapping_insert
+    # binding.pry
     branches.each do |br|
       br.nodes.each do |nd|
         nodeName = nd.name
+        # binding.pry
+
         # columnsArray=nd.columns.map{|c| "'"+(c.relalias.nil? ? '' : c.relalias+'.')+c.colname+"'"}.join(',')
         columnsArray = nd.columns.map { |c| "'" + c.relname + '.' + c.colname + "'" }.join(',')
         query = "INSERT INTO #{@nqTblName} values (#{@test_id} ,'#{br.name}','#{nd.name}', '#{nd.query.gsub(/'/, '\'\'')}',#{nd.location}, ARRAY[#{columnsArray}], #{nd.suspicious_score} , '#{@type}' )"
@@ -259,7 +368,7 @@ class PredicateTree
   # in order to present (a or b) and (c or d)
   # we need to reform the structure to
   # (a and c) or (a and d) or (b and c) or (b and d)
-  def structure_reform(lNode, rNode, curNode)
+  def structure_reform(curNode, addNode)
     # reset branches for reform
     @branches = []
     @branch_count = 0
@@ -271,23 +380,24 @@ class PredicateTree
     # remove_PH_node(rNode)
     # remove_PH_node(curNode)
     # puts 'after cleanup'
-    # lNode.print_tree
+    # curNode.print_tree
+    # addNode.print_tree
     # rNode.print_tree
-    # rNode.print_tree
-    lChildren = lNode.children.count == 0 ? [lNode] : lNode.children
-    rChildren = rNode.children.count == 0 ? [rNode] : rNode.children
+    curChildren = curNode.children.count == 0 ? [curNode] : curNode.children
+    addChildren = addNode.children.count == 0 ? [addNode] : addNode.children
     count = 0
     # p 'lnode'
     # pp lChildren
     # p 'rnode'
-    lChildren.each do |ln|
-      rChildren.each do |rn|
+    curChildren.each do |ln|
+      curNode.remove!(ln)
+      addChildren.each do |rn|
         # p '--------------'
         # p 'ln'
         # ln.print_tree
         # p 'rn'
         # rn.print_tree
-
+        # binding.pry
         # phName="PH#{@branch_count}"
         # ph =Tree::TreeNode.new(phName, '')
         ln_append = ln.detached_subtree_copy
@@ -309,6 +419,55 @@ class PredicateTree
     end
   end
 
+  # def structure_reform(curNode, addNode, curNode)
+  #   # reset branches for reform
+  #   @branches = []
+  #   @branch_count = 0
+  #   # puts 'before cleanup'
+  #   # lNode.print_tree
+  #   # rNode.print_tree
+  #   # rNode.print_tree
+  #   # remove_PH_node(lNode)
+  #   # remove_PH_node(rNode)
+  #   # remove_PH_node(curNode)
+  #   # puts 'after cleanup'
+  #   # lNode.print_tree
+  #   # rNode.print_tree
+  #   # rNode.print_tree
+  #   lChildren = lNode.children.count == 0 ? [lNode] : lNode.children
+  #   rChildren = rNode.children.count == 0 ? [rNode] : rNode.children
+  #   count = 0
+  #   # p 'lnode'
+  #   # pp lChildren
+  #   # p 'rnode'
+  #   lChildren.each do |ln|
+  #     rChildren.each do |rn|
+  #       # p '--------------'
+  #       # p 'ln'
+  #       # ln.print_tree
+  #       # p 'rn'
+  #       # rn.print_tree
+
+  #       # phName="PH#{@branch_count}"
+  #       # ph =Tree::TreeNode.new(phName, '')
+  #       ln_append = ln.detached_subtree_copy
+  #       # p 'ln_append before'
+  #       # ln_append.print_tree
+  #       append_to_end(ln_append, rn)
+  #       # p 'ln_append'
+  #       # ln_append.print_tree
+  #       # ph<<ln_append #unless curNode==newNode
+  #       ln_append = add_branch(ln_append)
+  #       # p 'ln_append after'
+  #       # ln_append.print_tree
+  #       curNode << ln_append
+  #       # p 'ph'
+  #       # ph.print_tree
+  #       # p 'curNode'
+  #       # curNode.print_tree
+  #     end
+  #   end
+  # end
   # # remove any PH child in tree
   # def remove_PH_node(tree)
   #   tree.children.each do |child|

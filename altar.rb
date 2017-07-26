@@ -10,16 +10,17 @@ require 'set'
 Dir['lib/*.rb', 'lib/*/*.rb'].each { |file| require_relative file }
 # /usr/local/Cellar/postgresql/9.3.3/bin/pg_ctl start -D/usr/local/var/postgres
 # ./altar.rb -s employees_000 -g i -m or
-# ./altar.rb -s employees_m06 -g i -m r -u y
-# ./altar.rb -s employees_m06 -o t -g i -m o
+# ./altar.rb -s employees_s01 -g i -m or
+# ./altar.rb -a y -m o -u n
+# ./altar.rb -s balance_m01 -m o -u n
 # Dir.glob("lib/*.rb").each {|file| puts file; require_relative file }
 opts = Trollop.options do
   banner 'Usage: ' + $PROGRAM_NAME + ' --script [script] '
   opt :script, 'location of sql script', type: :string
   opt :allscripts, 'process all scripts in folder (y|n)', type: :string, default: 'n'
   # opt :operation, "m(utate)|t(est)", :type => :string
-  opt :golden_record, 'c(reate)|i(mport)', type: :string
-  opt :method, 'o(ld)r(emoval)|b(aseline SBFL)', type: :string
+  opt :golden_record, 'c(reate)|i(mport)', type: :string, default: 'i'
+  opt :method, 'o(ld)r(emoval)|b(aseline SBFL)|o(ld)', type: :string
   opt :autofix, 'y|n', type: :string, default: 'y'
   # opt :expectation, "location of expectation file", :type => :string
 end
@@ -34,6 +35,7 @@ if opts[:allscripts] == 'y'
   create_all_script_result_tbl
   Dir["sql/#{dbname}/*.json"].each do |file|
     script = File.basename file, '.json'
+    puts "processing  #{script}"
     faultLocalization(script, opts[:golden_record], opts[:method], autofix)
     dump_result(script)
   end

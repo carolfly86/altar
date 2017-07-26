@@ -94,49 +94,49 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       puts 'begin fault localization'
       beginTime = Time.now
       puts "fault localization start time: #{beginTime}"
-
-
-      puts 'fault localize: Join Key Errors'
       localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
-      new_join_key,old_join_key = localizeErr.join_key_err
-      if new_join_key.count >0
-        puts 'finding candidate join key list'
-        # pp new_join_key
-        new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
-        unless (candidate_join_key - old_join_key).empty?
-          # pp new_from
-          puts 'Fixing join key'
-          fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
-          pp fQueryNew
-          fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
-          LozalizeError.new(fqueryObj, tqueryObj)
+
+      if auto_fix
+        puts 'fault localize: Join Key Errors'
+        new_join_key,old_join_key = localizeErr.join_key_err
+        if new_join_key.count >0
+          puts 'finding candidate join key list'
+          # pp new_join_key
+          new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
+          unless (candidate_join_key - old_join_key).empty?
+            # pp new_from
+            puts 'Fixing join key'
+            fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
+            pp fQueryNew
+            fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
+            LozalizeError.new(fqueryObj, tqueryObj)
+          else
+            puts 'No Join Key Error'
+          end
         else
           puts 'No Join Key Error'
         end
-      else
-        puts 'No Join Key Error'
-      end
 
-      # # Join type error localization
-      puts 'fault localize: Join Type Errors'
-      joinErrList = localizeErr.join_type_err
-      if joinErrList.count > 0
-        # fix join type error
-        pp 'fixing join type error'
-        pp 'join type error list'
-        pp joinErrList
+        # # Join type error localization
+        puts 'fault localize: Join Type Errors'
+        joinErrList = localizeErr.join_type_err
+        if joinErrList.count > 0
+          # fix join type error
+          pp 'fixing join type error'
+          pp 'join type error list'
+          pp joinErrList
 
-        psNew = AutoFix.JoinTypeFix(joinErrList, fqueryObj.parseTree)
-        fQueryNew = ReverseParseTree.reverse(psNew)
-        p 'New query after fixing join type error'
-        p fQueryNew
-        fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
-        # Reinitialize LocalizeErr with fixed query
-        localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
-      else
-        puts 'No Join Type Error'
+          psNew = AutoFix.JoinTypeFix(joinErrList, fqueryObj.parseTree)
+          fQueryNew = ReverseParseTree.reverse(psNew)
+          p 'New query after fixing join type error'
+          p fQueryNew
+          fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
+          # Reinitialize LocalizeErr with fixed query
+          localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
+        else
+          puts 'No Join Type Error'
+        end
       end
-      return
       # Where condition fault localization
       localizeErr.selecionErr(method)
 
@@ -146,7 +146,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       m_u_tuple_count = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count
 
       # Projection error localization
-      prjErrList = localizeErr.projErr
+      # prjErrList = localizeErr.projErr
 
       fqueryObj.score = localizeErr.getSuspiciouScore
       puts 'fquery score:'
@@ -161,26 +161,41 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
     # tarantular_rank = tarantular.relevence(f_options[:relevent])
     # return
     update_test_result_tbl(idx, fqueryObj.query, tqueryObj.query, m_u_tuple_count, duration, totalScore, f_options[:relevent], tarantular_rank, tarantular_duration, total_test_cnt)
+
     if auto_fix
       puts 'begin fix'
       # create t_result stats table
       tqueryObj.create_stats_tbl
-      fqueryObj.score.each do |k, v|
-        next if k == 'totalScore'
-        next unless v.to_i > 0
-        puts "fixing location #{k}"
-        neighborQueryObj = fqueryObj.generate_neighbor_program(k, 1)
+      test_result = localizeErr.get_test_result
+      test_result.each do |rst|
+        next if rst.suspicious_score.to_i <= 0
+
+        puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
+        binding.pry
+        if rst.location == 0
+          # if location is 0 then add missing node
+          neighborQueryObj = fqueryObj.add_missing_branch(rst.branch_name,rst.columns)
+        else
+          # modify existing node
+          neighborQueryObj = fqueryObj.generate_neighbor_program(rst.location, 1)
+        end
+        binding.pry
+        return
+        localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
+        localizeErr.selecionErr(method)
+        new_score = localizeErr.getSuspiciouScore
+        return if new_score['totalScore'] == 0
         # binding.pry
-        puts 'neighborQueryObj query:'
-        pp neighborQueryObj.query
-        puts 'neighborQueryObj score:'
-        pp neighborQueryObj.score
+        # puts 'neighborQueryObj query:'
+        # pp neighborQueryObj.query
+        # puts 'neighborQueryObj score:'
+        # pp neighborQueryObj.score
         # hc=HillClimbingAlg.new(fqueryObj,tqueryObj)
         # hc.hill_climbing(k)
         # hc.create_stats_tbl
       end
     end
-    exit 0
+    # exit 0
   end
 end
 
@@ -210,6 +225,7 @@ def createGR(golden_record_opr, script, tqueryObj)
     # import golden record
     query = 'drop table IF EXISTS golden_record;'
     DBConn.exec(query)
+    # binding.pry
     DBConn.exec_golden_record_script(script)
     # abort('test')
   end
@@ -249,7 +265,7 @@ def create_golden_record(tQueryObj)
   excluded_query = ReverseParseTree.reverseAndreplace(parseTree, excluded_target_list, excluded_predicates)
   excluded_query = "#{excluded_query} limit 1"
   # pp excluded_query
-
+  # binding.pry
   DBConn.tblCreation('golden_record', '', excluded_query)
 
   query = "select count(1) as cnt from golden_record where type = 'excluded'"

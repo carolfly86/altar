@@ -197,6 +197,7 @@ class TupleMutation
       # satisfiedQuery = "#{@satisfiedQuery} UNION #{@subset_col_query}"
       satisfiedQuery = @satisfiedQuery
       # binding.pry
+      # pp satisfiedQuery
       satisfied = DBConn.exec(satisfiedQuery)
       excluded = DBConn.exec(@excluded_query)
       # binding.pry
@@ -254,14 +255,20 @@ class TupleMutation
         mutationTbl_upd(bn_pair, @updateTup, @pkCond)
         # binding.pry
         excluded = DBConn.exec(@excluded_query)
+        # binding.pry
         next unless excluded.count > 0
-        1.upto(i) do |_j|
+        # 1.upto(i) do |j|
+        # binding.pry
+        cib =  Column_In_Branch.new(i)
+        cib.populate_cols_in_branch(excluded)
+        cols_in_branch = cib.cols_in_branch
+        cols_in_branch.each do |cols|
           nodes = []
           nd = {}
-          # binding.pry
           nd['branch_name'] = "missing_branch#{i}"
           nd['node_name'] = "missing_node#{i}"
-          nd['columns'] = "{#{excluded.map { |e| e['mutation_cols'].split(',') }.flatten.uniq.join(',')}}"
+          nd['columns'] = "{#{cols.uniq.join(',')}}"
+          # nd['columns'] = "{#{cols.map { |e| e['mutation_cols'].split(',') }.flatten.uniq.join(',')}}"
           nd['query'] = ''
           nd['location'] = 0
           nd['type'] = 'f'
@@ -274,7 +281,8 @@ class TupleMutation
           # or if the missing branch containing same set of columns as the existing branch
           # then we cannot exonerate
           old_cols = @branches.map(&:columns).flatten.map { |c| "#{c.relname}.#{c.colname}" }
-          new_cols = excluded.map { |e| e['mutation_cols'].split(',') }.flatten.uniq
+          new_cols = cols.uniq
+          # new_cols = excluded.map { |e| e['mutation_cols'].split(',') }.flatten.uniq
           # binding.pry
           if @branches.count == 1 && old_cols.to_set == new_cols.to_set # @branches.count == 1 || (old_cols-new_cols).empty?
             # binding.pry

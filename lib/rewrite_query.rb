@@ -65,7 +65,7 @@ module RewriteQuery
     #  :replace_expr_with_fullname
     c = %w(colname colalias fullname expr renamed_colname)
     c.product(c).delete_if { |c| c[0] == c[1] }.each do |type|
-      define_method("replace_#{type[0]}_with_#{type[1]}") do |_query, _col|
+      define_method("replace_#{type[0]}_with_#{type[1]}") do |query, col|
         eval("col.#{type[0]}.nil? ? query : col.#{type[1]}.nil? ? query : query.gsub(col.#{type[0]},col.#{type[1]})")
       end
     end
