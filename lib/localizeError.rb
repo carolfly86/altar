@@ -55,12 +55,15 @@ class LozalizeError
     @pkFullList = tQueryObj.pk_full_list
 
     # generate predicate tree from where clause
-    root = Tree::TreeNode.new('root', '')
-    @predicateTree = PredicateTree.new('f', @is_new, @test_id)
+    fQueryObj.predicate_tree_construct('f', @is_new, @test_id)
+    @predicateTree = fQueryObj.predicate_tree
+
+    # root = Tree::TreeNode.new('root', '')
+    # @predicateTree = PredicateTree.new('f', @is_new, @test_id)
     # pp @wherePT
-    @predicateTree.build_full_pdtree(@fromPT[0], @wherePT, root)
+    # @predicateTree.build_full_pdtree(@fromPT[0], @wherePT, root)
     @pdtree = @predicateTree.pdtree
-    # binding.pry 
+    # binding.pry
     # puts tes
     # @predicateTree.node_query_mapping_insert()
     @fromCondStr = ReverseParseTree.fromClauseConstr(@fromPT)
@@ -89,7 +92,7 @@ class LozalizeError
   end
 
   def create_t_f_union_table
-    query = "select #{@pkSelect} from #{@tTable} UNION select #{@pkSelect} from #{@fTable}"
+    query = "select #{@pkSelect},'t' from #{@tTable} UNION select #{@pkSelect},'f' from #{@fTable}"
     query = QueryBuilder.create_tbl('t_f_union', @pkList, query)
     puts'create t_f_union'
     puts query
@@ -98,8 +101,8 @@ class LozalizeError
   end
 
   def create_t_f_intersect_table
-    query = "select #{@pkSelect} from #{@tTable} INTERSECT select #{@pkSelect} from #{@fTable}"
-    query = QueryBuilder.create_tbl('t_f_union', @pkList, query)
+    query = "select #{@pkSelect},'t' from #{@tTable} INTERSECT select #{@pkSelect},'f' from #{@fTable}"
+    query = QueryBuilder.create_tbl('t_f_intersect', @pkList, query)
     puts'create t_f_intersect'
     puts query
     # create
@@ -107,7 +110,7 @@ class LozalizeError
   end
 
   def create_t_f_all_table
-    query = ReverseParseTree.reverseAndreplace(@fParseTree, @pkList, '')
+    query = ReverseParseTree.reverseAndreplace(@fParseTree, @pkList, '1=1')
     query = QueryBuilder.create_tbl('t_f_all', @pkList, query)
     puts'create t_f_all'
     puts query
@@ -415,10 +418,12 @@ class LozalizeError
   end
 
   def true_query_PT_construct
-    @tWherePT = @tPS['SELECT']['whereClause']
-    @tPredicateTree = PredicateTree.new('t', false, @test_id)
-    root = Tree::TreeNode.new('root', '')
-    @tPredicateTree.build_full_pdtree(@fromPT[0], @tWherePT, root)
+    # @tWherePT = @tPS['SELECT']['whereClause']
+    # @tPredicateTree = PredicateTree.new('t', false, @test_id)
+    # root = Tree::TreeNode.new('root', '')
+    # @tPredicateTree.build_full_pdtree(@fromPT[0], @tWherePT, root)
+    @tQueryObj.predicate_tree_construct('t', false, @test_id)
+    @tPredicateTree = @tQueryObj.predicate_tree
   end
 
   def constraint_predicate_construct
@@ -427,7 +432,7 @@ class LozalizeError
     # pp 't_predicate_tree.all_columns'
     # rename_where_pt = @tQueryObj.parseTree['SELECT']['whereClause']
     # binding.pry
-    constraintPredicateQuery = ReverseParseTree.whereClauseConst(@tWherePT)
+    constraintPredicateQuery = ReverseParseTree.whereClauseConst(@tPS['SELECT']['whereClause'])
     # pp 'before'
     # pp @constraintPredicateQuery
     # pp constraintPredicateQuery
@@ -636,7 +641,7 @@ class LozalizeError
       trd.location = t['location']
       trd.columns = []
       t['cols'].gsub('{', '').gsub('}','').split(',').each do |c|
-        trd.columns << @tQueryObj.all_cols.find{|col| col.hash == c.hash }
+        trd.columns << @tQueryObj.all_cols.find{|col| col.hash == c.split('.').hash }
       end
       trd.suspicious_score = t['suspicious_score']
       test_result << trd

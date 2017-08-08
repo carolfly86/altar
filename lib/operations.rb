@@ -166,20 +166,19 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       puts 'begin fix'
       # create t_result stats table
       tqueryObj.create_stats_tbl
+      # fqueryObj.create_stats_tbl
+      excluded_tbl = tqueryObj.create_excluded_tbl
+      satisfied_tbl = tqueryObj.create_satisfied_tbl
+
+      mutation = Mutation.new(fqueryObj,excluded_tbl,satisfied_tbl)
       test_result = localizeErr.get_test_result
       test_result.each do |rst|
         next if rst.suspicious_score.to_i <= 0
 
         puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
-        binding.pry
-        if rst.location == 0
-          # if location is 0 then add missing node
-          neighborQueryObj = fqueryObj.add_missing_branch(rst.branch_name,rst.columns)
-        else
-          # modify existing node
-          neighborQueryObj = fqueryObj.generate_neighbor_program(rst.location, 1)
-        end
-        binding.pry
+
+        neighborQueryObj = mutation.generate_neighbor_query(rst)
+
         return
         localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
         localizeErr.selecionErr(method)
@@ -233,43 +232,49 @@ end
 
 def create_golden_record(tQueryObj)
   # tQueryObj.parseTree
-  parseTree = tQueryObj.parseTree
-  wherePT = tQueryObj.parseTree['SELECT']['whereClause']
-  fromPT = tQueryObj.parseTree['SELECT']['fromClause']
-  col_list = DBConn.getAllRelFieldList(fromPT)
-  new_target_list = col_list.map do |col|
-    "#{col.fullname} as #{col.renamed_colname}"
-  end.join(', ')
-
-  tPredicateTree = PredicateTree.new('t', true, 0)
-  root = Tree::TreeNode.new('root', '')
-  tPredicateTree.build_full_pdtree(fromPT[0], wherePT, root)
-  pdtree = tPredicateTree.pdtree
+  # parseTree = tQueryObj.parseTree
+  # wherePT = tQueryObj.parseTree['SELECT']['whereClause']
+  # fromPT = tQueryObj.parseTree['SELECT']['fromClause']
+  # col_list = DBConn.getAllRelFieldList(fromPT)
+  # new_target_list = col_list.map do |col|
+  #   "#{col.fullname} as #{col.renamed_colname}"
+  # end.join(', ')
+  new_target_list = tQueryObj.all_cols_select
+  # tPredicateTree = PredicateTree.new('t', true, 0)
+  # root = Tree::TreeNode.new('root', '')
+  # tPredicateTree.build_full_pdtree(fromPT[0], wherePT, root)
+  # pdtree = tPredicateTree.pdtree
   # pdtree.print_tree
+  tQueryObj.predicate_tree_construct('t', true, 0)
+  excluded_tbl = tQueryObj.create_excluded_tbl
+  satisfied_tbl = tQueryObj.create_satisfied_tbl
+  # all_queries = []
+  # br_queries = []
+  # tPredicateTree.branches.each do |br|
+  #   br_query = ''
+  #   brq = {}
+  #   br.nodes.each_with_index do |nd, idx|
+  #     all_queries << nd.query unless all_queries.include?(nd.query)
+  #     br_query = br_query + (idx > 0 ? ' AND ' : '') + nd.query
+  #   end
+  #   brq[br.name] = br_query
+  #   br_queries << brq
+  # end
 
-  all_queries = []
-  br_queries = []
-  tPredicateTree.branches.each do |br|
-    br_query = ''
-    brq = {}
-    br.nodes.each_with_index do |nd, idx|
-      all_queries << nd.query unless all_queries.include?(nd.query)
-      br_query = br_query + (idx > 0 ? ' AND ' : '') + nd.query
-    end
-    brq[br.name] = br_query
-    br_queries << brq
-  end
-
-  excluded_predicates = all_queries.map { |query| "NOT (#{query})" }.join(' AND ')
-  excluded_target_list = "#{new_target_list} , 'excluded'::varchar(30) as type, ''::varchar(30) as branch"
-  excluded_query = ReverseParseTree.reverseAndreplace(parseTree, excluded_target_list, excluded_predicates)
-  excluded_query = "#{excluded_query} limit 1"
+  # excluded_predicates = all_queries.map { |query| "NOT (#{query})" }.join(' AND ')
+  # excluded_target_list = "#{new_target_list} , 'excluded'::varchar(30) as type, ''::varchar(30) as branch"
+  # excluded_query = ReverseParseTree.reverseAndreplace(parseTree, excluded_target_list, excluded_predicates)
+  # excluded_query = "#{excluded_query} limit 1"
   # pp excluded_query
   # binding.pry
+  # DBConn.tblCreation('golden_record', '', excluded_query)
+
+  excluded_query =  "select #{new_target_list},'excluded'::varchar(30) as type, ''::varchar(30) as branch from #{excluded_tbl} limit 1"
   DBConn.tblCreation('golden_record', '', excluded_query)
 
   query = "select count(1) as cnt from golden_record where type = 'excluded'"
   res = DBConn.exec(query)
+  # if no excluded rows are found, we generate an excluded row which contains all Null values
   if res[0]['cnt'].to_i == 0
     # binding.pry
     null_target_list = col_list.map do |col|
@@ -280,18 +285,20 @@ def create_golden_record(tQueryObj)
     null_query = "INSERT INTO golden_record #{null_query} limit 1"
     DBConn.exec(null_query)
     # binding.pry
-
   end
 
-  br_queries.each do |q|
-    q.each_pair do |key, val|
-      satisfied_target_list = "#{new_target_list} , 'satisfied'::varchar(30) as type, '#{key}'::varchar(30) as branch"
-      satisfied_query = ReverseParseTree.reverseAndreplace(parseTree, satisfied_target_list, val)
-      satisfied_query = "INSERT INTO golden_record #{satisfied_query} limit 1"
-      # pp satisfied_query
-      DBConn.exec(satisfied_query)
-    end
-  end
+  satisfied_query = "SELECT distinct on (branch) #{new_target_list},'satisfied'::varchar(30) as type, branch from  #{satisfied_tbl}"
+  satisfied_query = "INSERT INTO golden_record #{satisfied_query}"
+  DBConn.exec(satisfied_query)
+  # br_queries.each do |q|
+  #   q.each_pair do |key, val|
+  #     satisfied_target_list = "#{new_target_list} , 'satisfied'::varchar(30) as type, '#{key}'::varchar(30) as branch"
+  #     satisfied_query = ReverseParseTree.reverseAndreplace(parseTree, satisfied_target_list, val)
+  #     satisfied_query = "INSERT INTO golden_record #{satisfied_query} limit 1"
+  #     # pp satisfied_query
+  #     DBConn.exec(satisfied_query)
+  #   end
+  # end
 end
 
 def create_test_result_tbl

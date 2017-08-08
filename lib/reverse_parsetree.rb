@@ -48,6 +48,7 @@ module ReverseParseTree
     query = 'SELECT ' + distinct + targetList +
             ' FROM ' + fromClause +
             (whereClause.empty? ? '' : ' WHERE ' + whereClause)
+
   end
 
   # construct relname from relname and rel alias
@@ -179,13 +180,11 @@ module ReverseParseTree
     elsif logicOpr == 'BOOLEXPR'
       bool_opr = where[logicOpr]['boolop'] == 0 ? 'AND' : 'OR'
       where[logicOpr]['args'].map do |arg|
-        # binding.pry
         expr = whereClauseConst(arg)
         expr = case  when bool_opr =='OR'
                 then'( '+ expr+' )'
                 else expr
                 end
-
       end.join(" #{bool_opr} ")
     else
       lexpr = whereClauseConst(lexpr)
@@ -193,10 +192,8 @@ module ReverseParseTree
       logicOpr = logicOpr.gsub('AEXPR ', '')
 
       expr = (logicOpr == 'OR' ? '( ' : '') +
-             lexpr + ' ' +
-             # ( logicOpr == 'OR' ? ') ':'') +
+              lexpr + ' ' +
              logicOpr + ' ' +
-             # ( logicOpr == 'OR' ? '( ':'' ) +
              rexpr +
              (logicOpr == 'OR' ? ' )' : '')
     end
