@@ -20,7 +20,6 @@ class Mutation
     # 2. excluded tuples -- exclude
     # 3. if it's missing branch then included rows are missing rows
     @excluded_stat = Column_Stat.new(@excluded_tbl)
-    binding.pry
     target_cols = test_rst.columns
 
     if test_rst.location == 0
@@ -28,13 +27,11 @@ class Mutation
       ## temporarily we assume there's only one missing branch
       ## which is not present in included_tbl by t_result
       branches = queryObj.predicate_tree.branches.map{|br| "'#{br.name}'"}.join(',')
-      @included_stat = Column_Stat.new(@satisfied_tbl,"branch not in (branches)")
+      @included_stat = Column_Stat.new(@satisfied_tbl,"branch not in (test_rst.branches)")
 
       # if location is 0 then add missing node
       add_missing_branch(test_rst.branch_name,test_rst.columns)
     else
-
-
       # modify existing node or remove existing node
       # if all failing rows are missing 
       # then there's 50% possibility of removing the node
@@ -42,8 +39,8 @@ class Mutation
       if removal?(test_rst)
         remove_node(test_rst.location)
       else
-        @included_stats = Column_Stat.new(@satisfied_tbl,"branch = '#{branch_name}'")
-        modify_node(test_rst.location, 1)
+        @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{test_rst.branch_name}'")
+        modify_node(test_rst.location, 1, test_rst.columns)
       end
     end
   end
@@ -96,25 +93,23 @@ class Mutation
   end
 
   # given a parse tree, generate a new predicate to replace the predicate at predicatePath
-  def modify_node(location, optimized = 1)
+  def modify_node(location, optimized = 1, columns = [])
     whereClause = @parse_tree['SELECT']['whereClause']
     predicatePath = whereClause.get_jsonpath_from_val('location', location)
     predicate = JsonPath.new(predicatePath).on(whereClause).first
     fromPT = @parse_tree['SELECT']['fromClause']
     newPredicate = predicate
-
+    element = generate_derived_clause(columns)
     # element = generate_rand_clause(predicate,fromPT,1)
-    element = generate_rand_clause(predicate,fromPT,1)
-    binding.pry
 
     puts 'element'
     pp element
     element.keys.each do |key|
-      newPredicate = mutatePredicate(key, element[key], predicate)
+      newPredicate = mutatePredicate(key, element[key], newPredicate)
     end
     predicatePath = "$..SELECT.whereClause.#{predicatePath.gsub('$..','')}"
-    binding.pry
-    newPS = JsonPath.for(@parse_tree).gsub(predicatePath) { |_v| newPredicate.obj }.obj
+    newPS = JsonPath.for(@parse_tree).gsub(predicatePath) { |_v| newPredicate }.obj
+
     newQuery = ReverseParseTree.reverse(newPS)
     options = { query: newQuery, parseTree: newPS, pkList: @pklist, table: 'neighbor' }
     newQueryObj = QueryObj.new(options)
@@ -124,16 +119,35 @@ class Mutation
   end
 
   def mutatePredicate(type, newVal, predicate)
-    # binding.pry
-    path = case type
-           when 'const'
-             '$..A_CONST.val'
-           when 'col'
-             '$..COLUMNREF.fields'
-           when 'opr'
-             '$..AEXPR.name'
-           end
-    JsonPath.for(predicate).gsub(path) { |_v| newVal }
+    if type == 'opr' && %w(in between).include?(newVal[0].downcase)
+      new_predicate = {}
+      new_predicate[nil] = {}
+      new_predicate[nil]['name'] = newVal[0] == 'in' ? ['='] : ['BETWEEN']
+      new_predicate[nil]['lexpr'] = predicate['AEXPR']['lexpr']
+      new_predicate[nil]['rexpr'] = predicate['AEXPR']['rexpr']
+      new_predicate[nil]['location'] = predicate['AEXPR']['location']
+      new_predicate
+    else
+      path = case type
+             when 'const'
+               '$..A_CONST.val'
+             when 'col'
+               '$..COLUMNREF.fields'
+             when 'opr'
+               '$..AEXPR.name'
+             end
+      if type == 'const' and newVal.is_a? Array
+        oldVal = JsonPath.new('$..rexpr').on(predicate[nil]).first
+        first_old_val = oldVal.is_a?(Array) ? oldVal[0] : oldVal
+        newVal.each do |val|
+          new_val = JsonPath.for(first_old_val).gsub(path) { |_v| val }.obj
+          newVal.delete(val)
+          newVal << new_val
+        end
+        path = '$..rexpr'
+      end
+      JsonPath.for(predicate).gsub(path) { |_v| newVal }.obj
+    end
     # predicate
   end
 
@@ -146,7 +160,7 @@ class Mutation
         end
       else # col = ['colname']
         return candidate if candidate.colname == col[0]
-          end
+      end
     end
   end
 
@@ -216,6 +230,7 @@ class Mutation
 
     target
   end
+
   def generate_rand_clause(predicate,fromPT,optimized)
         # all columns of the same data type
     target = get_mutationTargets(predicate)
@@ -268,35 +283,44 @@ class Mutation
     end
     return element
   end
-
+  def generate_derived_clause(columns)
+    element = {}
+    if columns.count == 1
+      element = derive_clause_from_col(columns[0])
+    elsif columns.count == 0
+      raise "Predicate does not contain column"
+    else
+      target = get_mutationTargets(predicate)
+      oldVal = target['opr']
+      element['opr'] = rand_operator(oldVal, OPR_SYMBOLS)
+    end
+  end
   # derive the clause from given column
   def derive_clause_from_col(col)
     ex_col_stat = @excluded_stat.get_stats(col)
-    in_col_stat = @included_statget_stats(col)
-
-    element['col'] = col.colname
-
-    if in_col_stat.min == in_col_stat.max
-      element['opr'] = '='
-      element['const'] = "'#{in_col_stat.min}'"
-    elsif ex_col_stat.min == ex_col_stat.max
-      element['opr'] = '<>'
-      element['const'] = "'#{ex_col_stat.min}'"
-    elsif ex_col_stat.max < in_col_stat.min
-      element['opr'] = '>='
-      element['const'] = "'#{in_col_stat.min}'"
-    elsif ex_col_stat.min > in_col_stat.max
-      element['opr'] = '<='
-      element['const'] = "'#{in_col_stat.max}'"
-    elsif ex_col_stat.min < in_col_stat.min && ex_col_stat.max > t_col_stat.max
-      element['opr'] = 'between'
-      element['const'] = "('#{in_col_stat.min}','#{in_col_stat.max}')"
+    in_col_stat = @included_stat.get_stats(col)
+    element = {}
+    if in_col_stat['min'] == in_col_stat['max']
+      element['opr'] = ['=']
+      element['const'] = in_col_stat['min']
+    elsif ex_col_stat['min'] == ex_col_stat['max']
+      element['opr'] = ['<>']
+      element['const'] = ex_col_stat['min']
+    elsif ex_col_stat['max'] < in_col_stat['min']
+      element['opr'] = ['>=']
+      element['const'] = in_col_stat['min']
+    elsif ex_col_stat['min'] > in_col_stat['max']
+      element['opr'] = ['<=']
+      element['const'] = in_col_stat['max']
+    elsif ex_col_stat['min'] < in_col_stat['min'] && ex_col_stat['max'] > in_col_stat['max']
+      element['opr'] = ['between']
+      element['const'] = [in_col_stat['min'],in_col_stat['max']]
     else
-      if in_col_stat.dist_count <= ex_col_stat.dist_count
-        element['opr'] = 'in'
+      if in_col_stat['dist_count'] <= ex_col_stat['dist_count']
+        element['opr'] = ['in']
         element['const'] = in_col_stat.get_distinct_vals(col)
       else
-        element['opr'] = 'not in'
+        element['opr'] = ['not in']
         element['const'] = ex_col_stat.get_distinct_vals(col)
       end
     end

@@ -179,13 +179,17 @@ module ReverseParseTree
       exprConstr(where)
     elsif logicOpr == 'BOOLEXPR'
       bool_opr = where[logicOpr]['boolop'] == 0 ? 'AND' : 'OR'
-      where[logicOpr]['args'].map do |arg|
-        expr = whereClauseConst(arg)
-        expr = case  when bool_opr =='OR'
-                then'( '+ expr+' )'
-                else expr
-                end
-      end.join(" #{bool_opr} ")
+      bool_expr = where[logicOpr]['args'].map do |arg|
+                    expr = whereClauseConst(arg)
+                    # expr = case  when bool_opr =='OR'
+                    #         then'( '+ expr+' )'
+                    #         else expr
+                    #         end
+                  end.join(" #{bool_opr} ")
+      if bool_opr =='OR'
+        bool_expr = "(#{bool_expr})"
+      end
+      bool_expr
     else
       lexpr = whereClauseConst(lexpr)
       rexpr = whereClauseConst(rexpr)

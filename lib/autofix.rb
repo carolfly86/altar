@@ -70,7 +70,6 @@ module AutoFix
   end
 
   def self.join_key_fix(join_key_list,parse_tree)
-    # join_rels = JsonPath.on(parse_tree['SELECT']['fromClause'][0]['JOINEXPR'].to_json, '$..relname')
     join_rels = ReverseParseTree.rel_in_from(parse_tree['SELECT']['fromClause'])
     from_query = ''
     ag = AcyclicGraph.new([])

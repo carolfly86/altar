@@ -43,6 +43,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   dbname = script[0...-4]
   query_json = JSON.parse(File.read("sql/#{dbname}/#{script}.json"))
   create_test_result_tbl
+  create_fix_result_tbl
   f_options_list = []
   t_options = {}
   query_json.each do |key, value|
@@ -172,6 +173,9 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
       mutation = Mutation.new(fqueryObj,excluded_tbl,satisfied_tbl)
       test_result = localizeErr.get_test_result
+      best_query = fqueryObj.query
+      best_score = totalScore
+      
       test_result.each do |rst|
         next if rst.suspicious_score.to_i <= 0
 
@@ -179,11 +183,14 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
         neighborQueryObj = mutation.generate_neighbor_query(rst)
 
-        return
-        localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
+        localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
         localizeErr.selecionErr(method)
         new_score = localizeErr.getSuspiciouScore
-        return if new_score['totalScore'] == 0
+        if new_score['totalScore'] < best_score
+          best_query = neighborQueryObj.query
+          best_score = new_score['totalScore']
+        end
+        break if best_score ==0
         # binding.pry
         # puts 'neighborQueryObj query:'
         # pp neighborQueryObj.query
@@ -193,6 +200,8 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         # hc.hill_climbing(k)
         # hc.create_stats_tbl
       end
+      update_fix_result_tbl(idx,tqueryObj.query,best_query, best_score)
+
     end
     # exit 0
   end
@@ -299,6 +308,25 @@ def create_golden_record(tQueryObj)
   #     DBConn.exec(satisfied_query)
   #   end
   # end
+end
+
+def create_fix_result_tbl
+  query = %(DROP TABLE if exists fix_result;
+  CREATE TABLE fix_result
+  (test_id int, tquery text, fixed_query text, final_score int)
+  )
+  DBConn.exec(query)
+end
+
+def update_fix_result_tbl(test_id,tquery,fixed_query, score)
+  fixed_query = fixed_query.gsub("'", "''")
+  tquery = tquery.gsub("'", "''")
+  query =  %(INSERT INTO fix_result
+        select #{test_id},
+        '"#{tquery}"',
+        '"#{fixed_query}"',
+        #{score})
+  DBConn.exec(query)
 end
 
 def create_test_result_tbl

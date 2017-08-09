@@ -11,8 +11,7 @@ class Column_Stat
   def initialize(tbl,predicate = nil)
     @tbl = tbl
     @predicate = predicate
-    @query_template = "SELECT %s from #{@tbl}" 
-                   + ( @predicate.to_s.empty? ? '' : " WHERE #{@predicate}")
+    @query_template = "SELECT %s from #{@tbl}"+( @predicate.to_s.empty? ? '' : " WHERE #{@predicate}")
 
   end
 

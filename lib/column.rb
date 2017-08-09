@@ -24,13 +24,12 @@ class Column
   end
 
   def columnRef
-    relname = relalias.nil? ? @relname : @relaias
-    [relname, @colname]
+    @relalias.nil? ? [@colname] : [@relalias, @colname]
   end
 
   def !=(other)
     if other.class == self.class
-      columnRef != other.columnRef
+      hash != other.hash
     else
       false
     end

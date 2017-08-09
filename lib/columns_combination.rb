@@ -19,7 +19,6 @@ class Columns_Combination
     query = %(select length(replace(0::bit(#{@cnt})::varchar(30),'0',''))::int as ith_combination,
     0::bigint as int_presentation
     FROM generate_series(1,1))
-    # @parseTree = options.fetch(:parseTree,PgQuery.parse(@query).parsetree[0])
     # pp "begin cc: #{Time.now()}"
     DBConn.tblCreation(@table, pkList, query)
 
