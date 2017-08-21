@@ -6,7 +6,6 @@
   },
 	"F":
 	[
-		
 		{
 		"query": "select emp_no,from_date,salary from salaries where ( salary > 110000 and emp_no >90000) or ( from_date > '1993-04-01' and to_date = '1996-04-01')",
 		"pkList": "emp_no,from_date",

@@ -171,27 +171,30 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       excluded_tbl = tqueryObj.create_excluded_tbl
       satisfied_tbl = tqueryObj.create_satisfied_tbl
 
-      mutation = Mutation.new(fqueryObj,excluded_tbl,satisfied_tbl)
+      current_query = fqueryObj.query
+      current_score = totalScore
+      current_queryObj = fqueryObj
+
+
       test_result = localizeErr.get_test_result
-      best_query = fqueryObj.query
-      best_score = totalScore
-      
+
       test_result.each do |rst|
         next if rst.suspicious_score.to_i <= 0
 
         puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
-
+        pp rst.columns
+        mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl)
         neighborQueryObj = mutation.generate_neighbor_query(rst)
-
         localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
         localizeErr.selecionErr(method)
         new_score = localizeErr.getSuspiciouScore
-        if new_score['totalScore'] < best_score
-          best_query = neighborQueryObj.query
-          best_score = new_score['totalScore']
-        end
-        break if best_score ==0
-        # binding.pry
+        # if new_score['totalScore'] < best_score
+        current_query = neighborQueryObj.query
+        current_score = new_score['totalScore']
+        current_queryObj = neighborQueryObj
+        # end
+        break if current_score ==0
+        binding.pry
         # puts 'neighborQueryObj query:'
         # pp neighborQueryObj.query
         # puts 'neighborQueryObj score:'
@@ -200,7 +203,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         # hc.hill_climbing(k)
         # hc.create_stats_tbl
       end
-      update_fix_result_tbl(idx,tqueryObj.query,best_query, best_score)
+      update_fix_result_tbl(idx,tqueryObj.query,current_query, current_score)
 
     end
     # exit 0

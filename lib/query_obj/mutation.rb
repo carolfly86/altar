@@ -1,3 +1,0 @@
-class QueryObj
-  
-end

@@ -1,6 +1,7 @@
 class Mutation
   OPR_SYMBOLS = [['='], ['<>'], ['>'], ['<'], ['>='], ['<=']].freeze
-  REMOVAL_RATIO = 0.3
+  REMOVAL_RATIO = 0
+
 
   def initialize(queryObj,excluded_tbl,satisfied_tbl)
     @queryObj = queryObj
@@ -21,27 +22,39 @@ class Mutation
     # 3. if it's missing branch then included rows are missing rows
     @excluded_stat = Column_Stat.new(@excluded_tbl)
     target_cols = test_rst.columns
-
-    if test_rst.location == 0
+    if test_rst.location == "0"
       ## How to find included rows for missing branch?
       ## temporarily we assume there's only one missing branch
       ## which is not present in included_tbl by t_result
-      branches = queryObj.predicate_tree.branches.map{|br| "'#{br.name}'"}.join(',')
-      @included_stat = Column_Stat.new(@satisfied_tbl,"branch not in (test_rst.branches)")
+      if test_rst.branch_name =~ /missing/
+        branches = @queryObj.predicate_tree.branches.map{|br| "'#{br.name}'"}.join(',')
+        @included_stat = Column_Stat.new(@satisfied_tbl,"branch not in (#{branches})")
+        if  @included_stat.get_count() == 0
+          # no missing branch, try modify existing branch instead
+          # find a branch that is most similar (columns) to missing columns
+          target_branch = @queryObj.predicate_tree.branches.sort_by {|br| br.columns_simialrity(test_rst.columns) }.first
+          @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{target_branch.name}'")
+          modify_branch(target_branch.name,test_rst.columns,'modify')
+        else
+          # if location is 0 then add missing node
+          add_missing_branch(test_rst.branch_name,test_rst.columns)
+        end
 
-      # if location is 0 then add missing node
-      add_missing_branch(test_rst.branch_name,test_rst.columns)
+      else
+        @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{test_rst.branch_name}'")
+        modify_branch(test_rst.branch_name,test_rst.columns,'add')
+      end
     else
       # modify existing node or remove existing node
       # if all failing rows are missing 
       # then there's 50% possibility of removing the node
       # else 0%
-      if removal?(test_rst)
-        remove_node(test_rst.location)
-      else
-        @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{test_rst.branch_name}'")
-        modify_node(test_rst.location, 1, test_rst.columns)
-      end
+      # if removal?(test_rst)
+      #   remove_node(test_rst.location)
+      # else
+      @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{test_rst.branch_name}'")
+      modify_node(test_rst.branch_name,test_rst.node_name,test_rst.location, 1, test_rst.columns)
+      # end
     end
   end
 
@@ -57,77 +70,219 @@ class Mutation
 
   def add_missing_branch(branches,columns)
 
-    # if branches =~ /missing_branch/
-    #   num_of_branches = branches.gsub('missing_branch','').to_i
-    #   new_clause = 1.upto(num_of_branches).map do |_i|
-    #     add_missing_node(columns)
-    #   end.join(' OR ')
+    if branches =~ /missing_branch/
+      num_of_branches = branches.gsub('missing_branch','').to_i
+      new_clause = 1.upto(num_of_branches).map do |_i|
+                      add_missing_node(columns)
+                    end.join(' OR ')
 
-    # else
-    new_clause = add_missing_node(columns)
-    # end
-    new_query = @query + " OR #{new_clause}"
+    else
+      new_clause = add_missing_node(columns)
+    end
+    new_query = mutate_predicate(branches,nil,new_clauses,nil)
+    pp new_query
     neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
     return neighborObj
   end
+
+  # def add_node_to_branch(branch,columns)
+  #   new_clauses = add_missing_node(columns)
+  #   new_where_clause = @queryObj.predicate_tree.branches.map do |br|
+  #                         node_query = br.nodes.map{|nd| nd.query }.join(' AND ')
+  #                         if br.name == branch
+  #                           node_query = node_query + ' AND '+ new_clauses
+  #                         end
+  #                         '( ' + node_query + ' )'
+  #                       end.join(' OR ')
+  #   new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
+  #   neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
+  #   return neighborObj
+  # end
+
+  def modify_branch(branch,columns,action)
+    new_clauses = add_missing_node(columns)
+    new_where_clause = mutate_predicate(branch,nil,new_clauses,action)
+    new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
+    pp new_query
+    neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
+    return neighborObj
+  end
+
+  def mutate_predicate(branch,node,new_clauses,action)
+    query = @queryObj.predicate_tree.branches.map do |br|
+            branch_query = br.nodes.map{|nd| nd.query }.join(' AND ')
+
+            if br.name == branch
+              # add missing node to branch
+              if action == 'add'
+                branch_query = branch_query + ' AND '+ new_clauses
+              # modify branch
+              elsif action == 'modify'
+                # modify entire branch when node is nil
+                if node.nil?
+                  branch_query =  new_clauses
+                # modify node in branch
+                else
+                  branch_query = br.nodes.map do |nd|
+                                  nd.name == node ? new_clauses : nd.query
+                                end.join(' AND ')
+                end
+              elsif action == 'delete'
+                # delete entire branch when node is nil
+                if node.nil?
+                  branch_query =  ''
+                # delete node in branch
+                else
+                  branch_query = br.nodes.map do |nd|
+                                  nd.name == node ? '' : nd.query 
+                                end.join(' AND ')
+                end
+              end
+            end
+            branch_query == '' ? '' : '( ' + branch_query + ' )'
+          end.select{|q| q!=''}.join(' OR ')
+    if branch =~ /missing_branch/
+      query = query + ' OR ( '+new_clauses+')'
+    end
+    query
+  end
+
+  def const_element_to_s( opr,const_element, col_typcategory)
+    if const_element.is_a? Array
+      # in/not in
+      if ['in', 'not in'].include?(opr.downcase)
+        '( ' +(const_element.map{|const| const.to_s.str_numeric_rep(col_typcategory) }.join(',')) +' )'
+      # between
+      else
+        const_element.map{|const| const.to_s.str_numeric_rep(col_typcategory) }.join(' AND ')
+      end
+    else
+      const_element.to_s.str_numeric_rep(col_typcategory)
+    end
+  end
+
   def add_missing_node(columns)
-    columns.map do |col|
-                  opr = nil
-                  opr = rand_operator(opr, OPR_SYMBOLS)
-                  const = optimized_rand_constant(col, opr)
-                  "#{col.fullname} #{opr} #{const}" 
+
+    eq_cols_clauses = find_eq_cols_clauses(columns)
+    remaining_clauses = columns.map do |col|
+                  # opr = nil
+                  # opr = rand_operator(opr, OPR_SYMBOLS)
+                  element = derive_clause_from_col(col)
+                  # const = optimized_rand_constant(col, opr)
+                  opr = element['opr'][0]
+                  "#{col.fullname} #{opr} #{const_element_to_s(opr, element['const'],col.typcategory)}" 
                 end.join(' AND ')
+    new_clauses = eq_cols_clauses != '' && remaining_clauses != '' ? (eq_cols_clauses + ' AND ' + remaining_clauses) : (eq_cols_clauses + remaining_clauses)
+    new_clauses
+  end
+
+  def find_eq_cols_clauses(columns)
+    same_type_cols = columns.group_by {|c| c.datatype}.select{|k,v| v.count>1}
+    eq_clauses = []
+    same_type_cols.each do |datatype, cols|
+      cols.combination(2).each do |cp|
+        opr = @included_stat.compare_two_columns(cp[0],cp[1],['='])
+        if opr == '='
+          clause = "#{cp[0].select_name} = #{cp[1].select_name}"
+          eq_clauses << clause
+          columns.delete(cp[0])
+          columns.delete(cp[1])
+        end
+      end
+    end
+    return eq_clauses.join(' AND ')
   end
 
   def remove_node(location)
     predicatePath = @parse_tree.get_jsonpath_from_val('location', location)
 
-    newPS = JsonPath.for(@parse_tree).delete(predicatePath)
+    # newPS = JsonPath.for(@parse_tree).delete(predicatePath)
     newQuery = ReverseParseTree.reverse(newPS.obj)
-    options = { query: newQuery, parseTree: newPS.obj, pkList: @pkList, table: 'neighbor' }
+    options = { query: newQuery, pkList: @pkList, table: 'neighbor' }
     newQueryObj = QueryObj.new(options)
     pp 'new query'
     pp newQuery
     newQueryObj
 
+  end
+
+  def const_clause_from_element(element,columns,location)
+    if columns.count > 1
+      # if more than 1 columns defined 
+      # then only operater can be mutated
+      "#{columns[0].select_name} #{element['opr'][0]} #{columns[1].select_name} "
+    else
+      col = columns[0]
+      whereClause = @parse_tree['SELECT']['whereClause']
+      predicatePath = whereClause.get_jsonpath_from_val('location', location)
+      predicate = JsonPath.new(predicatePath).on(whereClause).first
+
+      opr = get_val_from_element_or_predicate(element,predicate,'opr')[0]
+      const = get_val_from_element_or_predicate(element,predicate,'const')
+      "#{col.fullname} #{opr} #{const_element_to_s(opr, const, col.typcategory)}" 
+    end
+  end
+
+  # get the value of type (opr or const) from element (if exists)
+  # otherwise from existing predicate
+  def get_val_from_element_or_predicate(element,predicate,type)
+    if element.keys.include?(type)
+      element[type]
+    else
+      path = case type
+           when 'const'
+             '$..A_CONST.val'
+           when 'col'
+             '$..COLUMNREF.fields'
+           when 'opr'
+             '$..AEXPR.name'
+           end
+      if type == 'const' and newVal.is_a? Array
+        path = '$..AEXPR.rexpr..fields'
+      end
+      JsonPath.new(path).on(predicate).flatten
+    end
   end
 
   # given a parse tree, generate a new predicate to replace the predicate at predicatePath
-  def modify_node(location, optimized = 1, columns = [])
-    whereClause = @parse_tree['SELECT']['whereClause']
-    predicatePath = whereClause.get_jsonpath_from_val('location', location)
-    predicate = JsonPath.new(predicatePath).on(whereClause).first
-    fromPT = @parse_tree['SELECT']['fromClause']
-    newPredicate = predicate
+  def modify_node(branch,node,location, optimized = 1, columns = [])
+    # fromPT = @parse_tree['SELECT']['fromClause']
+    # newPredicate = predicate
     element = generate_derived_clause(columns)
     # element = generate_rand_clause(predicate,fromPT,1)
+    unless element == {}
+      puts 'element'
+      pp element
 
-    puts 'element'
-    pp element
-    element.keys.each do |key|
-      newPredicate = mutatePredicate(key, element[key], newPredicate)
+      # predicatePath = "$..SELECT.whereClause.#{predicatePath.gsub('$..','')}"
+      # newPS = JsonPath.for(@parse_tree).gsub(predicatePath) { |_v| newPredicate }.obj
+      # newQuery = ReverseParseTree.reverse(newPS)
+      new_clauses = const_clause_from_element(element,columns,location)
+      new_where_clause = mutate_predicate(branch,node,new_clauses,'modify')
+
+    else
+      # remove node if element is {}
+      new_where_clause = mutate_predicate(branch,node,'','delete')
     end
-    predicatePath = "$..SELECT.whereClause.#{predicatePath.gsub('$..','')}"
-    newPS = JsonPath.for(@parse_tree).gsub(predicatePath) { |_v| newPredicate }.obj
 
-    newQuery = ReverseParseTree.reverse(newPS)
-    options = { query: newQuery, parseTree: newPS, pkList: @pklist, table: 'neighbor' }
-    newQueryObj = QueryObj.new(options)
+    new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
     pp 'new query'
-    pp newQuery
+    pp new_query
+    options = { query: new_query, pkList: @pklist, table: 'neighbor' }
+    newQueryObj = QueryObj.new(options)
     newQueryObj
   end
 
-  def mutatePredicate(type, newVal, predicate)
-    if type == 'opr' && %w(in between).include?(newVal[0].downcase)
-      new_predicate = {}
-      new_predicate[nil] = {}
-      new_predicate[nil]['name'] = newVal[0] == 'in' ? ['='] : ['BETWEEN']
-      new_predicate[nil]['lexpr'] = predicate['AEXPR']['lexpr']
-      new_predicate[nil]['rexpr'] = predicate['AEXPR']['rexpr']
-      new_predicate[nil]['location'] = predicate['AEXPR']['location']
-      new_predicate
-    else
+  def mutate_predicate_by_path(type, newVal, predicate)
+    # if type == 'opr' && %w(in between).include?(newVal[0].downcase)
+    #   new_predicate = {}
+    #   new_predicate[nil] = {}
+    #   new_predicate[nil]['name'] = newVal[0] == 'in' ? ['='] : ['BETWEEN']
+    #   new_predicate[nil]['lexpr'] = predicate['AEXPR']['lexpr']
+    #   new_predicate[nil]['rexpr'] = predicate['AEXPR']['rexpr']
+    #   new_predicate[nil]['location'] = predicate['AEXPR']['location']
+    #   new_predicate
+    # else
       path = case type
              when 'const'
                '$..A_CONST.val'
@@ -137,17 +292,18 @@ class Mutation
                '$..AEXPR.name'
              end
       if type == 'const' and newVal.is_a? Array
-        oldVal = JsonPath.new('$..rexpr').on(predicate[nil]).first
-        first_old_val = oldVal.is_a?(Array) ? oldVal[0] : oldVal
+        oldVal = JsonPath.new('$..rexpr').on(predicate).first
+        # first_old_val = oldVal.is_a?(Array) ? oldVal[0] : oldVal
+        binding.pry
         newVal.each do |val|
-          new_val = JsonPath.for(first_old_val).gsub(path) { |_v| val }.obj
+          new_val = JsonPath.for(oldVal).gsub(path) { |_v| val }.obj
           newVal.delete(val)
           newVal << new_val
         end
         path = '$..rexpr'
       end
       JsonPath.for(predicate).gsub(path) { |_v| newVal }.obj
-    end
+    # end
     # predicate
   end
 
@@ -283,6 +439,7 @@ class Mutation
     end
     return element
   end
+
   def generate_derived_clause(columns)
     element = {}
     if columns.count == 1
@@ -290,16 +447,22 @@ class Mutation
     elsif columns.count == 0
       raise "Predicate does not contain column"
     else
-      target = get_mutationTargets(predicate)
-      oldVal = target['opr']
-      element['opr'] = rand_operator(oldVal, OPR_SYMBOLS)
+      operator = @included_stat.compare_two_columns(columns[0],columns[1])
+      element['opr'] = [operator]
     end
+    element
   end
+
   # derive the clause from given column
   def derive_clause_from_col(col)
+    element = {}
+    abort('Unable to fix Non numeric or Datetime column') unless %(N D).include?(col.typcategory)
     ex_col_stat = @excluded_stat.get_stats(col)
     in_col_stat = @included_stat.get_stats(col)
-    element = {}
+    puts 'ex_col_stat'
+    pp ex_col_stat
+    puts 'in_col_stat'
+    pp in_col_stat
     if in_col_stat['min'] == in_col_stat['max']
       element['opr'] = ['=']
       element['const'] = in_col_stat['min']
@@ -316,12 +479,16 @@ class Mutation
       element['opr'] = ['between']
       element['const'] = [in_col_stat['min'],in_col_stat['max']]
     else
-      if in_col_stat['dist_count'] <= ex_col_stat['dist_count']
-        element['opr'] = ['in']
-        element['const'] = in_col_stat.get_distinct_vals(col)
+      if in_col_stat['dist_count'] <= 10 or ex_col_stat['dist_count'] <= 10
+        if in_col_stat['dist_count'] <= ex_col_stat['dist_count']
+          element['opr'] = ['in']
+          element['const'] = @included_stat.get_distinct_vals(col)
+        else
+          element['opr'] = ['not in']
+          element['const'] = @excluded_stat.get_distinct_vals(col)
+        end
       else
-        element['opr'] = ['not in']
-        element['const'] = ex_col_stat.get_distinct_vals(col)
+        element = {}
       end
     end
 

@@ -30,4 +30,8 @@ class Branch
     end
     @columns
   end
+
+  def columns_simialrity(other_columns)
+    ( self.columns.to_set ^ other_columns.to_set ).count
+  end
 end

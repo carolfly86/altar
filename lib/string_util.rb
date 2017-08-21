@@ -1,3 +1,5 @@
+require 'bigdecimal'
+
 class String
   def is_integer?
     to_s.to_i.to_s == to_s
@@ -8,8 +10,35 @@ class String
     is_integer? ? self : "'" + gsub("'", "''") + "'"
   end
 
+  def to_numeric
+    if self.is_number?
+      num = BigDecimal.new(self)
+      if num.frac == 0
+        num.to_i
+      else
+        num.to_f
+      end
+    else
+      self
+    end
+  end
+
+  def to_datetime
+    Time.parse(self)
+  end
+
+  def str_numeric_rep(type_category)
+    type_category == 'N' ? self : "'" + gsub("'", "''") + "'"
+  end
+
   def is_number?
     true if Float(self)
+  rescue
+    false
+  end
+
+  def is_datetime?
+    true if Time.parse(self)
   rescue
     false
   end

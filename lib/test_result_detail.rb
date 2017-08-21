@@ -9,7 +9,7 @@ class Test_Result_Detail
     rst_hash = {}
     rst_hash['total'] = 0
     rst.each do |r|
-      rst_hash[r['type']] = r['count']
+      rst_hash[r['type']] = r['count'].to_i
       rst_hash['total'] = 0+r['count'].to_i
     end
     rst_hash

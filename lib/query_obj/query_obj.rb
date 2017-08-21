@@ -10,7 +10,6 @@ class QueryObj
   :all_cols, :all_cols_select,
   :predicate_tree
   attr_accessor :score
-  OPR_SYMBOLS = [['='], ['<>'], ['>'], ['<'], ['>='], ['<=']].freeze
 
   def initialize(options)
     script = options.fetch(:queryJson, '')
@@ -111,6 +110,8 @@ class QueryObj
     return @full_rst_tbl
   end
 
+
+
   # create a table containing all rows excluded from query
   def create_excluded_tbl
     unless defined? @excluded_tbl
@@ -138,7 +139,7 @@ class QueryObj
 
       branch_queries = get_all_branch_queries
       @satisfied_tbl = "#{@table}_satisfied"
-      pk_list =  @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ')
+      pk_list =  @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ') + ', branch'
       branch_queries.each_with_index do |brq,idx|
         branch = brq.keys[0]
         predicate = brq[branch]
@@ -149,6 +150,7 @@ class QueryObj
         else
           query = "INSERT INTO #{@satisfied_tbl} #{query}"
         end
+        puts query
         DBConn.exec(query)
       end
     end
@@ -178,8 +180,8 @@ class QueryObj
 
   def all_cols_select
     @all_cols_select ||= @all_cols.map do |field|
-      col = field.relalias.nil? ? "#{field.relname}.#{field.colname}" : "#{field.relalias}.#{field.colname}"
-      "#{col} as #{field.renamed_colname}"
+      # col = field.relalias.nil? ? "#{field.relname}.#{field.colname}" : "#{field.relalias}.#{field.colname}"
+      "#{field.select_name} as #{field.renamed_colname}"
     end.join(',')
   end
 

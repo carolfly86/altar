@@ -6,6 +6,7 @@
   },
 	"F":
 	[
+
 		{
 		"query": "select emp_no,from_date,salary from salaries where salary > 60000 and ( from_date = '1993-04-01' or to_date = '1993-04-01')",
 		"pkList": "emp_no,from_date",
@@ -16,7 +17,7 @@
 		"pkList": "emp_no,from_date",
 		"relevent": ["PH0-N1","PH1-N1"]
 		},
-		{
+				{
 		"query": "select emp_no,from_date,salary from salaries where salary > 60000 and ( to_date = '1996-04-01' or to_date = '1993-04-01')",
 		"pkList": "emp_no,from_date",
 		"relevent": ["PH0-N2"]
