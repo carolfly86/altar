@@ -158,19 +158,19 @@ class QueryObj
   end
 
   def get_excluded_query()
-    predicate_tree.branches.map do |br|
+    @predicate_tree.branches.map do |br|
       br.nodes.map { |nd| "NOT (#{nd.query})" }.join(' AND ')
     end.join(' AND ')
   end
 
   def get_branch_query(branch_name)
-    branch = predicate_tree.branches.find{|br| br.name == branch_name}
+    branch = @predicate_tree.branches.find{|br| br.name == branch_name}
     branch.nodes.map { |nd| nd.query }.join(' AND ')
   end
 
   def get_all_branch_queries()
     br_queries = []
-    predicate_tree.branches.each do |br|
+    @predicate_tree.branches.each do |br|
       brq = {}
       brq[br.name] = get_branch_query(br.name)
       br_queries << brq

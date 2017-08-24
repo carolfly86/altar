@@ -66,6 +66,16 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   end
 
   tqueryObj = QueryObj.new(t_options)
+
+  tqueryObj.predicate_tree_construct('t', true, 0)
+  excluded_tbl = tqueryObj.create_excluded_tbl
+  satisfied_tbl = tqueryObj.create_satisfied_tbl
+  attributes = tqueryObj.all_cols.select do |col|
+                  %(N D).include? col.typcategory
+                end
+  dcm = DecisionTreeMutation.new(attributes)
+  dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script)
+  return
   # pp tqueryObj.parseTree
   # return
   # create Golden record
