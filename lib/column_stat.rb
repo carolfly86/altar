@@ -2,14 +2,20 @@ require 'time'
 require_relative 'db_connection'
 
 class Column_Stat
-  attr_reader :min, :max, :count, :dist_count
+  attr_reader :min, :max, :count, :dist_count, :query_template
   STATS = {
       "min": {"func": "min(%s)", "type": "text" },
-      "max": {"func": "max(%s)", "type": "text" },
-      "count": {"func": "count(%s)", "type": "int" },
-      "dist_count": {"func": "count(distinct %s)", "type": "int" }
+      "max": {"func": "max(%s)", "type": "text" }
     }
-
+  BOOL_STATS = {
+      "bool_or": {"func": "bool_or(%s)", "type": "bool" },
+      "bool_and": {"func": "bool_and(%s)", "type": "bool" }
+    }
+  COUNT_STATS = {
+      "count": {"func": "count(%s)", "type": "int" },
+      "dist_count": {"func": "count(distinct %s)+count(case when %s is null then 1 else 0 end)", "type": "int" },
+      "is_null_count": {"func": "count(case when %s is null then 1 else 0 end)", "type": "int" }
+  }
   OPR_SYMBOLS = ['=', '>', '<', '>=', '<=', '<>'].freeze
 
   def initialize(tbl,predicate = nil)
@@ -20,17 +26,19 @@ class Column_Stat
   end
 
   def get_stats(col)
-    select_list = STATS.map do |stat, info|
-                  info[:func] % [col.renamed_colname] +" as #{stat}"
+    stats = col.typcategory == 'B' ? BOOL_STATS : STATS
+    stats.merge!(COUNT_STATS)
+    select_list = stats.map do |stat, info|
+                  info[:func] % [col.renamed_colname, col.renamed_colname] +" as #{stat}"
                 end.join(', ')
     query = @query_template % [select_list]
     rst = DBConn.exec(query)
     result ={}
     rst[0].each do |key,val|
-      result[key] = if col.typcategory == 'D' and %w(min max).include?(key)
-                      val
+      result[key] = if col.is_numeric_type? or COUNT_STATS.keys.include?(key.to_sym)
+                      val.nil? ? val : val.to_numeric
                     else
-                      val.to_numeric
+                      val
                     end
     end
     return result

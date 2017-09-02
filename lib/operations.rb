@@ -1,38 +1,31 @@
-def create_all_script_result_tbl
-  query = %(DROP TABLE if exists all_test_result;
-	CREATE TABLE all_test_result
-	(script_name varchar(100), test_id int, m_u_tuple_count bigint, duration bigint, total_score bigint,
-	harmonic_mean float(2), jaccard float(2), column_cnt int,
-	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
-	sober_hm float(2), liblit_hm float(2),mw_hm float(2),crosstab_hm float(2),
-	tarantular_duration int, total_test_cnt int);)
-  # pp query
-  DBConn.exec(query)
-end
 
-def dump_result(script)
-  query = " insert into all_test_result
-	select '#{script}',
-	test_id,
-	m_u_tuple_count ,
-	duration ,
-	total_score ,
-	harmonic_mean ,
-	jaccard ,
-	column_cnt ,
-	tarantular_hm ,
-	ochihai_hm ,
-	kulczynski2_hm ,
-	naish2_hm ,
-	wong1_hm,
-	sober_hm ,
-	liblit_hm ,
-	mw_hm ,
-	crosstab_hm ,
-	tarantular_duration ,
-	total_test_cnt
-	from test_result"
-  DBConn.exec(query)
+def ds_learning(script)
+  dbname = script[0...-4]
+  query_json = JSON.parse(File.read("sql/#{dbname}/#{script}.json"))
+  f_options_list = []
+  t_options = {}
+
+  query_json.each do |key, value|
+    if key == 'T'
+      query = value['query']
+      pk_list = value['pkList']
+      t_options = { query: query, pkList: pk_list, table: 't_result' }
+      # tqueryObj = QueryObj.new(t_options)
+    end
+  end
+
+  tqueryObj = QueryObj.new(t_options)
+
+  tqueryObj.predicate_tree_construct('t', true, 0)
+
+  excluded_tbl = tqueryObj.create_excluded_tbl
+  satisfied_tbl = tqueryObj.create_satisfied_tbl
+  # attributes = tqueryObj.all_cols.select do |col|
+  #                 %(N D).include? col.typcategory
+  #               end
+  dcm = DecisionTreeMutation.new(tqueryObj.all_cols)
+  dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script)
+
 end
 
 def faultLocalization(script, golden_record_opr, method, auto_fix)
@@ -41,6 +34,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   #         n --- new
   # dbname = script.split('_')[0]
   dbname = script[0...-4]
+  script_type = script[-3]
   query_json = JSON.parse(File.read("sql/#{dbname}/#{script}.json"))
   create_test_result_tbl
   create_fix_result_tbl
@@ -67,15 +61,6 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
   tqueryObj = QueryObj.new(t_options)
 
-  tqueryObj.predicate_tree_construct('t', true, 0)
-  excluded_tbl = tqueryObj.create_excluded_tbl
-  satisfied_tbl = tqueryObj.create_satisfied_tbl
-  attributes = tqueryObj.all_cols.select do |col|
-                  %(N D).include? col.typcategory
-                end
-  dcm = DecisionTreeMutation.new(attributes)
-  dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script)
-  return
   # pp tqueryObj.parseTree
   # return
   # create Golden record
@@ -107,7 +92,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       puts "fault localization start time: #{beginTime}"
       localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
 
-      if auto_fix
+      if script_type == 'j'
         puts 'fault localize: Join Key Errors'
         new_join_key,old_join_key = localizeErr.join_key_err
         if new_join_key.count >0
@@ -175,8 +160,9 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
     if auto_fix
       puts 'begin fix'
+      startTime = Time.now
       # create t_result stats table
-      tqueryObj.create_stats_tbl
+      # tqueryObj.create_stats_tbl
       # fqueryObj.create_stats_tbl
       excluded_tbl = tqueryObj.create_excluded_tbl
       satisfied_tbl = tqueryObj.create_satisfied_tbl
@@ -187,24 +173,39 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
 
       test_result = localizeErr.get_test_result
-
+      iterate_cnt = 1
       test_result.each do |rst|
         next if rst.suspicious_score.to_i <= 0
 
         puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
         pp rst.columns
-        mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl)
-        neighborQueryObj = mutation.generate_neighbor_query(rst)
-        localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
-        localizeErr.selecionErr(method)
-        new_score = localizeErr.getSuspiciouScore
-        # if new_score['totalScore'] < best_score
-        current_query = neighborQueryObj.query
-        current_score = new_score['totalScore']
-        current_queryObj = neighborQueryObj
+        faulty_script = "#{script}_#{idx.to_s}"
+        mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
+        is_ds = false
+        neighborQueryObj = mutation.generate_neighbor_query(rst,is_ds)
+        unless is_ds
+          localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
+          localizeErr.selecionErr(method)
+          new_score = localizeErr.getSuspiciouScore
+          # if new_score['totalScore'] < best_score
+          current_query = neighborQueryObj.query
+          current_score = new_score['totalScore']
+          current_queryObj = neighborQueryObj
+          if current_score ==0
+            break
+          # else
+          #   if f_options[:relevent].count() == 1
+          #     col_mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
+          #     mu_column = true
+          #     neighborQueryObj = col_mutation.generate_neighbor_query(rst,is_ds,mu_column)
+
+          #   end
+          end
+        else
+          break if iterate_cnt >= f_options[:relevent].count()
+        end
+        iterate_cnt = iterate_cnt + 1
         # end
-        break if current_score ==0
-        binding.pry
         # puts 'neighborQueryObj query:'
         # pp neighborQueryObj.query
         # puts 'neighborQueryObj score:'
@@ -213,10 +214,40 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         # hc.hill_climbing(k)
         # hc.create_stats_tbl
       end
-      update_fix_result_tbl(idx,tqueryObj.query,current_query, current_score)
+      endTime= Time.now
+      fix_duration = (endTime - startTime).to_i
+      update_fix_result_tbl(idx,tqueryObj.query,current_query,fix_duration, current_score)
 
     end
     # exit 0
+  end
+end
+
+def mutate(test_rst,tqueryObj,fl_method,is_ds,mutation,relevent_cnt)
+  puts "fixing node: #{test_rst.branch_name} #{test_rst.node_name} at location #{test_rst.location}"
+  pp test_rst.columns
+  faulty_script = "#{script}_#{idx.to_s}"
+  # mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
+  is_ds = false
+  neighborQueryObj = mutation.generate_neighbor_query(test_rst,is_ds)
+  unless is_ds
+    localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
+    localizeErr.selecionErr(fl_method)
+    new_score = localizeErr.getSuspiciouScore
+    # if new_score['totalScore'] < best_score
+    current_query = neighborQueryObj.query
+    current_score = new_score['totalScore']
+    current_queryObj = neighborQueryObj
+    if current_score > 0
+      # when there's only one fault and can't be fixd by modifying expr
+      # we restart fix with a similar column
+      if relevent_cnt == 1
+        col_mutation = Mutation.new(mutation.queryObj, mutation.excluded_tbl, mutation.satisfied_tbl,mutation.dbname,mutation.script)
+        rst=col_mutation.candidate_cols(rst.columns)
+        neighborQueryObj = col_mutation.generate_neighbor_query(rst,is_ds,mu_column)
+
+      end
+    end
   end
 end
 
@@ -323,123 +354,4 @@ def create_golden_record(tQueryObj)
   # end
 end
 
-def create_fix_result_tbl
-  query = %(DROP TABLE if exists fix_result;
-  CREATE TABLE fix_result
-  (test_id int, tquery text, fixed_query text, final_score int)
-  )
-  DBConn.exec(query)
-end
 
-def update_fix_result_tbl(test_id,tquery,fixed_query, score)
-  fixed_query = fixed_query.gsub("'", "''")
-  tquery = tquery.gsub("'", "''")
-  query =  %(INSERT INTO fix_result
-        select #{test_id},
-        '"#{tquery}"',
-        '"#{fixed_query}"',
-        #{score})
-  DBConn.exec(query)
-end
-
-def create_test_result_tbl
-  query = %(DROP TABLE if exists test_result;
-	CREATE TABLE test_result
-	(test_id int, fquery text, tquery text, m_u_tuple_count bigint, duration bigint, total_score bigint,
-	harmonic_mean float(2), jaccard float(2), column_cnt int,
-	tarantular_rank varchar(50), ochihai_rank varchar(50), kulczynski2_rank varchar(50), naish2_rank varchar(50),wong1_rank varchar(50),
-	sober_rank varchar(50), liblit_rank varchar(50),mw_rank varchar(50),
-	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
-	sober_hm float(2), liblit_hm float(2),mw_hm float(2),crosstab_hm float(2),
-	tarantular_duration int, total_test_cnt int);)
-  # pp query
-  DBConn.exec(query)
-
-  query = %(DROP TABLE if exists test_result_detail;
- 	CREATE TABLE test_result_detail
- 	(test_id int, branch_name varchar(30), node_name varchar(30), query text, columns text, score bigint);)
-  # pp query
-  DBConn.exec(query)
-end
-
-def update_test_result_tbl(test_id, fquery, tquery, m_u_tuple_count, duration, total_score, relevent, rank, tarantular_duration, total_test_cnt)
-  fquery = fquery.gsub("'", "''")
-  tquery = tquery.gsub("'", "''")
-  query =  %(INSERT INTO test_result
-				select #{test_id},
-				'"#{fquery}"',
-				'"#{tquery}"',
-				#{m_u_tuple_count},
-				#{duration},
-				#{total_score},
-				0,
-				0,
-				0,
-				'#{rank['tarantular_rank']}',
-				'#{rank['ochihai_rank']}',
-				'#{rank['kulczynski2_rank']}',
-				'#{rank['naish2_rank']}',
-				'#{rank['wong1_rank']}',
-				'#{rank['sober_rank']}',
-				'#{rank['liblit_rank']}',
-				'#{rank['mw_rank']}',
-				'#{rank['tarantular_hm']}',
-				'#{rank['ochihai_hm']}',
-				'#{rank['kulczynski2_hm']}',
-				'#{rank['naish2_hm']}',
-				'#{rank['wong1_hm']}',
-				'#{rank['sober_hm']}',
-				'#{rank['liblit_hm']}',
-				'#{rank['mw_hm']}',
-				'#{rank['crosstab_hm']}',
-				#{tarantular_duration},
-				#{total_test_cnt}
-
-			)
-  # pp query
-  DBConn.exec(query)
-
-  query = %(INSERT INTO test_result_detail
- 				select #{test_id},
- 				branch_name,
- 				node_name,
- 				query,
- 				columns,
- 				suspicious_score
- 				from node_query_mapping
- 				where type = 'f' and suspicious_score >0
- 			)
-  # puts query
-  DBConn.exec(query)
-
-  query = "select #{test_id},
- 				branch_name,
- 				node_name,
- 				query,
- 				columns,
- 				suspicious_score
- 				from node_query_mapping
- 				where type = 'f' and suspicious_score >0"
-  res = DBConn.exec(query)
-  puts 'result:'
-  answer = Set.new
-  res.each do |r|
-    # pp r
-    predicate = "#{r['branch_name']}-#{r['node_name']}"
-    answer.add(predicate)
-  end
-
-  # update accuracy
-  # pp relevent.to_a
-  # binding.pry
-  accuracy = Accuracy.new(answer, relevent.to_set)
-  harmonic_mean = accuracy.harmonic_mean
-  jaccard = accuracy.jaccard
-
-  query = QueryBuilder.find_cols_by_data_typcategory('golden_record')
-  res = DBConn.exec(query)
-  column_cnt = res.count - 2
-
-  query = "update test_result set harmonic_mean = #{harmonic_mean}, jaccard = #{jaccard}, column_cnt = #{column_cnt} where test_id = #{test_id}"
-  res = DBConn.exec(query)
-end

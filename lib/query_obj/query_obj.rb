@@ -150,7 +150,7 @@ class QueryObj
         else
           query = "INSERT INTO #{@satisfied_tbl} #{query}"
         end
-        puts query
+        # puts query
         DBConn.exec(query)
       end
     end
@@ -159,8 +159,8 @@ class QueryObj
 
   def get_excluded_query()
     @predicate_tree.branches.map do |br|
-      br.nodes.map { |nd| "NOT (#{nd.query})" }.join(' AND ')
-    end.join(' AND ')
+      br.nodes.map { |nd| nd.query }.join(' AND ')
+    end.map{|q| "NOT (#{q})"}.join(' AND ')
   end
 
   def get_branch_query(branch_name)

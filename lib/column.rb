@@ -31,6 +31,14 @@ class Column
     @relalias.nil? ? [@colname] : [@relalias, @colname]
   end
 
+  def is_numeric_type?
+    @typcategory == 'N'
+  end
+
+  def is_string_type?
+    @typcategory == 'S'
+  end
+
   def !=(other)
     if other.class == self.class
       hash != other.hash

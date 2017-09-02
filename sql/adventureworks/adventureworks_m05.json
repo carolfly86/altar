@@ -33,7 +33,7 @@
 		"relevent": ["PH1-N4","PH2-N6","PH2-N7"]
 		},
 		{
- 	 	"query": "select purchaseorderid,businessentityid from purchaseorderheader po join employee e on po.employeeid = e.businessentityid  where (e.jobtitle='Buyer' and e.hiredate > '2010-01-01'and e.vacationhours > 55) or (po.orderdate > '2012-01-01 00:00:00' and po.taxamt > 1000) or (po.orderdate > '2014-01-01 00:00:00' and po.shipmethodid =5) or (po.orderdate < '2014-01-01 00:00:00');",
+ 	 	"query": "select purchaseorderid,businessentityid from purchaseorderheader po join employee e on po.employeeid = e.businessentityid  where (e.jobtitle='Buyer' and e.hiredate > '2010-01-01'and e.vacationhours > 55) or (po.orderdate > '2012-01-01 00:00:00' and po.taxamt > 1000) or (po.orderdate > '2014-01-01 00:00:00' and po.shipmethodid =5 and po.orderdate < '2014-01-01 00:00:00');",
 		"pkList": "purchaseorderid,businessentityid",
 		"relevent": ["PH3-N8"]
 		}

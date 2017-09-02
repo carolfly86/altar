@@ -69,7 +69,7 @@ class Hash
 
   def get_jsonpath_from_val(key, val)
     rst = constr_jsonpath_to_val(key, val)
-    raise "Can't find val #{val} for key #{key} in #{self}" if rst.count == 0
+    return false if rst.count == 0
     last = rst.count - 1
     rst.delete_at(last)
     predicatePath = '$..' + rst.join('.')

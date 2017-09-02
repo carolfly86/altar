@@ -774,7 +774,7 @@ class TupleMutation
 
     # binding.pry if @pk.any?{|pk| pk['col'] == 'e.emp_no' and pk['val'] == '248447'}
 
-    puts eliminate
+    # puts eliminate
     # pp Time.now
     res = DBConn.exec(eliminate)
     # binding.pry if res.cmd_tuples == 0

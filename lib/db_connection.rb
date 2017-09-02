@@ -3,7 +3,7 @@ require 'pg'
 
 module DBConn
   @cfg = YAML.load_file(File.join(File.dirname(__FILE__), '../config/default.yml'))
-  @conn = PG::Connection.open(dbname: @cfg['default']['database'], user: @cfg['default']['user'], password: @cfg['default']['password'])
+  @conn = PG::Connection.open(host: @cfg['default']['host'] ,dbname: @cfg['default']['database'], user: @cfg['default']['user'], password: @cfg['default']['password'])
 
   def self.exec(query)
     @conn.exec(query)
@@ -14,7 +14,7 @@ module DBConn
     # contents = file.read
     # pp contents
     gr_script = "sql/golden_record/#{@cfg['default']['database']}/#{script}_gr.sql"
-    system("psql -d#{@cfg['default']['database']} < #{gr_script}")
+    system("psql -h#{@cfg['default']['host']} -d#{@cfg['default']['database']} -U#{@cfg['default']['user']}< #{gr_script}")
     # file.close()
   end
 
@@ -22,13 +22,13 @@ module DBConn
     # file = File.open(script, "r")
     # contents = file.read
     # pp "pg_dump -t golden_record #{@cfg['default']['database']} > sql/golden_record/#{script}_gr.sql"
-    system("pg_dump -t golden_record #{@cfg['default']['database']} > sql/golden_record/#{@cfg['default']['database']}/#{script}_gr.sql")
+    system("pg_dump -h#{@cfg['default']['host']} -U#{@cfg['default']['user']} -t golden_record #{@cfg['default']['database']} > sql/golden_record/#{@cfg['default']['database']}/#{script}_gr.sql")
     # file.close()
   end
 
   def self.tblCreation(tblName, pkList, query)
     q = QueryBuilder.create_tbl(tblName, pkList, query)
-    puts q
+    # puts q
     exec(q)
   end
 

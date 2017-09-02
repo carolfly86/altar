@@ -32,7 +32,7 @@
 		"relevent": ["PH0-N1","PH1-N2","PH2-N3"]
 		},
 		{
-  		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Manager%' or e.hiredate> '2010-01-01' or e.vacationhours >80 or p.lastname like 'G%' or p.title is not null or e.birthdate > '1980-01-01';",
+  		"query": "select p.businessentityid from Person p join employee e on e.BusinessEntityID = p.BusinessEntityID where e.jobtitle like '%Manager%' or e.hiredate> '2010-01-01' or e.vacationhours >80 or p.lastname like 'G%' or p.title is not null and e.birthdate > '1980-01-01';",
 		"pkList": "businessentityid",
 		"relevent": ["PH5-N6"]
 		}

@@ -1,0 +1,24 @@
+# build local
+docker build --rm=true -t altar .
+
+# run local
+docker run --rm --name "altar" -v /Users/yguo/RubymineProjects/altar/graph:/altar/graph altar "./python-training.sh" 
+
+docker run --rm --name "altar" -v /Users/yguo/RubymineProjects/altar/config:/altar/config -v /Users/yguo/.pgpass:/root/.pgpass altar:ruby "./altar.rb" "-s" "employees_c02" "-g" "i" "-m" "or" "-o" "fl"
+
+
+# build public
+docker build --rm=true -t docker.cvent.net/dbtools/altar:python .
+docker build --rm=true -t docker.cvent.net/dbtools/altar:ruby .
+
+# publish
+docker push docker.cvent.net/dbtools/altar:latest
+
+# pull
+docker pull docker.cvent.net/dbtools/altar:latest
+
+# run public
+docker run --rm --name "altar" -v /Users/yguo/RubymineProjects/altar/graph:/altar/graph:rw docker.cvent.net/dbtools/altar:latest "./python-training.sh DBNAME" 
+
+
+

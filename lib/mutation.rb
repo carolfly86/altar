@@ -1,9 +1,10 @@
+require 'active_support/core_ext/enumerable.rb'
 class Mutation
   OPR_SYMBOLS = [['='], ['<>'], ['>'], ['<'], ['>='], ['<=']].freeze
   REMOVAL_RATIO = 0
 
-
-  def initialize(queryObj,excluded_tbl,satisfied_tbl)
+  attr_reader :queryObj, :excluded_tbl, :satisfied_tbl, :dbname, :script
+  def initialize(queryObj,excluded_tbl,satisfied_tbl,dbname,script)
     @queryObj = queryObj
     @query = queryObj.query
     @pklist = queryObj.pkList
@@ -11,11 +12,13 @@ class Mutation
     @all_cols = queryObj.all_cols
     @excluded_tbl = excluded_tbl
     @satisfied_tbl = satisfied_tbl
+    @dbname = dbname
+    @script = script
   end
 
 
-  def generate_neighbor_query(test_rst)
-
+  def generate_neighbor_query(test_rst,is_ds=false)
+    @is_ds = is_ds
     # only relevant tupes are analyzed
     # 1. included tuples only satisfy branch -- include
     # 2. excluded tuples -- exclude
@@ -28,12 +31,14 @@ class Mutation
       ## which is not present in included_tbl by t_result
       if test_rst.branch_name =~ /missing/
         branches = @queryObj.predicate_tree.branches.map{|br| "'#{br.name}'"}.join(',')
-        @included_stat = Column_Stat.new(@satisfied_tbl,"branch not in (#{branches})")
+        @included_pred = "branch not in (#{branches})"
+        @included_stat = Column_Stat.new(@satisfied_tbl,@included_pred)
         if  @included_stat.get_count() == 0
           # no missing branch, try modify existing branch instead
           # find a branch that is most similar (columns) to missing columns
           target_branch = @queryObj.predicate_tree.branches.sort_by {|br| br.columns_simialrity(test_rst.columns) }.first
-          @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{target_branch.name}'")
+          @included_pred = "branch = '#{target_branch.name}'"
+          @included_stat = Column_Stat.new(@satisfied_tbl,@included_pred)
           modify_branch(target_branch.name,test_rst.columns,'modify')
         else
           # if location is 0 then add missing node
@@ -41,18 +46,13 @@ class Mutation
         end
 
       else
-        @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{test_rst.branch_name}'")
+        @included_pred = "branch = '#{test_rst.branch_name}'"
+        @included_stat = Column_Stat.new(@satisfied_tbl,@included_pred)
         modify_branch(test_rst.branch_name,test_rst.columns,'add')
       end
     else
-      # modify existing node or remove existing node
-      # if all failing rows are missing 
-      # then there's 50% possibility of removing the node
-      # else 0%
-      # if removal?(test_rst)
-      #   remove_node(test_rst.location)
-      # else
-      @included_stat = Column_Stat.new(@satisfied_tbl,"branch = '#{test_rst.branch_name}'")
+      @included_pred = "branch = '#{test_rst.branch_name}'"
+      @included_stat = Column_Stat.new(@satisfied_tbl,@included_pred)
       modify_node(test_rst.branch_name,test_rst.node_name,test_rst.location, 1, test_rst.columns)
       # end
     end
@@ -69,7 +69,7 @@ class Mutation
   end
 
   def add_missing_branch(branches,columns)
-
+    binding.pry if columns.count == 0
     if branches =~ /missing_branch/
       num_of_branches = branches.gsub('missing_branch','').to_i
       new_clause = 1.upto(num_of_branches).map do |_i|
@@ -79,9 +79,13 @@ class Mutation
     else
       new_clause = add_missing_node(columns)
     end
-    new_query = mutate_predicate(branches,nil,new_clauses,nil)
-    pp new_query
-    neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
+    if @is_ds
+      neighborObj = @queryObj
+    else
+      new_query = mutate_predicate(branches,nil,new_clauses,nil)
+      pp new_query
+      neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
+    end
     return neighborObj
   end
 
@@ -100,11 +104,13 @@ class Mutation
   # end
 
   def modify_branch(branch,columns,action)
+    binding.pry if columns.count == 0
     new_clauses = add_missing_node(columns)
     new_where_clause = mutate_predicate(branch,nil,new_clauses,action)
     new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
     pp new_query
-    neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
+
+    neighborObj = @is_ds ? @queryObj : QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
     return neighborObj
   end
 
@@ -164,16 +170,20 @@ class Mutation
   def add_missing_node(columns)
 
     eq_cols_clauses = find_eq_cols_clauses(columns)
-    remaining_clauses = columns.map do |col|
-                  # opr = nil
-                  # opr = rand_operator(opr, OPR_SYMBOLS)
-                  element = derive_clause_from_col(col)
-                  # const = optimized_rand_constant(col, opr)
-                  opr = element['opr'][0]
-                  "#{col.fullname} #{opr} #{const_element_to_s(opr, element['const'],col.typcategory)}" 
-                end.join(' AND ')
-    new_clauses = eq_cols_clauses != '' && remaining_clauses != '' ? (eq_cols_clauses + ' AND ' + remaining_clauses) : (eq_cols_clauses + remaining_clauses)
-    new_clauses
+    return eq_cols_clauses if columns.count == 0 
+
+    if @is_ds
+      derive_clause_from_col_ds(columns)
+      return ''
+    else
+      remaining_clauses = columns.map do |col|
+        element = derive_clause_from_col(col)
+        opr = element['opr'][0]
+        "#{col.fullname} #{opr} #{const_element_to_s(opr, element['const'],col.typcategory)}" 
+        # const = optimized_rand_constant(col, opr)
+      end.join(' AND ')
+      return eq_cols_clauses != '' && remaining_clauses != '' ? (eq_cols_clauses + ' AND ' + remaining_clauses) : (eq_cols_clauses + remaining_clauses)
+    end
   end
 
   def find_eq_cols_clauses(columns)
@@ -214,11 +224,19 @@ class Mutation
     else
       col = columns[0]
       whereClause = @parse_tree['SELECT']['whereClause']
+      pp whereClause
+      pp location
       predicatePath = whereClause.get_jsonpath_from_val('location', location)
-      predicate = JsonPath.new(predicatePath).on(whereClause).first
+      if predicatePath
+        predicate = JsonPath.new(predicatePath).on(whereClause).first
 
-      opr = get_val_from_element_or_predicate(element,predicate,'opr')[0]
-      const = get_val_from_element_or_predicate(element,predicate,'const')
+        opr = get_val_from_element_or_predicate(element,predicate,'opr')[0]
+        const = get_val_from_element_or_predicate(element,predicate,'const')
+      else
+        # cannot find location in predicate !
+        opr = element['opr']
+        const = element['const']
+      end
       "#{col.fullname} #{opr} #{const_element_to_s(opr, const, col.typcategory)}" 
     end
   end
@@ -247,8 +265,9 @@ class Mutation
   # given a parse tree, generate a new predicate to replace the predicate at predicatePath
   def modify_node(branch,node,location, optimized = 1, columns = [])
     # fromPT = @parse_tree['SELECT']['fromClause']
-    # newPredicate = predicate
+
     element = generate_derived_clause(columns)
+
     # element = generate_rand_clause(predicate,fromPT,1)
     unless element == {}
       puts 'element'
@@ -264,12 +283,15 @@ class Mutation
       # remove node if element is {}
       new_where_clause = mutate_predicate(branch,node,'','delete')
     end
-
-    new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
-    pp 'new query'
-    pp new_query
-    options = { query: new_query, pkList: @pklist, table: 'neighbor' }
-    newQueryObj = QueryObj.new(options)
+    unless @is_ds
+      new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
+      pp 'new query'
+      pp new_query
+      options = { query: new_query, pkList: @pklist, table: 'neighbor' }
+      newQueryObj = QueryObj.new(options)
+    else
+      newQueryObj = @queryObj
+    end
     newQueryObj
   end
 
@@ -443,7 +465,12 @@ class Mutation
   def generate_derived_clause(columns)
     element = {}
     if columns.count == 1
-      element = derive_clause_from_col(columns[0])
+      if @is_ds
+        binding.pry if columns.count == 0
+        element = derive_clause_from_col_ds(columns)
+      else
+        element = derive_clause_from_col(columns[0])
+      end
     elsif columns.count == 0
       raise "Predicate does not contain column"
     else
@@ -453,28 +480,51 @@ class Mutation
     element
   end
 
+  def derive_clause_from_col_ds(cols)
+    dcm = DecisionTreeMutation.new(cols)
+    dcm.python_training(@satisfied_tbl,@excluded_tbl,@dbname,@script,true,@included_pred)
+    return {}
+    binding.pry
+  end
+
   # derive the clause from given column
   def derive_clause_from_col(col)
     element = {}
-    abort('Unable to fix Non numeric or Datetime column') unless %(N D).include?(col.typcategory)
+    # abort('Unable to fix Non numeric or Datetime column') unless %(N D).include?(col.typcategory)
     ex_col_stat = @excluded_stat.get_stats(col)
     in_col_stat = @included_stat.get_stats(col)
     puts 'ex_col_stat'
     pp ex_col_stat
     puts 'in_col_stat'
     pp in_col_stat
-    if in_col_stat['min'] == in_col_stat['max']
+    if in_col_stat['is_null_count'] == in_col_stat['count'] && ex_col_stat['is_null_count'] ==0
+      element['opr'] = ['IS']
+      element['const'] = 'NULL'
+    elsif ex_col_stat['is_null_count'] == ex_col_stat['count'] && in_col_stat['is_null_count'] ==0
+      element['opr'] = ['IS NOT']
+      element['const'] = 'NULL'
+    elsif in_col_stat['min'] == in_col_stat['max']
       element['opr'] = ['=']
       element['const'] = in_col_stat['min']
     elsif ex_col_stat['min'] == ex_col_stat['max']
       element['opr'] = ['<>']
       element['const'] = ex_col_stat['min']
     elsif ex_col_stat['max'] < in_col_stat['min']
-      element['opr'] = ['>=']
-      element['const'] = in_col_stat['min']
+      if col.is_string_type?
+        element['opr'] = ['LIKE']
+        element['const'] = native_string_like([in_col_stat['min'],in_col_stat['max']])
+      else
+        element['opr'] = ['>=']
+        element['const'] = in_col_stat['min']
+      end
     elsif ex_col_stat['min'] > in_col_stat['max']
-      element['opr'] = ['<=']
-      element['const'] = in_col_stat['max']
+      if col.is_string_type?
+        element['opr'] = ['LIKE']
+        element['const'] = native_string_like([in_col_stat['min'],in_col_stat['max']])
+      else
+        element['opr'] = ['<=']
+        element['const'] = in_col_stat['max']
+      end
     elsif ex_col_stat['min'] < in_col_stat['min'] && ex_col_stat['max'] > in_col_stat['max']
       element['opr'] = ['between']
       element['const'] = [in_col_stat['min'],in_col_stat['max']]
@@ -488,12 +538,43 @@ class Mutation
           element['const'] = @excluded_stat.get_distinct_vals(col)
         end
       else
-        element = {}
+        # puts 'unable to derive!'
+        # binding.pry unless %(N D).include?(col.typcategory)
+        if col.is_string_type?
+          element['opr'] = ['LIKE']
+          element['const'] = native_string_like([in_col_stat['min'],in_col_stat['max']])
+        else
+          abort 'unable to derive!'
+        end
       end
     end
-
+    pp element
     return element
   end
+
+  def native_string_like(strings)
+    commn_substr = longest_common_substr(strings)
+    if strings.map{|str| str.start_with?(commn_substr) ? 1 : 0}.sum == strings.count()
+      "#{commn_substr}%"
+    elsif strings.map{|str| str.start_with?(commn_substr) ? 1 : 0}.sum == strings.count()
+      "\%#{commn_substr}"
+    else
+      "\%#{commn_substr}\%"
+    end
+  end
+
+  def longest_common_substr(strings)
+    shortest = strings.min_by &:length
+    maxlen = shortest.length
+    maxlen.downto(0) do |len|
+      0.upto(maxlen - len) do |start|
+        substr = shortest[start,len]
+        return substr if strings.all?{|str| str.include? substr }
+      end
+    end
+  end
+
+
   # below functions are used for optimezed random constant generating
 
   def optimized_rand_constant(col, opr)

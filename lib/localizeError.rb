@@ -57,13 +57,11 @@ class LozalizeError
     # generate predicate tree from where clause
     fQueryObj.predicate_tree_construct('f', @is_new, @test_id)
     @predicateTree = fQueryObj.predicate_tree
-
     # root = Tree::TreeNode.new('root', '')
     # @predicateTree = PredicateTree.new('f', @is_new, @test_id)
     # pp @wherePT
     # @predicateTree.build_full_pdtree(@fromPT[0], @wherePT, root)
     @pdtree = @predicateTree.pdtree
-    # binding.pry
     # puts tes
     # @predicateTree.node_query_mapping_insert()
     @fromCondStr = ReverseParseTree.fromClauseConstr(@fromPT)
@@ -163,14 +161,14 @@ class LozalizeError
     if @unwanted_tuple_count > 0
       # query = @unwantedQuery.gsub('tbl2.*',tbl2PK)
       errlist = jointypeTest(unwantedQuery, 'U')
-      unwanted_joinErrList = errList unless errlist.nil?
+      unwanted_joinErrList = errlist unless errlist.nil?
     end
 
     if @missing_tuple_count > 0
       # query = @missingQuery.gsub('tbl2.*',tbl2PK)
 
       errlist = jointypeTest(missingQuery, 'M')
-      missing_joinErrList = errList unless errlist.nil?
+      missing_joinErrList = errlist unless errlist.nil?
     end
 
     # joinErrList = unwanted_joinErrList + missing_joinErrList
@@ -281,7 +279,7 @@ class LozalizeError
     query += !@whereStr.empty? ? "WHERE #{@whereStr} AND #{pkNull}" : " WHERE #{pkNull}"
 
     testQuery = QueryBuilder.subset_test(query, pkQuery)
-
+    puts testQuery
     res = DBConn.exec(testQuery)
     # p testQuery
     result = res[0]['result']
@@ -351,6 +349,7 @@ class LozalizeError
       # p "Unwanted Pk count #{unWantedPK.count()}"
       # create unwanted_tuple_branch table
       # binding.pry
+
       whereErrList = whereCondTest(@unWantedPK, 'U')
       # joinErrList = jointypeErr(query,'U')
     end
@@ -392,7 +391,12 @@ class LozalizeError
       true_query_PT_construct
       constraint_query = constraint_predicate_construct
       # allcolumns_construct()
+      puts 'Missing starts'
+      puts Time.now()
       tuple_mutation_test_with_dup_removal('M', constraint_query)
+      puts 'Unwanted starts'
+      puts Time.now()
+
       tuple_mutation_test_with_dup_removal('U', constraint_query)
     when 'n'
       puts 'new exonerate algorithm'

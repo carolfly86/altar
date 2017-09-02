@@ -154,11 +154,18 @@ module ReverseParseTree
       lexpr = lexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(lexpr) : exprConstr(lexpr)
       # if rexpr is Array then operator is IN or NOT IN
       if rexpr.kind_of?(Array)
-        op = where[logicOpr]['name'][0] == '<>' ? 'NOT IN' : 'IN'
-        rexpr = rexpr.map do |val|
+        # binding.pry
+        op = where[logicOpr]['name'][0]
+        if op.casecmp("BETWEEN") == 0
+          rexpr = rexpr.map do |val|
+                    exprConstr(val)
+                  end.join(' AND ')
+        else
+          rexpr = rexpr.map do |val|
                   exprConstr(val)
                 end.join(',')
-        rexpr = ' ( ' + rexpr + ' )'
+          rexpr = ' ( ' + rexpr + ' )'
+        end
       else
         rexpr = rexpr.keys[0].to_s == 'AEXPR' ? whereClauseConst(rexpr) : exprConstr(rexpr)
       end
