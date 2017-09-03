@@ -23,7 +23,6 @@ class Mutation
     # 1. included tuples only satisfy branch -- include
     # 2. excluded tuples -- exclude
     # 3. if it's missing branch then included rows are missing rows
-    @excluded_stat = Column_Stat.new(@excluded_tbl)
     target_cols = test_rst.columns
     if test_rst.location == "0"
       ## How to find included rows for missing branch?
@@ -139,9 +138,9 @@ class Mutation
                   branch_query =  ''
                 # delete node in branch
                 else
-                  branch_query = br.nodes.map do |nd|
-                                  nd.name == node ? '' : nd.query 
-                                end.join(' AND ')
+                  branch_query = br.nodes.select{|nd| nd.name != node }.map do |nd|
+                                  nd.query 
+                                 end.join(' AND ')
                 end
               end
             end
@@ -163,7 +162,11 @@ class Mutation
         const_element.map{|const| const.to_s.str_numeric_rep(col_typcategory) }.join(' AND ')
       end
     else
-      const_element.to_s.str_numeric_rep(col_typcategory)
+      if opr.casecmp('IS')==0 and const_element.casecmp('NULL') == 0
+        'NULL'
+      else
+        const_element.to_s.str_numeric_rep(col_typcategory)
+      end
     end
   end
 
@@ -224,9 +227,11 @@ class Mutation
     else
       col = columns[0]
       whereClause = @parse_tree['SELECT']['whereClause']
-      pp whereClause
-      pp location
+
+      # pp whereClause
+      # pp location
       predicatePath = whereClause.get_jsonpath_from_val('location', location)
+
       if predicatePath
         predicate = JsonPath.new(predicatePath).on(whereClause).first
 
@@ -234,7 +239,7 @@ class Mutation
         const = get_val_from_element_or_predicate(element,predicate,'const')
       else
         # cannot find location in predicate !
-        opr = element['opr']
+        opr = element['opr'][0]
         const = element['const']
       end
       "#{col.fullname} #{opr} #{const_element_to_s(opr, const, col.typcategory)}" 
@@ -490,6 +495,10 @@ class Mutation
   # derive the clause from given column
   def derive_clause_from_col(col)
     element = {}
+
+    exclude_pred = "#{col.renamed_colname} not in (select #{col.renamed_colname} from #{@satisfied_tbl})"
+    @excluded_stat = Column_Stat.new(@excluded_tbl,exclude_pred)
+
     # abort('Unable to fix Non numeric or Datetime column') unless %(N D).include?(col.typcategory)
     ex_col_stat = @excluded_stat.get_stats(col)
     in_col_stat = @included_stat.get_stats(col)
@@ -544,7 +553,8 @@ class Mutation
           element['opr'] = ['LIKE']
           element['const'] = native_string_like([in_col_stat['min'],in_col_stat['max']])
         else
-          abort 'unable to derive!'
+          puts 'unable to derive! remove the node instead'
+
         end
       end
     end

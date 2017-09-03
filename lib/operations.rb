@@ -1,4 +1,4 @@
-
+require 'timeout'
 def ds_learning(script)
   dbname = script[0...-4]
   query_json = JSON.parse(File.read("sql/#{dbname}/#{script}.json"))
@@ -177,6 +177,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       test_result.each do |rst|
         next if rst.suspicious_score.to_i <= 0
 
+        terminated = false
         puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
         pp rst.columns
         faulty_script = "#{script}_#{idx.to_s}"
@@ -185,12 +186,22 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         neighborQueryObj = mutation.generate_neighbor_query(rst,is_ds)
         unless is_ds
           localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
-          localizeErr.selecionErr(method)
-          new_score = localizeErr.getSuspiciouScore
-          # if new_score['totalScore'] < best_score
-          current_query = neighborQueryObj.query
-          current_score = new_score['totalScore']
-          current_queryObj = neighborQueryObj
+          # localizeErr.selecionErr(method)
+          begin
+            Timeout.timeout(300) do
+              localizeErr.selecionErr(method)
+            end
+          rescue Timeout::Error
+            puts 'fault localization can not complete in 5mins and is terminated'
+            terminated = true
+          end
+          unless terminated
+            new_score = localizeErr.getSuspiciouScore
+            # if new_score['totalScore'] < best_score
+            current_query = neighborQueryObj.query
+            current_score = new_score['totalScore']
+            current_queryObj = neighborQueryObj
+          end
           if current_score ==0
             break
           # else
@@ -232,7 +243,13 @@ def mutate(test_rst,tqueryObj,fl_method,is_ds,mutation,relevent_cnt)
   neighborQueryObj = mutation.generate_neighbor_query(test_rst,is_ds)
   unless is_ds
     localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
-    localizeErr.selecionErr(fl_method)
+    begin
+      Timeout.timeout(1) do      
+        localizeErr.selecionErr(fl_method)
+      end
+    rescue Timeout::Error
+      puts 'fault localization can not complete in 5mins and is terminated'
+    end
     new_score = localizeErr.getSuspiciouScore
     # if new_score['totalScore'] < best_score
     current_query = neighborQueryObj.query

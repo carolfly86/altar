@@ -61,6 +61,8 @@ class LozalizeError
     # @predicateTree = PredicateTree.new('f', @is_new, @test_id)
     # pp @wherePT
     # @predicateTree.build_full_pdtree(@fromPT[0], @wherePT, root)
+    pp @predicateTree.branches.map{|br| br.nodes.map{|nd| nd.query}.join(' AND ')}
+
     @pdtree = @predicateTree.pdtree
     # puts tes
     # @predicateTree.node_query_mapping_insert()
