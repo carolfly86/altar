@@ -13,15 +13,15 @@ class Column_Stat
     }
   COUNT_STATS = {
       "count": {"func": "count(%s)", "type": "int" },
-      "dist_count": {"func": "count(distinct %s)+count(case when %s is null then 1 else 0 end)", "type": "int" },
-      "is_null_count": {"func": "count(case when %s is null then 1 else 0 end)", "type": "int" }
+      "dist_count": {"func": "count(distinct %s)+sum(case when %s is null then 1 else 0 end)", "type": "int" },
+      "is_null_count": {"func": "sum(case when %s is null then 1 else 0 end)", "type": "int" }
   }
   OPR_SYMBOLS = ['=', '>', '<', '>=', '<=', '<>'].freeze
 
   def initialize(tbl,predicate = nil)
     @tbl = tbl
     @predicate = predicate
-    @query_template = "SELECT %s from #{@tbl}"+( @predicate.to_s.empty? ? '' : " WHERE #{@predicate}")
+    @query_template = "SELECT #TARGET# from #{@tbl}"+( @predicate.to_s.empty? ? '' : " WHERE #{@predicate}")
 
   end
 
@@ -31,7 +31,7 @@ class Column_Stat
     select_list = stats.map do |stat, info|
                   info[:func] % [col.renamed_colname, col.renamed_colname] +" as #{stat}"
                 end.join(', ')
-    query = @query_template % [select_list]
+    query = @query_template.gsub('#TARGET#', select_list)
     rst = DBConn.exec(query)
     result ={}
     rst[0].each do |key,val|
@@ -45,7 +45,7 @@ class Column_Stat
   end
 
   def get_distinct_vals(col)
-    query = @query_template % ["distinct #{col.renamed_colname}"]
+    query = @query_template.gsub('#TARGET#', "distinct #{col.renamed_colname}")
     rst = DBConn.exec(query)
     rst.map do |val|
       col.typcategory == 'N' ? val : "'#{val}'"
@@ -53,7 +53,7 @@ class Column_Stat
   end
 
   def get_count()
-    query = @query_template % ["count(1) as cnt"]
+    query = @query_template.gsub('#TARGET#', "count(1) as cnt")
     rst = DBConn.exec(query)
     rst[0]['cnt'].to_i
   end
@@ -63,7 +63,7 @@ class Column_Stat
     # opr_symbols = OPR_SYMBOLS
     operator = nil
     opr_symbols.each do |opr|
-      query = @query_template % ["count(1) as cnt"]
+      query = @query_template.gsub('#TARGET#', "count(1) as cnt")
       col_compare_clause = "#{col1.renamed_colname} #{opr} #{col2.renamed_colname}"
       query = query + (@predicate.to_s.empty? ? "WHERE #{col_compare_clause}" : " AND #{col_compare_clause}")
       rst = DBConn.exec(query)
@@ -73,5 +73,20 @@ class Column_Stat
       end
     end
     return operator
+  end
+end
+
+class Excluded_Col_Stat < Column_Stat
+  def initialize(tbl,col)
+
+    excluded_pred = "failed_cols like '\%#{col.renamed_colname};\%'"
+    cnt_query = "select count(1) as cnt from #{tbl} where #{excluded_pred}"
+    rst = DBConn.exec(cnt_query)
+    if rst[0]['cnt'].to_i == 0 
+      super(tbl)
+    else
+      super(tbl,excluded_pred)
+    end
+    # pp "excluded_pred: #{excluded_pred}"
   end
 end

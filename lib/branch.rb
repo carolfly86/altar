@@ -18,6 +18,13 @@ class Branch
     end
   end
 
+  def branch_query
+    @nodes.map do |nd|
+      nd.query
+    end.join(' AND ')
+  end
+
+
   def columns
     # relalias.colname as colalias
     @columns = []

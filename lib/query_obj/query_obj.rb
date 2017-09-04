@@ -125,9 +125,28 @@ class QueryObj
       query = ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, excluded_predicate)
       query = QueryBuilder.create_tbl(@excluded_tbl, @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', '), query)
       DBConn.exec(query)
+
+      check_excluded_tup_orig
     end
     return @excluded_tbl
+  end
 
+  def check_excluded_tup_orig()
+    return unless defined? @excluded_tbl
+    query = "ALTER TABLE #{@excluded_tbl} ADD COLUMN failed_cols varchar(800) DEFAULT '';"
+    DBConn.exec(query)
+    @predicate_tree.branches.each do |br|
+      br.nodes.each do |nd|
+        where_pred = ''
+        nd.columns.each do |col|
+          where_pred = RewriteQuery.replace_fullname_with_renamed_colname(nd.query, col)
+        end
+        query = "update #{@excluded_tbl} set failed_cols = failed_cols||'#{nd.columns.map{|c| c.renamed_colname}.join(';')};'"+
+        " where not (#{where_pred}) "
+        # pp query
+        DBConn.exec(query)
+      end
+    end
   end
 
   def create_satisfied_tbl

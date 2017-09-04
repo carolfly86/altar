@@ -78,10 +78,12 @@ class Mutation
     else
       new_clause = add_missing_node(columns)
     end
+
     if @is_ds
       neighborObj = @queryObj
     else
-      new_query = mutate_predicate(branches,nil,new_clauses,nil)
+      new_where_clause = mutate_predicate(branches,nil,new_clause,nil)
+      new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
       pp new_query
       neighborObj = QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
     end
@@ -181,10 +183,15 @@ class Mutation
     else
       remaining_clauses = columns.map do |col|
         element = derive_clause_from_col(col)
-        opr = element['opr'][0]
-        "#{col.fullname} #{opr} #{const_element_to_s(opr, element['const'],col.typcategory)}" 
+        if element == {}
+          cl = ''
+        else
+          opr = element['opr'][0]
+          cl = "#{col.fullname} #{opr} #{const_element_to_s(opr, element['const'],col.typcategory)}"
+        end
+        cl
         # const = optimized_rand_constant(col, opr)
-      end.join(' AND ')
+      end.select{|c| c!='' }.join(' AND ')
       return eq_cols_clauses != '' && remaining_clauses != '' ? (eq_cols_clauses + ' AND ' + remaining_clauses) : (eq_cols_clauses + remaining_clauses)
     end
   end
@@ -489,19 +496,21 @@ class Mutation
     dcm = DecisionTreeMutation.new(cols)
     dcm.python_training(@satisfied_tbl,@excluded_tbl,@dbname,@script,true,@included_pred)
     return {}
-    binding.pry
   end
 
   # derive the clause from given column
   def derive_clause_from_col(col)
     element = {}
 
-    exclude_pred = "#{col.renamed_colname} not in (select #{col.renamed_colname} from #{@satisfied_tbl})"
-    @excluded_stat = Column_Stat.new(@excluded_tbl,exclude_pred)
+    # exclude_pred = "#{col.renamed_colname} not in (select #{col.renamed_colname} from #{@satisfied_tbl})"
+    # @excluded_stat = Column_Stat.new(@excluded_tbl,exclude_pred)
+    @excluded_stat = Excluded_Col_Stat.new(@excluded_tbl,col)
 
     # abort('Unable to fix Non numeric or Datetime column') unless %(N D).include?(col.typcategory)
     ex_col_stat = @excluded_stat.get_stats(col)
     in_col_stat = @included_stat.get_stats(col)
+
+    binding.pry if ex_col_stat['count'] == 0 or in_col_stat['count'] == 0
     puts 'ex_col_stat'
     pp ex_col_stat
     puts 'in_col_stat'
@@ -520,16 +529,14 @@ class Mutation
       element['const'] = ex_col_stat['min']
     elsif ex_col_stat['max'] < in_col_stat['min']
       if col.is_string_type?
-        element['opr'] = ['LIKE']
-        element['const'] = native_string_like([in_col_stat['min'],in_col_stat['max']])
+        element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
       else
         element['opr'] = ['>=']
         element['const'] = in_col_stat['min']
       end
     elsif ex_col_stat['min'] > in_col_stat['max']
       if col.is_string_type?
-        element['opr'] = ['LIKE']
-        element['const'] = native_string_like([in_col_stat['min'],in_col_stat['max']])
+        element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
       else
         element['opr'] = ['<=']
         element['const'] = in_col_stat['max']
@@ -550,8 +557,7 @@ class Mutation
         # puts 'unable to derive!'
         # binding.pry unless %(N D).include?(col.typcategory)
         if col.is_string_type?
-          element['opr'] = ['LIKE']
-          element['const'] = native_string_like([in_col_stat['min'],in_col_stat['max']])
+          element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
         else
           puts 'unable to derive! remove the node instead'
 
@@ -562,14 +568,28 @@ class Mutation
     return element
   end
 
+  def const_like_clause(min,max)
+    element = {}
+    const = native_string_like([in_col_stat['min'],in_col_stat['max']])
+    unless const != ''
+      element['opr'] = ['LIKE']
+      element['const'] = const
+    end
+    return element
+  end
+
   def native_string_like(strings)
     commn_substr = longest_common_substr(strings)
-    if strings.map{|str| str.start_with?(commn_substr) ? 1 : 0}.sum == strings.count()
-      "#{commn_substr}%"
-    elsif strings.map{|str| str.start_with?(commn_substr) ? 1 : 0}.sum == strings.count()
-      "\%#{commn_substr}"
+    if commn_substr == ''
+      return ''
     else
-      "\%#{commn_substr}\%"
+      if strings.map{|str| str.start_with?(commn_substr) ? 1 : 0}.sum == strings.count()
+        "#{commn_substr}%"
+      elsif strings.map{|str| str.start_with?(commn_substr) ? 1 : 0}.sum == strings.count()
+        "%#{commn_substr}"
+      else
+        "%#{commn_substr}%"
+      end
     end
   end
 

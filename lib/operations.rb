@@ -67,6 +67,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   createGR(golden_record_opr, script, tqueryObj)
   # pp 'test'
   f_options_list.each_with_index do |f_options, idx|
+
     fqueryObj = QueryObj.new(f_options)
     if method == 'b'
       beginTime = Time.now
@@ -185,16 +186,17 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         is_ds = false
         neighborQueryObj = mutation.generate_neighbor_query(rst,is_ds)
         unless is_ds
-          localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
           # localizeErr.selecionErr(method)
           begin
-            Timeout.timeout(300) do
+            Timeout.timeout(600) do
+              localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
               localizeErr.selecionErr(method)
             end
           rescue Timeout::Error
-            puts 'fault localization can not complete in 5mins and is terminated'
+            puts 'fault localization can not complete in 600s and is terminated'
             terminated = true
           end
+
           unless terminated
             new_score = localizeErr.getSuspiciouScore
             # if new_score['totalScore'] < best_score
@@ -202,15 +204,11 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
             current_score = new_score['totalScore']
             current_queryObj = neighborQueryObj
           end
+
+
+
           if current_score ==0
             break
-          # else
-          #   if f_options[:relevent].count() == 1
-          #     col_mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
-          #     mu_column = true
-          #     neighborQueryObj = col_mutation.generate_neighbor_query(rst,is_ds,mu_column)
-
-          #   end
           end
         else
           break if iterate_cnt >= f_options[:relevent].count()
@@ -229,41 +227,6 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       fix_duration = (endTime - startTime).to_i
       update_fix_result_tbl(idx,tqueryObj.query,current_query,fix_duration, current_score)
 
-    end
-    # exit 0
-  end
-end
-
-def mutate(test_rst,tqueryObj,fl_method,is_ds,mutation,relevent_cnt)
-  puts "fixing node: #{test_rst.branch_name} #{test_rst.node_name} at location #{test_rst.location}"
-  pp test_rst.columns
-  faulty_script = "#{script}_#{idx.to_s}"
-  # mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
-  is_ds = false
-  neighborQueryObj = mutation.generate_neighbor_query(test_rst,is_ds)
-  unless is_ds
-    localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
-    begin
-      Timeout.timeout(1) do      
-        localizeErr.selecionErr(fl_method)
-      end
-    rescue Timeout::Error
-      puts 'fault localization can not complete in 5mins and is terminated'
-    end
-    new_score = localizeErr.getSuspiciouScore
-    # if new_score['totalScore'] < best_score
-    current_query = neighborQueryObj.query
-    current_score = new_score['totalScore']
-    current_queryObj = neighborQueryObj
-    if current_score > 0
-      # when there's only one fault and can't be fixd by modifying expr
-      # we restart fix with a similar column
-      if relevent_cnt == 1
-        col_mutation = Mutation.new(mutation.queryObj, mutation.excluded_tbl, mutation.satisfied_tbl,mutation.dbname,mutation.script)
-        rst=col_mutation.candidate_cols(rst.columns)
-        neighborQueryObj = col_mutation.generate_neighbor_query(rst,is_ds,mu_column)
-
-      end
     end
   end
 end

@@ -47,7 +47,7 @@ class PredicateTree
         @pdtree << branch
       end
     end
-    @pdtree.print_tree
+    # @pdtree.print_tree
     node_query_mapping_insert
   end
 

@@ -34,7 +34,7 @@
 		"relevent": ["PH0-N1","PH0-N3","PH0-N5"]
 		},
 		{
-  		"query": "select e.emp_no  as emp_no ,salary,first_name,last_name,birth_date,hire_date,from_date  from employees e join salaries s on e.emp_no = s.emp_no where e.emp_no > 20000 and s.from_date > '1990-01-01' and e.last_name like 'Al%' and e.gender = 'M' and e.birth_date > '1960-01-01' and s.salary > 80000 and hire_date>'1986-01-01';",
+  		"query": "select e.emp_no  as emp_no ,salary,first_name,last_name,birth_date,hire_date,from_date  from employees e join salaries s on e.emp_no = s.emp_no where e.emp_no > 20000 and s.from_date > '1990-01-01' and e.last_name like 'Al%' and e.gender = 'M' and e.birth_date > '1960-01-01' and s.salary > 80000 and e.hire_date>'1986-01-01';",
 		"pkList": "emp_no,from_date",
 		"relevent": ["PH0-N7"]
 		}

@@ -1,7 +1,8 @@
 default:
-  host: 'bh20-pgs-008.core.cvent.org'
+  # host: 'bh20-pgs-008.core.cvent.org'
+  host: localhost
   database: 'employees'
-  user: 'dba'
-  password: 'Di0tim@'
-  # user: 'myuser'
-  # password: 'password'
+  # user: 'dba'
+  # password: 'Di0tim@'
+  user: 'myuser'
+  password: 'password'
