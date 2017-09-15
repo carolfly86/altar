@@ -79,7 +79,8 @@ class TupleMutation
     @updateTup = get_first_satisfiedPK
     nodes = @branches[0].nodes.map(&:name)
     max = nodes.count
-
+    # puts '1'
+    # pp @pk
     1.upto(max) do |i|
       bn_pair = unwanted_branch_node_pairs(i)
       mutationTbl_upd(bn_pair, @updateTup, @pkCond)
@@ -88,10 +89,11 @@ class TupleMutation
       exluded = DBConn.exec(@excluded_query)
       # pp "excluded_query2: #{Time.now}"
       nd_combinations_set = nodes.combination(i).map(&:to_set).to_set
-      # binding.pry if @pk.any?{|pk| pk['col'] == 'e.emp_no' and pk['val'] == '248447'}
+      # binding.pry if @pk.any?{|pk| pk['col'] == 'pv.businessentityid' and pk['val'] == '1572'}
       # pp "nd_combinations_set: #{Time.now}"
       next unless exluded.count < nd_combinations_set.count
       found = true
+      # puts found
       # binding.pry
       exluded_nodes = []
       exluded.each do |e|
@@ -118,14 +120,19 @@ class TupleMutation
           end
         end
       end
+      # puts found
       # pp "nodes to be exonerated"
       # pp exluded_nodes
+      # puts 'DONE!!!!!'
+      # puts found
       # pp "exnorate_nodes :#{Time.now}"
       # pp exluded_nodes
       exnorate_nodes(exluded_nodes, 1, duplicate_removal)
+      # puts found
       # pp "exnorate_nodes2 :#{Time.now}"
       return
     end
+    # puts found
     # if not able to find suspicious node
     # it might be due to missing node on some column combinations
     unless found
@@ -196,7 +203,6 @@ class TupleMutation
       # subset col query returns nodes that contain colum(s) that is subset from another node
       # satisfiedQuery = "#{@satisfiedQuery} UNION #{@subset_col_query}"
       satisfiedQuery = @satisfiedQuery
-      # binding.pry
       # pp satisfiedQuery
       satisfied = DBConn.exec(satisfiedQuery)
       excluded = DBConn.exec(@excluded_query)
@@ -207,7 +213,6 @@ class TupleMutation
       # binding.pry
       next unless uniq_branches.count < @branches.combination(i).count
       # if @branches.combination(i).count - uniq_branches.count == i
-      found = true
       satisfied_nodes = []
       uniq_branches.each do |s|
         # if i == 1
@@ -226,6 +231,8 @@ class TupleMutation
           end
         end
       end
+      next if satisfied_nodes.count == 0
+      found = true
       # query = "select branch_name,node_name from tuple_node_test_result where #{@pkCond_strip_tbl_alias} and branch_name in (#{satisfied_branches})"
       # satisfied_nodes = DBConn.exec(query)
       satisfied_nodes.uniq!
@@ -237,6 +244,8 @@ class TupleMutation
     # it might be due to missing branch on some column combinations
     unless found
       puts 'fail to find in existing branches. Trying column combinations'
+      # binding.pry if @pk.any?{|pk| pk['col'] == 'pod.purchaseorderid' and pk['val'] == '12'}
+
       # binding.pry
       # exnorate_all_suspicious_nodes
       # max = @remaining_cols.map{|cols| cols.count}.max
@@ -255,20 +264,19 @@ class TupleMutation
         mutationTbl_upd(bn_pair, @updateTup, @pkCond)
         # binding.pry
         excluded = DBConn.exec(@excluded_query)
-        # binding.pry
         next unless excluded.count > 0
-        # 1.upto(i) do |j|
-        # binding.pry
-        cib =  Column_In_Branch.new(i)
-        cib.populate_cols_in_branch(excluded)
-        cols_in_branch = cib.cols_in_branch
-        cols_in_branch.each do |cols|
+        # cib =  Column_In_Branch.new(i)
+        # cib.populate_cols_in_branch(excluded)
+        # cols_in_branch = cib.cols_in_branch
+        # cols_in_branch.each do |cols|
           nodes = []
           nd = {}
           nd['branch_name'] = "missing_branch#{i}"
           nd['node_name'] = "missing_node#{i}"
-          nd['columns'] = "{#{cols.uniq.join(',')}}"
-          # nd['columns'] = "{#{cols.map { |e| e['mutation_cols'].split(',') }.flatten.uniq.join(',')}}"
+          # binding.pry
+          # nd['columns'] = "{#{cols.uniq.join(',')}}"
+          cols = excluded.map { |e| e['mutation_cols'] }.uniq
+          nd['columns'] = "{#{cols.join(',')}}"
           nd['query'] = ''
           nd['location'] = 0
           nd['type'] = 'f'
@@ -296,9 +304,10 @@ class TupleMutation
           end
 
           blame_nodes(nodes, 1, duplicate_removal)
-        end
+        # end
         # @remaining_cols.recover_processed(i)
         found = true
+
         break
       end
       exnorate_all_suspicious_nodes(duplicate_removal)
@@ -522,7 +531,6 @@ class TupleMutation
   end
 
   def exnorate_nodes(nodes, decr = 1, eliminate)
-    # binding.pry
     # puts 'exonerating'
     if eliminate
       # pp "suspicious_nodes: "
@@ -618,22 +626,26 @@ class TupleMutation
 
   def eliminate_redundant_tuples(guilty_nodes, _guilty_type)
     # create mutation table containing all failed rows
-
     suspicious_nodes_val = @suspicious_nodes.map { |sn| "#{sn['branch_name']}-#{sn['node_name']}" }.join(',')
     all_cols = []
     all_cols_suspicious_nodes_cond = "AND suspicious_nodes = '" + suspicious_nodes_val + "'"
 
     branches = guilty_nodes.map { |gn| gn['branch_name'] }.uniq
     # binding.pry
+    # pk_cond =  QueryBuilder.pkCondConstr_replace_tbl_alias_colalias(@pk,'t')
     branches.each do |br|
       # binding.pry
       columns = []
       g_nodes = guilty_nodes.find_all { |gn| gn['branch_name'] == br }
 
       if @type == 'M'
-        query = "select columns from node_query_mapping where test_id = #{@test_id} and type = 'f' and branch_name = '#{br}'"
-
-        cols = DBConn.exec(query).to_a.map { |c| c['columns'] }
+        if br =~ /^missing_branch/
+          # binding.pry
+          cols = g_nodes.map { |g| g['columns'] }
+        else
+          query = "select columns from node_query_mapping where test_id = #{@test_id} and type = 'f' and branch_name = '#{br}'"
+          cols = DBConn.exec(query).to_a.map { |c| c['columns'] }
+        end
       # binding.pry
       # cols = branch.columns
       else
@@ -654,72 +666,19 @@ class TupleMutation
       all_cols += columns
 
       if @type == 'U'
-        suspicious_nodes_cond = "AND suspicious_nodes = '" + suspicious_nodes_val + "'"
+        suspicious_nodes_cond = "AND ( suspicious_nodes = '" + suspicious_nodes_val + "')"
       else
         if br =~ /^missing/
           suspicious_nodes_cond = ''
           all_cols_suspicious_nodes_cond = ''
         else
-          suspicious_nodes_cond = "AND suspicious_nodes = '" + suspicious_nodes_val + "'"
+          suspicious_nodes_cond = "AND (suspicious_nodes = '" + suspicious_nodes_val + "' )"
         end
       end
-
-      puts "suspicious_nodes_cond: #{suspicious_nodes_cond}"
-      # blm_nodes = []
-      # blm_nodes << g_nodes
       find_duplicate_tuples(columns, g_nodes, suspicious_nodes_cond)
     end
-    # guilty_nodes.each do |gn|
-    # 	gn
-    # 	if guilty_type == 'e'
-    # 	# exonrate guilty nodes can be find in @branches
-    # 		branch = @branches.find{|br| br.name == gn['branch_name']}
-    # 		# for missing tuple, all columns in guilty branch must be mutated
-    # 		if @type == 'M'
-    # 			columns = branch.columns
-    # 		else
-    # 			# binding.pry
-    # 			# pp gn['branch_name']
-    # 			node = branch.nodes.find{|nd| nd.name == gn['node_name']}
-    # 			columns = node.columns
-    # 		end
-    # 	# blame guilty nodes are not available in @branches thus must be initialized
-    # 	else
-    # 		columns = []
-    # 		cols_str = gn['columns'].gsub('{','').gsub('}','')
-    # 		cols_str.split(',').each do |c|
-    # 			column = Column.new()
-    # 			col = c.split('.')
-    # 			column.relname = col[0]
-    # 			column.colname =  col[1]
-    # 			columns << column
-    # 		end
-    # 		# gn['columns'] = "{#{columns.map{|c| c.relname_fullname }.join(',')}}"
-    # 		# gn['query'] =''
-    # 		# gn['location'] = 0
-    # 		# gn['type'] = 'f'
 
-    # 	end
-    # 	all_cols = all_cols + columns
-
-    # 	if @type == 'U'
-    # 		suspicious_nodes_cond = "AND suspicious_nodes = '" +suspicious_nodes_val+"'"
-    # 	else
-    # 		if  gn['branch_name'] =~ /^missing/
-    # 			suspicious_nodes_cond =''
-    # 			all_cols_suspicious_nodes_cond = ''
-    # 		else
-    # 			suspicious_nodes_cond = "AND suspicious_nodes = '" + suspicious_nodes_val+"'"
-    # 		end
-    # 	end
-
-    # 	puts "suspicious_nodes_cond: #{suspicious_nodes_cond}"
-    # 	blm_nodes = []
-    # 	blm_nodes << gn
-    # 	find_duplicate_tuples(columns,blm_nodes,suspicious_nodes_cond)
-    # end
     if branches.count > 1
-      # binding.pry
       find_duplicate_tuples(all_cols, guilty_nodes, all_cols_suspicious_nodes_cond)
     end
   end
@@ -757,7 +716,6 @@ class TupleMutation
             " where type = '#{@type}' "\
             "#{suspicious_nodes_cond} "
     # create
-    # pp query
     # binding.pry
     # pp Time.now
     res = DBConn.exec(query)
@@ -772,15 +730,21 @@ class TupleMutation
                    " with dup_pks AS ((select #{renamedPKCols} from ftuples_mutate) except (select #{renamedPKCols} from ftuples_mutate where #{@constraintPredicate})) "
           end) + " delete from ftuples f using dup_pks fm where #{renamedPKJoin} "
 
-    # binding.pry if @pk.any?{|pk| pk['col'] == 'e.emp_no' and pk['val'] == '248447'}
+    # binding.pry if @pk.any?{|pk| pk['col'] == 'pv.businessentityid' and pk['val'] == '1572'}
 
     # puts eliminate
     # pp Time.now
     res = DBConn.exec(eliminate)
-    # binding.pry if res.cmd_tuples == 0
+
+    # if res.cmd_tuples == 0
+    #   binding.pry
+    #   pp @pk
+    #   abort('fail')
+    # end
+
     # binding.pry
     dup_cnt = res.cmd_tuples
-    puts "duplicate remove count #{dup_cnt}"
+    # puts "duplicate remove count #{dup_cnt}"
     # # blame
     # pp guilty_nodes
     # binding.pry

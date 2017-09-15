@@ -110,7 +110,6 @@ class Mutation
     new_where_clause = mutate_predicate(branch,nil,new_clauses,action)
     new_query = ReverseParseTree.reverseAndreplace(@parse_tree, '', new_where_clause)
     pp new_query
-
     neighborObj = @is_ds ? @queryObj : QueryObj.new(query: new_query, pkList: @pkList, table: 'neighbor')
     return neighborObj
   end
@@ -164,8 +163,8 @@ class Mutation
         const_element.map{|const| const.to_s.str_numeric_rep(col_typcategory) }.join(' AND ')
       end
     else
-      if opr.casecmp('IS')==0 and const_element.casecmp('NULL') == 0
-        'NULL'
+      if opr.include?('IS') and const_element.include?('NULL')
+        const_element
       else
         const_element.to_s.str_numeric_rep(col_typcategory)
       end
@@ -505,7 +504,6 @@ class Mutation
     # exclude_pred = "#{col.renamed_colname} not in (select #{col.renamed_colname} from #{@satisfied_tbl})"
     # @excluded_stat = Column_Stat.new(@excluded_tbl,exclude_pred)
     @excluded_stat = Excluded_Col_Stat.new(@excluded_tbl,col)
-
     # abort('Unable to fix Non numeric or Datetime column') unless %(N D).include?(col.typcategory)
     ex_col_stat = @excluded_stat.get_stats(col)
     in_col_stat = @included_stat.get_stats(col)
@@ -515,52 +513,113 @@ class Mutation
     pp ex_col_stat
     puts 'in_col_stat'
     pp in_col_stat
-    if in_col_stat['is_null_count'] == in_col_stat['count'] && ex_col_stat['is_null_count'] ==0
-      element['opr'] = ['IS']
-      element['const'] = 'NULL'
-    elsif ex_col_stat['is_null_count'] == ex_col_stat['count'] && in_col_stat['is_null_count'] ==0
-      element['opr'] = ['IS NOT']
-      element['const'] = 'NULL'
-    elsif in_col_stat['min'] == in_col_stat['max']
-      element['opr'] = ['=']
-      element['const'] = in_col_stat['min']
-    elsif ex_col_stat['min'] == ex_col_stat['max']
-      element['opr'] = ['<>']
-      element['const'] = ex_col_stat['min']
-    elsif ex_col_stat['max'] < in_col_stat['min']
-      if col.is_string_type?
-        element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
+    pp col.typcategory
+    if col.typcategory == 'B'
+      if in_col_stat['is_null_count'] == in_col_stat['count'] && ex_col_stat['is_null_count'] ==0 && in_col_stat['is_null_count'] >0
+        element['opr'] = ['IS']
+        element['const'] = 'NULL'
+      elsif ex_col_stat['is_null_count'] == ex_col_stat['count'] && in_col_stat['is_null_count'] ==0 && ex_col_stat['is_null_count'] >0
+        element['opr'] = ['IS NOT']
+        element['const'] = 'NULL'
       else
-        element['opr'] = ['>=']
-        element['const'] = in_col_stat['min']
+        element['opr'] = ['=']
+        element['const'] = in_col_stat['bool_and']
       end
-    elsif ex_col_stat['min'] > in_col_stat['max']
-      if col.is_string_type?
-        element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
+    elsif col.typcategory == 'U'
+      if in_col_stat['is_null_count'] == in_col_stat['count'] && ex_col_stat['is_null_count'] ==0 && in_col_stat['is_null_count'] >0
+        element['opr'] = ['IS']
+        element['const'] = 'NULL'
+      elsif ex_col_stat['is_null_count'] == ex_col_stat['count'] && in_col_stat['is_null_count'] ==0 && ex_col_stat['is_null_count'] >0
+        element['opr'] = ['IS NOT']
+        element['const'] = 'NULL'
       else
-        element['opr'] = ['<=']
-        element['const'] = in_col_stat['max']
-      end
-    elsif ex_col_stat['min'] < in_col_stat['min'] && ex_col_stat['max'] > in_col_stat['max']
-      element['opr'] = ['between']
-      element['const'] = [in_col_stat['min'],in_col_stat['max']]
-    else
-      if in_col_stat['dist_count'] <= 10 or ex_col_stat['dist_count'] <= 10
-        if in_col_stat['dist_count'] <= ex_col_stat['dist_count']
-          element['opr'] = ['in']
-          element['const'] = @included_stat.get_distinct_vals(col)
+        if in_col_stat['dist_count'] <= 10 or ex_col_stat['dist_count'] <= 10
+          if in_col_stat['dist_count'] <= ex_col_stat['dist_count']
+            element['const'] = @included_stat.get_distinct_vals(col)
+            if element['const'].include?(nil)
+              binding.pry
+              element = {}
+            else
+              element['opr'] = ['in']
+            end
+            # element['const'] = @included_stat.get_distinct_vals(col)
+          else
+            element['const'] = @excluded_stat.get_distinct_vals(col)
+            if element['const'].include?(nil)
+              element = {}
+            else
+              element['opr'] = ['not in']
+            end
+            # element['const'] = @excluded_stat.get_distinct_vals(col)
+          end
         else
-          element['opr'] = ['not in']
-          element['const'] = @excluded_stat.get_distinct_vals(col)
+          # puts 'unable to derive!'
+          # binding.pry unless %(N D).include?(col.typcategory)
+          if col.is_string_type?
+            element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
+          else
+            puts 'unable to derive! remove the node instead'
+
+          end
         end
-      else
-        # puts 'unable to derive!'
-        # binding.pry unless %(N D).include?(col.typcategory)
+      end
+    else
+      if in_col_stat['is_null_count'] == in_col_stat['count'] && ex_col_stat['is_null_count'] ==0 && in_col_stat['is_null_count'] >0
+        element['opr'] = ['IS']
+        element['const'] = 'NULL'
+      elsif ex_col_stat['is_null_count'] == ex_col_stat['count'] && in_col_stat['is_null_count'] ==0 && ex_col_stat['is_null_count'] >0
+        element['opr'] = ['IS NOT']
+        element['const'] = 'NULL'
+      elsif in_col_stat['min'] == in_col_stat['max']
+        element['opr'] = ['=']
+        element['const'] = in_col_stat['min']
+      elsif ex_col_stat['min'] == ex_col_stat['max']
+        element['opr'] = ['<>']
+        element['const'] = ex_col_stat['min']
+      elsif ex_col_stat['max'] < in_col_stat['min']
         if col.is_string_type?
           element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
         else
-          puts 'unable to derive! remove the node instead'
+          element['opr'] = ['>=']
+          element['const'] = in_col_stat['min']
+        end
+      elsif ex_col_stat['min'] > in_col_stat['max']
+        if col.is_string_type?
+          element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
+        else
+          element['opr'] = ['<=']
+          element['const'] = in_col_stat['max']
+        end
+      elsif ex_col_stat['min'] < in_col_stat['min'] && ex_col_stat['max'] > in_col_stat['max']
+        element['opr'] = ['between']
+        element['const'] = [in_col_stat['min'],in_col_stat['max']]
+      else
+        if in_col_stat['dist_count'] <= 10 or ex_col_stat['dist_count'] <= 10
+          if in_col_stat['dist_count'] <= ex_col_stat['dist_count']
+            element['const'] = @included_stat.get_distinct_vals(col)
+            if element['const'].include?(nil)
+              binding.pry
+              element = {}
+            else
+              element['opr'] = ['in']
+            end
+          else
+            element['const'] = @excluded_stat.get_distinct_vals(col)
+            if element['const'].include?(nil)
+              element = {}
+            else
+              element['opr'] = ['not in']
+            end
+          end
+        else
+          # puts 'unable to derive!'
+          # binding.pry unless %(N D).include?(col.typcategory)
+          if col.is_string_type?
+            element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
+          else
+            puts 'unable to derive! remove the node instead'
 
+          end
         end
       end
     end
@@ -570,8 +629,8 @@ class Mutation
 
   def const_like_clause(min,max)
     element = {}
-    const = native_string_like([in_col_stat['min'],in_col_stat['max']])
-    unless const != ''
+    const = native_string_like([min,max])
+    if const != ''
       element['opr'] = ['LIKE']
       element['const'] = const
     end

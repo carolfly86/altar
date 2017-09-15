@@ -12,8 +12,8 @@ class Column_Stat
       "bool_and": {"func": "bool_and(%s)", "type": "bool" }
     }
   COUNT_STATS = {
-      "count": {"func": "count(%s)", "type": "int" },
-      "dist_count": {"func": "count(distinct %s)+sum(case when %s is null then 1 else 0 end)", "type": "int" },
+      "count": {"func": "count(1)", "type": "int" },
+      "dist_count": {"func": "count(distinct %s)+count(distinct case when %s is null then 1 end)", "type": "int" },
       "is_null_count": {"func": "sum(case when %s is null then 1 else 0 end)", "type": "int" }
   }
   OPR_SYMBOLS = ['=', '>', '<', '>=', '<=', '<>'].freeze
@@ -26,8 +26,13 @@ class Column_Stat
   end
 
   def get_stats(col)
-    stats = col.typcategory == 'B' ? BOOL_STATS : STATS
+    stats = case col.typcategory 
+                when 'B' then BOOL_STATS 
+                when 'U' then {}
+                else  STATS
+                end
     stats.merge!(COUNT_STATS)
+    binding.pry if col.typcategory == 'U'
     select_list = stats.map do |stat, info|
                   info[:func] % [col.renamed_colname, col.renamed_colname] +" as #{stat}"
                 end.join(', ')
@@ -47,9 +52,7 @@ class Column_Stat
   def get_distinct_vals(col)
     query = @query_template.gsub('#TARGET#', "distinct #{col.renamed_colname}")
     rst = DBConn.exec(query)
-    rst.map do |val|
-      col.typcategory == 'N' ? val : "'#{val}'"
-    end.join(',')
+    rst.map{|v| v[col.renamed_colname]}
   end
 
   def get_count()
@@ -87,6 +90,6 @@ class Excluded_Col_Stat < Column_Stat
     else
       super(tbl,excluded_pred)
     end
-    # pp "excluded_pred: #{excluded_pred}"
+    pp "excluded_pred: #{excluded_pred}"
   end
 end

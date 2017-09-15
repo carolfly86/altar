@@ -8,7 +8,7 @@ class QueryObj
   attr_reader :query, :pkList,
   :table, :parseTree,
   :all_cols, :all_cols_select,
-  :predicate_tree
+  :predicate_tree, :nullable_tbl
   attr_accessor :score
 
   def initialize(options)
@@ -28,17 +28,120 @@ class QueryObj
     end
     # pp @query
     @parseTree = options.fetch(:parseTree, PgQuery.parse(@query).parsetree[0])
-    DBConn.tblCreation(@table, @pkList, @query)
 
     @all_cols = DBConn.getAllRelFieldList(parseTree['SELECT']['fromClause'])
+
+    create_tbl()
+  end
+
+  def rel_list()
+    if @rel_list.nil?
+      from_pt = @parseTree['SELECT']['fromClause'][0].to_json
+      @rel_list = []
+      JsonPath.on(from_pt,'$..RANGEVAR').each do |tbl|
+        relname = tbl['relname']
+        relalias = tbl['alias'].nil? ? nil : tbl['alias']['ALIAS']['aliasname']
+
+        table = Table.new(relname)
+        table.relalias = relalias
+
+        @rel_list << table unless @rel_list.include?(table)
+      end
+    end
+    return @rel_list
+  end
+
+  def create_tbl()
+    # create plain table from query if
+    # 1. no join
+    # 2. all joins are inner join
+    is_plain_query = ((not has_join?()) or (join_types().select{|type| type.to_i != 0}.count() ==0))
+    if is_plain_query
+      DBConn.tblCreation(@table, @pkList, @query)
+
+      @nullable_tbl = "#{@table}_nullable"
+      new_query = "select * from #{@table} where 1=2"
+      DBConn.tblCreation(@nullable_tbl, '', new_query)
+      puts "#{@table} is_plain_query "
+    # otherwise query must contain at least one none inner join
+    else
+      puts "#{@table} is NOT plain_query "
+      # create table without pk
+      DBConn.tblCreation(@table, '', @query)
+      # from_pt = @parseTree['SELECT']['fromClause'][0].to_json
+      tbls = rel_list()
+      # binding.pry
+      # join_expr_list = JsonPath.on(from_pt, '$..JOINEXPR')
+
+      # join_expr_list.each do |join_expr|
+      #   # next if join_expr['jointype'].to_i == 0
+      #   l_tbls = JsonPath.on(join_expr['larg'],'$..RANGEVAR')
+      #   r_tbls = JsonPath.on(join_expr['rarg'],'$..RANGEVAR')
+      #   tbls = tbls + l_tbls
+      #   tbls = tbls + r_tbls
+
+      # end
+      pk_col_list = []
+
+      tbls.each do |tbl|
+        pk_col_list << tbl.pk_column_list
+      end
+      # not_null_query = pk_list.flat.map{|pk| "#{pk} is not null"}.join(' AND ')
+      # add index on not null columns
+      pk_not_null = @pkList.split(',').map{|pk| "#{pk} is not null"}.join(' OR ')
+      create_indx = "CREATE UNIQUE INDEX idx_#{@table} on #{@table} (#{@pkList}) where #{pk_not_null}"
+      pp create_indx
+      DBConn.exec(create_indx)
+
+      pp pk_col_list
+      # create a nullable table for storing nullable columns
+      nullable_query = pk_col_list.map{|tbl_pks| '(' +tbl_pks.map{|pk| "#{pk.select_name} is null"}.join(" AND ") + ')'}.join(' OR ')
+      all_pk_list = pk_col_list.flatten.map{|col| "#{col.select_name} as #{col.renamed_colname}"}.join(', ')
+      new_query = "SELECT #{all_pk_list} FROM "+ @query.split(/ from /i)[1].rstrip
+      if has_where_predicate?()
+        new_query =new_query.insert( new_query.downcase.index(' where ')+7, " (#{nullable_query}) AND (")
+        if new_query.end_with?(';')
+          new_query = new_query.insert(new_query.length-1,")")
+        else
+          new_query = new_query.insert(new_query.length,")")
+        end
+      else
+        new_query = new_query[0...new_query.length-1].rstrip if new_query.end_with?(';')
+        new_query =  new_query + " WHERE #{nullable_query}"
+      end
+      @nullable_tbl = "#{@table}_nullable"
+      pp new_query
+      DBConn.tblCreation(@nullable_tbl, '', new_query)
+    end
   end
 
   def predicate_tree_construct(type,is_new,test_id)
+    return nil unless has_where_predicate?()
+    
     where_clause = @parseTree['SELECT']['whereClause']
     from_pt = @parseTree['SELECT']['fromClause']
     @predicate_tree = PredicateTree.new(type, is_new, test_id)
     root = Tree::TreeNode.new('root', '')
     @predicate_tree.build_full_pdtree(from_pt[0], where_clause, root)
+  end
+
+  def has_where_predicate?()
+    where_clause = @parseTree['SELECT']['whereClause']
+    return (not where_clause.nil?)
+  end
+
+  def has_join?()
+    from_pt = @parseTree['SELECT']['fromClause'][0]
+    return from_pt.keys.include?('JOINEXPR')
+  end
+
+  def join_types()
+    if has_join?()
+      from_pt = @parseTree['SELECT']['fromClause'][0].to_json
+      return JsonPath.on(from_pt, '$..jointype')
+    else
+      return []
+    end
   end
 
   def pk_list
@@ -121,7 +224,7 @@ class QueryObj
       targetListReplacement = "#{renamed_pk_col},#{@all_cols_select}"
       @excluded_tbl = "#{@table}_excluded"
       excluded_predicate = get_excluded_query
-      pp excluded_predicate
+      # pp excluded_predicate
       query = ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, excluded_predicate)
       query = QueryBuilder.create_tbl(@excluded_tbl, @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', '), query)
       DBConn.exec(query)
@@ -137,13 +240,13 @@ class QueryObj
     DBConn.exec(query)
     @predicate_tree.branches.each do |br|
       br.nodes.each do |nd|
-        where_pred = ''
+        where_pred = nd.query
         nd.columns.each do |col|
-          where_pred = RewriteQuery.replace_fullname_with_renamed_colname(nd.query, col)
+          where_pred = RewriteQuery.replace_fullname_with_renamed_colname(where_pred, col)
         end
         query = "update #{@excluded_tbl} set failed_cols = failed_cols||'#{nd.columns.map{|c| c.renamed_colname}.join(';')};'"+
         " where not (#{where_pred}) "
-        # pp query
+        # pp quer dy
         DBConn.exec(query)
       end
     end

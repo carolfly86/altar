@@ -150,6 +150,14 @@ module QueryBuilder
     # p pkcond
   end
 
+  def self.pkCondConstr_replace_tbl_alias_colalias(pk,new_tbl_alias)
+    pk.map do |f|
+      colname = QueryBuilder.get_colalias(f)
+      "#{new_tbl_alias}.#{colname} = #{f['val'].to_s.str_int_rep}"
+    end.join(' AND ')
+    # p pkcond
+  end
+
   def self.pkValConstr(pk)
     pk.map { |pk|  pk['val'].to_s.str_int_rep }.join(', ')
     # p pkcond

@@ -44,7 +44,6 @@ class DecisionTreeMutation
   end
 
   def python_training(included_tbl,excluded_tbl,dbname,script_name,is_sampling=false,included_pred=nil)
-
     if is_sampling
       included_sample_tbl = sampling(included_tbl,included_pred)
       excluded_sample_tbl = sampling(excluded_tbl)

@@ -53,21 +53,16 @@ class LozalizeError
     @relNames = tQueryObj.rel_names
 
     @pkFullList = tQueryObj.pk_full_list
-
     # generate predicate tree from where clause
-    fQueryObj.predicate_tree_construct('f', @is_new, @test_id)
-    @predicateTree = fQueryObj.predicate_tree
-    # root = Tree::TreeNode.new('root', '')
-    # @predicateTree = PredicateTree.new('f', @is_new, @test_id)
-    # pp @wherePT
-    # @predicateTree.build_full_pdtree(@fromPT[0], @wherePT, root)
-    # pp @predicateTree.branches.map{|br| br.nodes.map{|nd| nd.query}.join(' AND ')}
-
-    @pdtree = @predicateTree.pdtree
+    unless @wherePT.nil?
+      fQueryObj.predicate_tree_construct('f', @is_new, @test_id)
+      @predicateTree = fQueryObj.predicate_tree
+      @pdtree = @predicateTree.pdtree
+      @whereStr = ReverseParseTree.whereClauseConst(@wherePT)
+    end
     # puts tes
     # @predicateTree.node_query_mapping_insert()
     @fromCondStr = ReverseParseTree.fromClauseConstr(@fromPT)
-    @whereStr = ReverseParseTree.whereClauseConst(@wherePT)
 
     # pp @whereStr
     @missing_tuple_count = 0
@@ -141,41 +136,149 @@ class LozalizeError
     projErrList
   end
 
+
+  def find_failing_nullable_rows()
+    f_nullable_tbl = Table.new(@fQueryObj.nullable_tbl)
+    t_nullable_tbl = Table.new(@tQueryObj.nullable_tbl)
+    if t_nullable_tbl.row_count() == 0 and f_nullable_tbl.row_count() == 0
+      return nil
+    elsif t_nullable_tbl.row_count() == 0 and f_nullable_tbl.row_count() > 0
+      query = "select *, 'U'::varchar(2) as type from #{f_nullable_tbl.relname}"
+    elsif f_nullable_tbl.row_count() == 0 and t_nullable_tbl.row_count() > 0
+      query = "select *, 'M'::varchar(2) as type from #{t_nullable_tbl.relname}"
+    else
+      unwanted_query = "SELECT *, 'U'::varchar(2) as type from ("+f_nullable_tbl.intersect_query(t_nullable_tbl)+") as unwanted"
+      missing_query = "SELECT *, 'M'::varchar(2) as type from ("+t_nullable_tbl.intersect_query(f_nullable_tbl)+") as missing"
+      query = "(#{unwanted_query}) UNION (#{missing_query})"
+    end
+    tbl_name = 'nullable_f_tbl'
+    DBConn.tblCreation(tbl_name, '', query)
+    nullable_f_tbl = Failing_Row_Table.new(tbl_name)
+    return nullable_f_tbl
+  end
+
   # join error localization : Join Type, Join condition
   def join_type_err
     # joinErrList = []
     unwanted_joinErrList = []
     missing_joinErrList = []
-    return [] if @fPS['SELECT']['fromClause'][0]['JOINEXPR'].nil?
+    return [] unless @fQueryObj.has_join?()
 
-    if @unwanted_tuple_count + @missing_tuple_count == 0
-      p 'no failed rows found. There is no Join Error'
+    nullable_f_tbl = find_failing_nullable_rows
+
+    if nullable_f_tbl.nil?
+      p 'No failing nullable rows found. There is no Join Type Error'
       return []
     end
 
-    tbl2PK = @pkList.map do |c|
-      "tbl2.#{c}_pk"
-    end.join(',')
-    unwantedQuery = @unwantedQuery.gsub('tbl2.*', tbl2PK)
-    missingQuery = @missingQuery.gsub('tbl2.*', tbl2PK)
-    # test if thers is join key errors
-
-    if @unwanted_tuple_count > 0
-      # query = @unwantedQuery.gsub('tbl2.*',tbl2PK)
-      errlist = jointypeTest(unwantedQuery, 'U')
-      unwanted_joinErrList = errlist unless errlist.nil?
-    end
-
-    if @missing_tuple_count > 0
-      # query = @missingQuery.gsub('tbl2.*',tbl2PK)
-
-      errlist = jointypeTest(missingQuery, 'M')
-      missing_joinErrList = errlist unless errlist.nil?
-    end
-
-    # joinErrList = unwanted_joinErrList + missing_joinErrList
-    unwanted_joinErrList + missing_joinErrList
+    return join_type_test(nullable_f_tbl)
   end
+
+  def join_type_test(nullable_f_tbl)
+
+    joinErrList = []
+    joinJson = @fPS['SELECT']['fromClause'][0].to_json
+    joinList = JsonPath.on(joinJson, '$..JOINEXPR')
+    f_rel_list = @fQueryObj.rel_list
+    joinList.each_with_index do |join, index|
+      joinType = join['jointype']
+      has_quals = join.key? 'quals'
+      # joinQuals = join['JOINEXPR'].has_key? 'quals' ? join['JOINEXPR']['quals'] : nil
+      larg = join['larg']
+      l_rel_list = join_arg_rel_list(larg,f_rel_list)
+      lLoc = JsonPath.on(larg, '$..location')[0]
+
+      rarg = join['rarg']
+      r_rel_list = join_arg_rel_list(rarg,f_rel_list)
+      rLoc = JsonPath.on(rarg, '$..location')[0]
+
+      # pp join
+      # join null testing is not needed for 
+      # 1. inner join if there is no missing rows
+      # 2. full join if there is no unwated rows
+      next if (((joinType.to_s == '0') && (nullable_f_tbl.missing_row_count == 0) )\
+              ||\
+              ((joinType.to_s == '3') && (nullable_f_tbl.unwanted_row_count == 0) ))
+
+      if has_quals
+        quals = join['quals']
+        join_key_rel_alias = JsonPath.on(quals, '$..COLUMNREF').map{|key| key['fields'][0]}
+
+        # remove rels not used in join key
+        l_rel_list.delete_if{|rel| not join_key_rel_alias.include?(rel.relalias) }
+        r_rel_list.delete_if{|rel| not join_key_rel_alias.include?(rel.relalias) }
+
+        l_null_query_template = rel_pk_null_query(l_rel_list)
+        r_null_query_template = rel_pk_null_query(r_rel_list)
+
+        l_type = join_failing_row_type(joinType, true)
+        r_type = join_failing_row_type(joinType, false)
+        l_null_query = "DELETE FROM #{nullable_f_tbl.relname} WHERE type = '#{l_type}' AND "\
+                      + l_null_query_template.gsub('#BOOL#', ' ') + ' AND '\
+                      + r_null_query_template.gsub('#BOOL#', ' NOT ')
+        r_null_query = "DELETE FROM #{nullable_f_tbl.relname} WHERE type = '#{r_type}' AND "\
+                      + l_null_query_template.gsub('#BOOL#', ' NOT ')+ ' AND '\
+                      + r_null_query_template.gsub('#BOOL#', ' ')
+        binding.pry
+        puts l_null_query
+        res = DBConn.exec(l_null_query)
+        joinErrList << joinNullRst(joinType, 'L', lLoc, index) if res.cmd_tuples >0
+        puts r_null_query
+        res = DBConn.exec(r_null_query)
+        joinErrList << joinNullRst(joinType, 'R', rLoc, index) if res.cmd_tuples >0
+
+      end
+    end
+    return joinErrList
+
+  end
+
+  def join_failing_row_type(join_type, is_l_null)
+    if is_l_null
+      case join_type
+      when 0
+        'M'
+      when 1
+        'M'
+      when 2
+        'U'
+      when 3
+        'U'
+      else
+        ''
+      end
+    else
+      case join_type
+      when 0
+        'M'
+      when 1
+        'U'
+      when 2
+        'M'
+      when 3
+        'U'
+      else
+        ''
+      end
+    end
+  end
+
+
+  def rel_pk_null_query(rel_list)
+    rel_list.map do |rel|
+      rel.pk_column_list.map{|col| "#{col.renamed_colname} is#BOOL#null"}.join(' AND ')
+    end.join(' AND ')
+  end
+
+  def join_arg_rel_list(arg,full_rel_list)
+    relname_list = JsonPath.on(arg, '$..relname')
+    rel_list = []
+    relname_list.each do |name|
+      rel_list << full_rel_list.find{|tbl| tbl.relname == name}
+    end
+    return rel_list
+  end
+
 
   def join_key_err
 
@@ -212,43 +315,6 @@ class LozalizeError
     return result_keys,f_key_list
   end
 
-  def jointypeTest(pkQuery, testDataType)
-    if testDataType == 'U' # unwanted
-      fromCondStr = @fromCondStr
-    else
-      # for missing data set, we need to replace all join to OUTER JOIN
-      fromPT = JsonPath.for(@fromPT.to_json).gsub('$..jointype') { |_v| '2' }.to_hash
-      fromCondStr = ReverseParseTree.fromClauseConstr(fromPT)
-      # p fromCondStr
-    end
-    joinErrList = []
-    joinJson = @fPS['SELECT']['fromClause'][0].to_json
-    joinList = JsonPath.on(joinJson, '$..JOINEXPR')
-
-    joinList.each_with_index do |join, index|
-      joinType = join['jointype']
-      has_quals = join.key? 'quals'
-      # joinQuals = join['JOINEXPR'].has_key? 'quals' ? join['JOINEXPR']['quals'] : nil
-      larg = join['larg']
-      lLoc = JsonPath.on(larg, '$..location')[0]
-
-      rarg = join['rarg']
-      rLoc = JsonPath.on(rarg, '$..location')[0]
-
-      # pp join
-      # join null testing is not needed for inner join, unwanted dataset
-      next if (joinType.to_s == '0') && (testDataType == 'U')
-      # LEFT NULL
-      lNull = joinArgNull(larg)
-      lRst = joinNullTest(lNull, pkQuery, fromCondStr)
-      joinErrList << joinNullRst(lRst, joinType, 'L', lLoc, has_quals, index)
-      # Right Null
-      rNull = joinArgNull(rarg)
-      rRst = joinNullTest(rNull, pkQuery, fromCondStr)
-      joinErrList << joinNullRst(rRst, joinType, 'R', rLoc, has_quals, index)
-    end
-    joinErrList.compact!
-  end
 
   def joinArgNull(arg)
     h = {}
@@ -296,11 +362,11 @@ class LozalizeError
     result
   end
 
-  def joinNullRst(rst, jointype, joinSide, location, has_quals, index)
+  def joinNullRst(jointype, joinSide, location, index)
     # p rst
 
-    if rst == 'IS SUBSET'
-      joinTypeDesc = ReverseParseTree.joinTypeConvert(jointype.to_s, has_quals)
+    # if rst == 'IS SUBSET'
+      # joinTypeDesc = ReverseParseTree.joinTypeConvert(jointype.to_s, has_quals)
       # p "Error in Join type #{joinTypeDesc} of #{joinSide}"
       h = {}
       h['location'] = location
@@ -308,38 +374,19 @@ class LozalizeError
       h['joinType'] = jointype
       h['index'] = index
       h
-    end
+    # end
   end
 
   def find_failed_tuples
     # Unwanted rows
-    # query,res = find_unwanted_tuples()
-    # unWantedPK = pkArryGen(res)
     @unWantedPK = find_unwanted_tuples
     # Missing rows
-    # query,res = find_missing_tuples()
-    # missinPK = pkArryGen(res)
     @missingPK = find_missing_tuples
-    # return unWantedPK,missinPK
   end
 
   # where cond error localization
   def selecionErr(method)
-    # whereErrList = []
-    # joinErrList = []
 
-    # if @missingQuery.nil? && @unwantedQuery.nil?
-    #   # allcolumns_construct('or',true)
-    #   ftuples_tbl_create
-    #   find_failed_tuples
-    # end
-
-    # allcolumns_construct(method,true)
-    # ftuples_tbl_create
-    # find_failed_tuples() if @unWantedPK.nil? && @missinPK.nil?
-
-    # # pkNull = @pkSelect.gsub(',',' IS NULL AND ')
-    # @unwanted_tuple_count = unWantedPK.count()
     tnTableCreation('tuple_node_test_result') if @is_new
 
     if @unwanted_tuple_count + @missing_tuple_count == 0
@@ -364,7 +411,6 @@ class LozalizeError
       where_cond_test('M')
       # joinErrList = jointypeErr(query,'M')
     end
-
     # create aggregated tuple_suspicious_nodes
     pk = @pkFullList.map { |pk| pk['alias'] }.join(',')
     query = 'create materialized view tuple_node_test_result_aggr as '\
@@ -372,7 +418,9 @@ class LozalizeError
     pp query
     DBConn.exec(query)
 
-    suspicious_score_upd(@predicateTree.branches)
+    unless @predicateTree.nil?
+      suspicious_score_upd(@predicateTree.branches)
+    end
     # exnorate algorithm
     # binding.pry
     @column_combinations = method.start_with?('o') ? Columns_Combination.new(@all_columns) : @all_columns
@@ -480,6 +528,7 @@ class LozalizeError
           # pp "branch: #{Time.now}"
           tupleMutationReverse = TupleMutationReverse.new(@test_id, pk, type, branch, @fQueryObj, constraint_predicate)
           # pp "new: #{Time.now}"
+          pp pk
           tupleMutationReverse.allcolumns_construct(@column_combinations, @allColumns_select, @allColumns_renamed)
           # pp "allcolumns_construct: #{Time.now}"
           tupleMutationReverse.unwanted_to_satisfied(duplicate_removal)
@@ -506,7 +555,7 @@ class LozalizeError
   def tuple_mutation_test(pkArry, type, constraint_predicate, duplicate_removal)
     # tPredicateArry =tPredicateTree.predicateArrayGen(tPDTree)
     pkArry.each do |pk|
-      # pp pk
+      
       # pp type
       @column_combinations.reset_processed
       # pkCond=QueryBuilder.pkCondConstr_strip_tbl_alias(pk)
@@ -523,6 +572,8 @@ class LozalizeError
           # distinct_query = "select distinct node_name from node_query_mapping where branch_name = '#{branch_name['branch_name']}'"
           # distinct_nodes =DBConn.exec(distinct_query)
           # if distinct_nodes.count()>1
+          # puts "ftuples_is_empty? #{ftuples_is_empty?}"
+          break if ftuples_is_empty?
           branch = []
           branch << @predicateTree.branches.find { |br| br.name == branch_name['branch_name'] }
           # pp "branch: #{Time.now}"
@@ -530,7 +581,12 @@ class LozalizeError
           # pp "new: #{Time.now}"
           tupleMutation.allcolumns_construct(@column_combinations, @allColumns_select, @allColumns_renamed)
           # pp "allcolumns_construct: #{Time.now}"
+          # puts '*******'
+          # pp pk
+          # pp branch_name
+          # puts 'going to unwanted_to_satisfied'
           tupleMutation.unwanted_to_satisfied(duplicate_removal)
+          # puts '**********'
           # pp "unwanted_to_satisfied: #{Time.now}"
           # end
         end
@@ -554,7 +610,7 @@ class LozalizeError
   def tuple_mutation_test_with_dup_removal(type, constraint_predicate)
     targetList = @pkFullList.map { |pk| "#{pk['alias']}_pk as #{pk['alias']}" }.join(', ')
     query = "select #{targetList} from ftuples where type='#{type}' limit 1"
-    pp query
+    # pp query
     res = DBConn.exec(query)
     cnt = 1
     while res.cmd_tuples > 0
@@ -562,10 +618,13 @@ class LozalizeError
       # puts "begin: #{Time.now}"
       pkArry = pkArryGen(res)
       # whereCondTest(pkArry,type)
-      # pp pkArry
-      # puts test
+      pp pkArry
+      # # puts test
+      # puts 'going to tuple_mutation_test'
       tuple_mutation_test(pkArry, type, constraint_predicate, true)
+
       res = DBConn.exec(query)
+
       # pp res
       # puts test
       # puts "end: #{Time.now}"
@@ -583,6 +642,11 @@ class LozalizeError
     end
   end
 
+  def ftuples_is_empty?
+    query = "select count(1) as cnt from ftuples"
+    res = DBConn.exec(query)
+    return res[0]['cnt'].to_i == 0
+  end
   # create tuple node table
   def tnTableCreation(tableName)
     pk_list = @pkList.join(',')

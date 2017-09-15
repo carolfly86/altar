@@ -20,11 +20,11 @@ def ds_learning(script)
 
   excluded_tbl = tqueryObj.create_excluded_tbl
   satisfied_tbl = tqueryObj.create_satisfied_tbl
-  # attributes = tqueryObj.all_cols.select do |col|
-  #                 %(N D).include? col.typcategory
-  #               end
-  dcm = DecisionTreeMutation.new(tqueryObj.all_cols)
-  dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script)
+  attributes = tqueryObj.all_cols.select do |col|
+                 col.typcategory != 'U'
+                end
+  dcm = DecisionTreeMutation.new(attributes)
+  dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, true)
 
 end
 
@@ -94,25 +94,25 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
 
       if script_type == 'j'
-        puts 'fault localize: Join Key Errors'
-        new_join_key,old_join_key = localizeErr.join_key_err
-        if new_join_key.count >0
-          puts 'finding candidate join key list'
-          # pp new_join_key
-          new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
-          unless (candidate_join_key - old_join_key).empty?
-            # pp new_from
-            puts 'Fixing join key'
-            fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
-            pp fQueryNew
-            fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
-            LozalizeError.new(fqueryObj, tqueryObj)
-          else
-            puts 'No Join Key Error'
-          end
-        else
-          puts 'No Join Key Error'
-        end
+        # puts 'fault localize: Join Key Errors'
+        # new_join_key,old_join_key = localizeErr.join_key_err
+        # if new_join_key.count >0
+        #   puts 'finding candidate join key list'
+        #   # pp new_join_key
+        #   new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
+        #   unless (candidate_join_key - old_join_key).empty?
+        #     # pp new_from
+        #     puts 'Fixing join key'
+        #     fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
+        #     pp fQueryNew
+        #     fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
+        #     LozalizeError.new(fqueryObj, tqueryObj)
+        #   else
+        #     puts 'No Join Key Error'
+        #   end
+        # else
+        #   puts 'No Join Key Error'
+        # end
 
         # # Join type error localization
         puts 'fault localize: Join Type Errors'
@@ -160,75 +160,68 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
     update_test_result_tbl(idx, fqueryObj.query, tqueryObj.query, m_u_tuple_count, duration, totalScore, f_options[:relevent], tarantular_rank, tarantular_duration, total_test_cnt)
 
     if auto_fix
-      puts 'begin fix'
-      startTime = Time.now
-      # create t_result stats table
-      # tqueryObj.create_stats_tbl
-      # fqueryObj.create_stats_tbl
-      excluded_tbl = tqueryObj.create_excluded_tbl
-      satisfied_tbl = tqueryObj.create_satisfied_tbl
-
-      current_query = fqueryObj.query
-      current_score = totalScore
-      current_queryObj = fqueryObj
-
-
       test_result = localizeErr.get_test_result
-      iterate_cnt = 1
-      test_result.each do |rst|
-        next if rst.suspicious_score.to_i <= 0
-
-        terminated = false
-        puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
-        pp rst.columns
-        faulty_script = "#{script}_#{idx.to_s}"
-        mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
-        is_ds = false
-        neighborQueryObj = mutation.generate_neighbor_query(rst,is_ds)
-        unless is_ds
-          # localizeErr.selecionErr(method)
-          begin
-            Timeout.timeout(600) do
-              localizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
-              localizeErr.selecionErr(method)
-            end
-          rescue Timeout::Error
-            puts 'fault localization can not complete in 600s and is terminated'
-            terminated = true
-          end
-
-          unless terminated
-            new_score = localizeErr.getSuspiciouScore
-            # if new_score['totalScore'] < best_score
-            current_query = neighborQueryObj.query
-            current_score = new_score['totalScore']
-            current_queryObj = neighborQueryObj
-          end
-
-
-
-          if current_score ==0
-            break
-          end
-        else
-          break if iterate_cnt >= f_options[:relevent].count()
-        end
-        iterate_cnt = iterate_cnt + 1
-        # end
-        # puts 'neighborQueryObj query:'
-        # pp neighborQueryObj.query
-        # puts 'neighborQueryObj score:'
-        # pp neighborQueryObj.score
-        # hc=HillClimbingAlg.new(fqueryObj,tqueryObj)
-        # hc.hill_climbing(k)
-        # hc.create_stats_tbl
-      end
-      endTime= Time.now
-      fix_duration = (endTime - startTime).to_i
-      update_fix_result_tbl(idx,tqueryObj.query,current_query,fix_duration, current_score)
-
+      fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method)
     end
   end
+end
+
+def fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method)
+   puts 'begin fix'
+    startTime = Time.now
+    excluded_tbl = tqueryObj.create_excluded_tbl
+    satisfied_tbl = tqueryObj.create_satisfied_tbl
+
+    current_query = fqueryObj.query
+    current_score = fqueryObj.score['totalScore']
+    current_queryObj = fqueryObj
+    newlocalizeErr = nil
+
+    faulty_script = "#{script}_#{idx.to_s}"
+
+    # test_result = localizeErr.get_test_result
+    iterate_cnt = 1
+    test_result.each do |rst|
+      next if rst.suspicious_score.to_i <= 0
+
+      terminated = false
+      puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
+      pp rst.columns
+      mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
+      is_ds = false
+      neighborQueryObj = mutation.generate_neighbor_query(rst,is_ds)
+      unless is_ds
+        # localizeErr.selecionErr(method)
+        begin
+          Timeout.timeout(600) do
+            newlocalizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
+            newlocalizeErr.selecionErr(method)
+          end
+        rescue Timeout::Error
+          puts 'fault localization can not complete in 600s and is terminated'
+          terminated = true
+        end
+
+        unless terminated
+          new_score = newlocalizeErr.getSuspiciouScore
+          # if new_score['totalScore'] < best_score
+          current_query = neighborQueryObj.query
+          current_score = new_score['totalScore']
+          current_queryObj = neighborQueryObj
+        end
+        if current_score ==0
+          break
+        end
+      else
+        break if iterate_cnt >= f_options[:relevent].count()
+      end
+      iterate_cnt = iterate_cnt + 1
+
+    end
+    endTime= Time.now
+    fix_duration = (endTime - startTime).to_i
+    update_fix_result_tbl(idx,tqueryObj.query,current_query,fix_duration, current_score)
+    return current_score
 end
 
 def randomMutation(fqueryObj, tqueryObj)
@@ -264,43 +257,10 @@ def createGR(golden_record_opr, script, tqueryObj)
 end
 
 def create_golden_record(tQueryObj)
-  # tQueryObj.parseTree
-  # parseTree = tQueryObj.parseTree
-  # wherePT = tQueryObj.parseTree['SELECT']['whereClause']
-  # fromPT = tQueryObj.parseTree['SELECT']['fromClause']
-  # col_list = DBConn.getAllRelFieldList(fromPT)
-  # new_target_list = col_list.map do |col|
-  #   "#{col.fullname} as #{col.renamed_colname}"
-  # end.join(', ')
   new_target_list = tQueryObj.all_cols_select
-  # tPredicateTree = PredicateTree.new('t', true, 0)
-  # root = Tree::TreeNode.new('root', '')
-  # tPredicateTree.build_full_pdtree(fromPT[0], wherePT, root)
-  # pdtree = tPredicateTree.pdtree
-  # pdtree.print_tree
   tQueryObj.predicate_tree_construct('t', true, 0)
   excluded_tbl = tQueryObj.create_excluded_tbl
   satisfied_tbl = tQueryObj.create_satisfied_tbl
-  # all_queries = []
-  # br_queries = []
-  # tPredicateTree.branches.each do |br|
-  #   br_query = ''
-  #   brq = {}
-  #   br.nodes.each_with_index do |nd, idx|
-  #     all_queries << nd.query unless all_queries.include?(nd.query)
-  #     br_query = br_query + (idx > 0 ? ' AND ' : '') + nd.query
-  #   end
-  #   brq[br.name] = br_query
-  #   br_queries << brq
-  # end
-
-  # excluded_predicates = all_queries.map { |query| "NOT (#{query})" }.join(' AND ')
-  # excluded_target_list = "#{new_target_list} , 'excluded'::varchar(30) as type, ''::varchar(30) as branch"
-  # excluded_query = ReverseParseTree.reverseAndreplace(parseTree, excluded_target_list, excluded_predicates)
-  # excluded_query = "#{excluded_query} limit 1"
-  # pp excluded_query
-  # binding.pry
-  # DBConn.tblCreation('golden_record', '', excluded_query)
 
   excluded_query =  "select #{new_target_list},'excluded'::varchar(30) as type, ''::varchar(30) as branch from #{excluded_tbl} limit 1"
   DBConn.tblCreation('golden_record', '', excluded_query)
@@ -323,15 +283,6 @@ def create_golden_record(tQueryObj)
   satisfied_query = "SELECT distinct on (branch) #{new_target_list},'satisfied'::varchar(30) as type, branch from  #{satisfied_tbl}"
   satisfied_query = "INSERT INTO golden_record #{satisfied_query}"
   DBConn.exec(satisfied_query)
-  # br_queries.each do |q|
-  #   q.each_pair do |key, val|
-  #     satisfied_target_list = "#{new_target_list} , 'satisfied'::varchar(30) as type, '#{key}'::varchar(30) as branch"
-  #     satisfied_query = ReverseParseTree.reverseAndreplace(parseTree, satisfied_target_list, val)
-  #     satisfied_query = "INSERT INTO golden_record #{satisfied_query} limit 1"
-  #     # pp satisfied_query
-  #     DBConn.exec(satisfied_query)
-  #   end
-  # end
 end
 
 

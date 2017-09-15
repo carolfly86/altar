@@ -23,7 +23,7 @@
 		"relevent": ["PH0-N10"]
 		},
 		{
-  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >70 and q.etl_time > '2016-12-14' and c.active = 't' and questionposition >4 and  q.maxresponses = 1 and q.required='t' and q.imageid<1000 and c.etl_time  > '2017-02-01'  and c.imageid > 1000",
+  		"query": "select q.surveyid,c.questionid,c.id from questions q join choices c on q.id = c.questionid where q.externalsystemid >70 and q.etl_time > '2016-12-14' and c.active = 't' and q.questionposition >4 and  q.maxresponses = 1 and q.required='t' and q.imageid<1000 and c.etl_time  > '2017-02-01'  and c.imageid > 1000",
   		"pkList": "id,surveyid,questionid",
 		"relevent": ["PH0-N4"]
 		},
