@@ -1,7 +1,7 @@
 def create_all_test_result_tbl
   query = %(DROP TABLE if exists all_test_result;
 	CREATE TABLE all_test_result
-	(script_name varchar(100), test_id int, m_u_tuple_count bigint, duration bigint, total_score bigint,
+	(script_name varchar(100), test_id char(5), m_u_tuple_count bigint, duration bigint, total_score bigint,
 	harmonic_mean float(2), jaccard float(2), column_cnt int,
 	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
 	sober_hm float(2), liblit_hm float(2),mw_hm float(2),crosstab_hm float(2),
@@ -37,7 +37,8 @@ end
 def create_test_result_tbl
   query = %(DROP TABLE if exists test_result;
 	CREATE TABLE test_result
-	(test_id int, fquery text, tquery text, m_u_tuple_count bigint, duration bigint, total_score bigint,
+	(test_id char(5), test_type char(5),
+  fquery text, tquery text, m_u_tuple_count bigint, duration bigint, total_score bigint,
 	harmonic_mean float(2), jaccard float(2), column_cnt int,
 	tarantular_rank varchar(50), ochihai_rank varchar(50), kulczynski2_rank varchar(50), naish2_rank varchar(50),wong1_rank varchar(50),
 	sober_rank varchar(50), liblit_rank varchar(50),mw_rank varchar(50),
@@ -49,16 +50,18 @@ def create_test_result_tbl
 
   query = %(DROP TABLE if exists test_result_detail;
  	CREATE TABLE test_result_detail
- 	(test_id int, branch_name varchar(30), node_name varchar(30), query text, columns text, score bigint);)
+ 	(test_id char(5), test_type char(5),
+  branch_name varchar(30), node_name varchar(30), query text, columns text, score bigint);)
   # pp query
   DBConn.exec(query)
 end
 
-def update_test_result_tbl(test_id, fquery, tquery, m_u_tuple_count, duration, total_score, relevent, rank, tarantular_duration, total_test_cnt)
+def update_test_result_tbl(test_id, test_type, fquery, tquery, m_u_tuple_count, duration, total_score, relevent, rank, tarantular_duration, total_test_cnt)
   fquery = fquery.gsub("'", "''")
   tquery = tquery.gsub("'", "''")
   query =  %(INSERT INTO test_result
-				select #{test_id},
+				select '#{test_id}',
+        '#{test_type}',
 				'"#{fquery}"',
 				'"#{tquery}"',
 				#{m_u_tuple_count},
@@ -92,7 +95,8 @@ def update_test_result_tbl(test_id, fquery, tquery, m_u_tuple_count, duration, t
   DBConn.exec(query)
 
   query = %(INSERT INTO test_result_detail
- 				select #{test_id},
+ 				select '#{test_id}',
+        '#{test_type}',
  				branch_name,
  				node_name,
  				query,
@@ -132,6 +136,6 @@ def update_test_result_tbl(test_id, fquery, tquery, m_u_tuple_count, duration, t
   res = DBConn.exec(query)
   column_cnt = res.count - 2
 
-  query = "update test_result set harmonic_mean = #{harmonic_mean}, jaccard = #{jaccard}, column_cnt = #{column_cnt} where test_id = #{test_id}"
+  query = "update test_result set harmonic_mean = #{harmonic_mean}, jaccard = #{jaccard}, column_cnt = #{column_cnt} where test_id = '#{test_id}' and test_type = '#{test_type}'"
   res = DBConn.exec(query)
 end

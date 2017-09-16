@@ -67,6 +67,9 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   createGR(golden_record_opr, script, tqueryObj)
   # pp 'test'
   f_options_list.each_with_index do |f_options, idx|
+    puts "#{idx}:****************************************"
+    fix_rst_list = []
+    fl_rst_list = []
 
     fqueryObj = QueryObj.new(f_options)
     if method == 'b'
@@ -80,6 +83,14 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       m_u_tuple_count = tarantular.failed_tuple_count
       totalScore = m_u_tuple_count
       duration = tarantular_duration
+      fix_rst = {'test_type' => 'w', 'query' => fqueryObj.query,
+          'm_u_tuple_count' => m_u_tuple_count,
+          'duration' => duration, 
+          'tarantular_rank' => tarantular_rank,
+          'tarantular_duration' => tarantular_duration,
+          'total_test_cnt' => total_test_cnt
+          }
+      fl_rst_list << fix_rst
     else
       tarantular_duration = 0
       tarantular_rank = { 'tarantular_rank' => '0', 'ochihai_rank' => '0', 'naish2_rank' => '0', 'kulczynski2_rank' => '0',
@@ -94,44 +105,58 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
 
       if script_type == 'j'
-        # puts 'fault localize: Join Key Errors'
-        # new_join_key,old_join_key = localizeErr.join_key_err
-        # if new_join_key.count >0
-        #   puts 'finding candidate join key list'
-        #   # pp new_join_key
-        #   new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj.parseTree)
-        #   unless (candidate_join_key - old_join_key).empty?
-        #     # pp new_from
-        #     puts 'Fixing join key'
-        #     fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
-        #     pp fQueryNew
-        #     fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
-        #     LozalizeError.new(fqueryObj, tqueryObj)
-        #   else
-        #     puts 'No Join Key Error'
-        #   end
-        # else
-        #   puts 'No Join Key Error'
-        # end
+
 
         # # Join type error localization
         puts 'fault localize: Join Type Errors'
+        fl_jt_start_time = Time.now
         joinErrList = localizeErr.join_type_err
+        fl_jt_end_time = Time.now
+        fl_jt_duration = (fl_jt_end_time - beginTime).to_i
+        # update_test_result_tbl(idx, 'jt',fqueryObj.query, tqueryObj.query, 0, fl_jt_duration, 0, f_options[:relevent], 0, 0, 0)
+        fix_rst = {'test_type' => 'jt', 'query' => fqueryObj.query,
+          'm_u_tuple_count' => 0,
+          'duration' => fl_jt_duration, 
+          'tarantular_rank' => tarantular_rank,
+          'tarantular_duration' => tarantular_duration,
+          'total_test_cnt' => total_test_cnt
+          }
+        fl_rst_list << fix_rst
+
+
         if joinErrList.count > 0
           # fix join type error
-          pp 'fixing join type error'
-          pp 'join type error list'
-          pp joinErrList
+          fqueryObj = fix_join_type(joinErrList,fqueryObj,fix_rst_list)
 
-          psNew = AutoFix.JoinTypeFix(joinErrList, fqueryObj.parseTree)
-          fQueryNew = ReverseParseTree.reverse(psNew)
-          p 'New query after fixing join type error'
-          p fQueryNew
-          fqueryObj = QueryObj.new(query: fQueryNew, pkList: fqueryObj.pkList, table: 'f_result')
           # Reinitialize LocalizeErr with fixed query
           localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
         else
           puts 'No Join Type Error'
+        end
+
+
+        puts 'fault localize: Join Key Errors'
+        fl_jc_start_time = Time.now
+        new_join_key,old_join_key = localizeErr.join_key_err
+        fl_jc_end_time = Time.now
+        fl_jc_duration = (fl_jc_end_time - beginTime- (fl_jt_end_time - fl_jt_start_time)).to_i
+        # update_test_result_tbl(idx, 'jc',fqueryObj.query, tqueryObj.query, 0, fl_jc_duration, 0, f_options[:relevent], 0, 0, 0)
+        fix_rst = {'test_type' => 'jc', 'query' => fqueryObj.query,
+          'm_u_tuple_count' => 0,
+          'duration' => fl_jc_duration, 
+          'tarantular_rank' => tarantular_rank,
+          'tarantular_duration' => tarantular_duration,
+          'total_test_cnt' => total_test_cnt
+          }
+        fl_rst_list << fix_rst
+
+        if new_join_key.count >0
+          puts 'finding candidate join key list'
+          fqueryObj = fix_join_cond(new_join_key,old_join_key,fqueryObj,fix_rst_list)
+          # Reinitialize LocalizeErr with fixed query
+          localizeErr = LozalizeError.new(fqueryObj, tqueryObj)
+        else
+          puts 'No Join Key Error'
         end
       end
       # Where condition fault localization
@@ -157,72 +182,25 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
     # return
     # tarantular_rank = tarantular.relevence(f_options[:relevent])
     # return
-    update_test_result_tbl(idx, fqueryObj.query, tqueryObj.query, m_u_tuple_count, duration, totalScore, f_options[:relevent], tarantular_rank, tarantular_duration, total_test_cnt)
 
     if auto_fix
       test_result = localizeErr.get_test_result
-      fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method)
+      fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method,fix_rst_list)
+    end
+
+    # update fl result table
+    fl_rst_list.each do |r|
+      update_test_result_tbl(idx,r['test_type'],r['query'], tqueryObj.query, r['m_u_tuple_count'], r['duration'], totalScore, f_options[:relevent], r['tarantular_rank'], r['tarantular_duration'], r['total_test_cnt'])
+    end
+    # update fix result table
+    fix_rst_list.each do |r|
+      score = r['score'].nil? ? totalScore : r['score']
+      update_fix_result_tbl(idx,r['test_type'],tqueryObj.query,r['query'],r['duration'], score)
     end
   end
 end
 
-def fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method)
-   puts 'begin fix'
-    startTime = Time.now
-    excluded_tbl = tqueryObj.create_excluded_tbl
-    satisfied_tbl = tqueryObj.create_satisfied_tbl
 
-    current_query = fqueryObj.query
-    current_score = fqueryObj.score['totalScore']
-    current_queryObj = fqueryObj
-    newlocalizeErr = nil
-
-    faulty_script = "#{script}_#{idx.to_s}"
-
-    # test_result = localizeErr.get_test_result
-    iterate_cnt = 1
-    test_result.each do |rst|
-      next if rst.suspicious_score.to_i <= 0
-
-      terminated = false
-      puts "fixing node: #{rst.branch_name} #{rst.node_name} at location #{rst.location}"
-      pp rst.columns
-      mutation = Mutation.new(current_queryObj,excluded_tbl,satisfied_tbl,dbname,"#{faulty_script}_#{iterate_cnt}")
-      is_ds = false
-      neighborQueryObj = mutation.generate_neighbor_query(rst,is_ds)
-      unless is_ds
-        # localizeErr.selecionErr(method)
-        begin
-          Timeout.timeout(600) do
-            newlocalizeErr = LozalizeError.new(neighborQueryObj, tqueryObj)
-            newlocalizeErr.selecionErr(method)
-          end
-        rescue Timeout::Error
-          puts 'fault localization can not complete in 600s and is terminated'
-          terminated = true
-        end
-
-        unless terminated
-          new_score = newlocalizeErr.getSuspiciouScore
-          # if new_score['totalScore'] < best_score
-          current_query = neighborQueryObj.query
-          current_score = new_score['totalScore']
-          current_queryObj = neighborQueryObj
-        end
-        if current_score ==0
-          break
-        end
-      else
-        break if iterate_cnt >= f_options[:relevent].count()
-      end
-      iterate_cnt = iterate_cnt + 1
-
-    end
-    endTime= Time.now
-    fix_duration = (endTime - startTime).to_i
-    update_fix_result_tbl(idx,tqueryObj.query,current_query,fix_duration, current_score)
-    return current_score
-end
 
 def randomMutation(fqueryObj, tqueryObj)
   # options = {:script=> script, :table =>'f_result' }

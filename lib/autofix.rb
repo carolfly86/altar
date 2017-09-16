@@ -69,26 +69,36 @@ module AutoFix
     end
   end
 
-  def self.join_key_fix(join_key_list,parse_tree)
-    join_rels = ReverseParseTree.rel_in_from(parse_tree['SELECT']['fromClause'])
+  def self.join_key_fix(join_key_list,query_object)
+    # join_rels = ReverseParseTree.rel_in_from(parse_tree['SELECT']['fromClause'])
+    join_list = query_object.join_list()
     from_query = ''
     ag = AcyclicGraph.new([])
     new_join_key_list = Set.new()
-    0.upto(join_rels.count-2) do |i|
-      l_rel = join_rels[i]
-      r_rel = join_rels[i+1]
-      from_query = from_query + (i==0 ? "#{l_rel['relname']} #{l_rel['relalias']}" : "")+ " JOIN #{r_rel['relname']} #{r_rel['relalias']} on "
+    0.upto(join_list.count-1) do |i|
+      binding.pry
+      join = join_list.find{|j| j['id'] ==i }
+      l_rel_list = join['l_rel_list']
+      r_rel = join['r_rel_list'][0]
+      has_quals = (not join['quals'].nil?)
+      join_type = ReverseParseTree.joinTypeConvert(join['jointype'].to_s, has_quals)
+
+      l_arg = (i==0 ? "#{l_rel_list[0].relname} #{l_rel_list[0].relalias}" : "")
+      from_query = from_query + "#{l_arg} #{join_type} #{r_rel.relname} #{r_rel.relalias} on "
 
       jk =  join_key_list.select do |kp|
                           rels = kp.map{|k| k.relname}
+                          rels_include_l_rels = (l_rel_list.map{|r| r.relname} - rels).empty?
+                          rels_include_r_rels = rels.include?(r_rel.relname)
+
                           col_id_list = kp.map{|k| k.hash}
-                          rels.include?(l_rel['relname']) && rels.include?(r_rel['relname']) && ag.add_edge(col_id_list)
+                          ( rels_include_l_rels && rels_include_r_rels && ag.add_edge(col_id_list) )
                         end
       new_join_key_list = new_join_key_list + jk
       join_key_list = join_key_list - jk
 
       q = jk.map do |kp|
-                        kp.map{|k| "#{k.fullname}"}.join(" = ")
+            kp.map{|k| "#{k.fullname}"}.join(" = ")
           end.join(" AND ")
       from_query = from_query + q
     end
@@ -102,7 +112,7 @@ module AutoFix
                         end
 
       q = jk.map do |kp|
-                        kp.map{|k| "#{k.fullname}"}.join(" = ")
+            kp.map{|k| "#{k.fullname}"}.join(" = ")
           end.join(" AND ")
       new_join_key_list = new_join_key_list + jk
     end

@@ -219,11 +219,10 @@ class LozalizeError
         r_null_query = "DELETE FROM #{nullable_f_tbl.relname} WHERE type = '#{r_type}' AND "\
                       + l_null_query_template.gsub('#BOOL#', ' NOT ')+ ' AND '\
                       + r_null_query_template.gsub('#BOOL#', ' ')
-        binding.pry
-        puts l_null_query
+        # puts l_null_query
         res = DBConn.exec(l_null_query)
         joinErrList << joinNullRst(joinType, 'L', lLoc, index) if res.cmd_tuples >0
-        puts r_null_query
+        # puts r_null_query
         res = DBConn.exec(r_null_query)
         joinErrList << joinNullRst(joinType, 'R', rLoc, index) if res.cmd_tuples >0
 
@@ -291,15 +290,19 @@ class LozalizeError
     join_key_err_list = {}
     unwanted_keys = f_key_list - t_key_list
     missing_keys = t_key_list - f_key_list
-    # binding.pry
     missing_keys.each do |kp|
       # if any unwanted tuple does not satisfy the missing key
       # then this missing key is neccessary
       # otherwise the missing key is not neccessary
-       joinkey = kp.map{|k| "#{k.renamed_colname}"}.join(' <> ')
+
+      # or if a missing tuple satisfy the missing key
+      # then the missing key is neccessary
+       joinkey_not_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' <> ')
+       joinkey_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' = ')
        query = " select count(1) as cnt from ftuples "+
-               " where type ='U' and #{joinkey}"
-       pp query
+               " where (type ='U' and #{joinkey_not_eq})" +
+               " or (type ='M' and #{joinkey_eq})"
+       # pp query
        res = DBConn.exec(query)
        result = res[0]['cnt']
        if result.to_i ==  0
@@ -875,7 +878,7 @@ class LozalizeError
     # Insert into ftuples_tbl
     renamedPKCol = @pkFullList.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
     targetList = "#{renamedPKCol},'none'::varchar(300) as mutation_cols,'M'::varchar(1) as type,#{@allColumns_select}"
-    val_query = ReverseParseTree.reverseAndreplace(@fPS, targetList, '1=1')
+    val_query = ReverseParseTree.reverseAndreplace(@tPS, targetList, '1=1')
     pkjoin = @pkFullList.map do |c|
       "tbl1.#{c['alias']} = tbl2.#{c['alias']}_pk"
     end.join(' AND ')

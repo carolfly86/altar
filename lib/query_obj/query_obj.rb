@@ -34,11 +34,39 @@ class QueryObj
     create_tbl()
   end
 
+  def join_list()
+    if @join_list.nil?
+      @join_list = []
+      if has_join?()
+        @join_list =[]
+        from_pt = @parseTree['SELECT']['fromClause'][0]
+        rel_list = rel_list()
+        join_list = JsonPath.on(from_pt, '$..JOINEXPR')
+        id = join_list.count() -1
+        join_list.each do |join|
+          j = {}
+          l_rel_list = JsonPath.on(join['larg'],'$..relname')
+          r_rel_list = JsonPath.on(join['rarg'],'$..relname')
+          j['jointype'] = join['jointype']
+          j['l_rel_list'] = rel_list.select{|rel| l_rel_list.include?(rel.relname)}
+          j['r_rel_list'] = rel_list.select{|rel| r_rel_list.include?(rel.relname)}
+          j['jointype'] = join['jointype']
+          j['quals'] = join['quals']
+          j['id'] = id
+          @join_list << j
+          id = id -1
+        end
+      end
+    end
+    return @join_list
+  end
+
   def rel_list()
     if @rel_list.nil?
-      from_pt = @parseTree['SELECT']['fromClause'][0].to_json
+      # from_pt = @parseTree['SELECT']['fromClause'][0].to_json
       @rel_list = []
-      JsonPath.on(from_pt,'$..RANGEVAR').each do |tbl|
+
+      self.rel_names.each do |tbl|
         relname = tbl['relname']
         relalias = tbl['alias'].nil? ? nil : tbl['alias']['ALIAS']['aliasname']
 
@@ -70,17 +98,7 @@ class QueryObj
       DBConn.tblCreation(@table, '', @query)
       # from_pt = @parseTree['SELECT']['fromClause'][0].to_json
       tbls = rel_list()
-      # binding.pry
-      # join_expr_list = JsonPath.on(from_pt, '$..JOINEXPR')
 
-      # join_expr_list.each do |join_expr|
-      #   # next if join_expr['jointype'].to_i == 0
-      #   l_tbls = JsonPath.on(join_expr['larg'],'$..RANGEVAR')
-      #   r_tbls = JsonPath.on(join_expr['rarg'],'$..RANGEVAR')
-      #   tbls = tbls + l_tbls
-      #   tbls = tbls + r_tbls
-
-      # end
       pk_col_list = []
 
       tbls.each do |tbl|
@@ -90,10 +108,10 @@ class QueryObj
       # add index on not null columns
       pk_not_null = @pkList.split(',').map{|pk| "#{pk} is not null"}.join(' OR ')
       create_indx = "CREATE UNIQUE INDEX idx_#{@table} on #{@table} (#{@pkList}) where #{pk_not_null}"
-      pp create_indx
+      # pp create_indx
       DBConn.exec(create_indx)
 
-      pp pk_col_list
+      # pp pk_col_list
       # create a nullable table for storing nullable columns
       nullable_query = pk_col_list.map{|tbl_pks| '(' +tbl_pks.map{|pk| "#{pk.select_name} is null"}.join(" AND ") + ')'}.join(' OR ')
       all_pk_list = pk_col_list.flatten.map{|col| "#{col.select_name} as #{col.renamed_colname}"}.join(', ')
@@ -110,7 +128,7 @@ class QueryObj
         new_query =  new_query + " WHERE #{nullable_query}"
       end
       @nullable_tbl = "#{@table}_nullable"
-      pp new_query
+      # pp new_query
       DBConn.tblCreation(@nullable_tbl, '', new_query)
     end
   end

@@ -9,6 +9,7 @@ class JoinKeyIdent
   end
 
   def extract_from_table()
+    # @candidates is sets of columns in the same data typecategory
     @candidates = []
     tbl_list = @query_obj.rel_names.map{|r| "'#{r['relname']}'"}.join(',')
     col_list_query = QueryBuilder.group_cols_by_data_typcategory(tbl_list)
@@ -32,6 +33,8 @@ class JoinKeyIdent
     end
     renamed_pk = @query_obj.pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ')
     query = "select #{renamed_pk} from #{t_full_table} limit 1"
+    # check one example row first
+    # if assiociation rule can be found in example row the process to all rows
     example_pk = DBConn.exec(query)[0]
     pk_cond = example_pk.map { |k,v|  k + ' = ' + v.to_s.str_int_rep }.join(' AND ')
     join_key_list =[]
@@ -42,8 +45,8 @@ class JoinKeyIdent
 
       # list = @candidates.split(',')
       select_cols = @query_obj.all_cols.select do |col|
-                      col_fullname = col.relname+'.'+col.colname
-                      list.include?(col_fullname)
+                      # col_fullname = col.relname+'.'+col.colname
+                      list.include?(col.relname_fullname)
                     end
       unnest_colname = select_cols.map{|c| "'#{c.renamed_colname}'"}.join(',')
       unnest_colval = select_cols.map{|c| c.renamed_colname }.join(',')
