@@ -9,7 +9,7 @@ require 'pry'
 require 'set'
 Dir['lib/*.rb', 'lib/*/*.rb'].each { |file| require_relative file }
 # /usr/local/Cellar/postgresql/9.3.3/bin/pg_ctl start -D/usr/local/var/postgres
-# ./altar.rb -s employees_000 -g i -m or -o fl
+# ./altar.rb -s employees_jc1 -g i -m or -o fl
 # ./altar.rb -s employees_s01 -g i -m or -o fl
 # ./altar.rb -a y -m o -u n -o ds
 # ./altar.rb -a y -o ds

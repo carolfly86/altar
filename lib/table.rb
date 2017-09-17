@@ -5,16 +5,39 @@ class Table
   end
 
   def row_count
-    if @row_count.nil?
-      query = "select count(1) as cnt from #{@relname}"
-      @row_count =  DBConn.exec(query)[0]['cnt'].to_i
-    end
-    return @row_count
+    # if @row_count.nil?
+    query = "select count(1) as cnt from #{@relname}"
+    return  DBConn.exec(query)[0]['cnt'].to_i
+    # end
   end
 
-  def intersect_query(other_tbl)
-    query = "select * from #{@relname} intersect select * from #{other_tbl.relname}"
+  def intersect_query(other_tbl,target_list = '*')
+    query = "select #{target_list} from #{@relname} intersect select #{target_list} from #{other_tbl.relname}"
     return query
+  end
+
+  def except_query(other_tbl,target_list = '*')
+    query = "select #{target_list} from #{@relname} except select #{target_list} from #{other_tbl.relname}"
+    return query
+  end
+
+  def columns()
+    if @columns.nil?
+      @columns = []
+      query = QueryBuilder.find_cols_by_data_typcategory(@relname)
+      colList = DBConn.exec(query).to_a
+      colList.each do |c|
+        field = Column.new
+        field.colname = c['column_name']
+        field.relname = @relname
+        field.relalias = @relalias
+        field.datatype = c['data_type']
+        field.typcategory = c['typcategory']
+        field.colalias = c['column_name']
+        @columns << field
+      end
+    end
+    return @columns
   end
 
   def pk_column_list()
@@ -66,18 +89,18 @@ class Failing_Row_Table < Table
   end
 
   def missing_row_count
-    if @missing_row_count.nil?
+    # if @missing_row_count.nil?
       query = "select count(1) as cnt from #{@relname} where type = 'M'"
-      @missing_row_count =  DBConn.exec(query)[0]['cnt'].to_i
-    end
-    return @missing_row_count
+      return DBConn.exec(query)[0]['cnt'].to_i
+    # end
+     # @missing_row_count
   end
 
   def unwanted_row_count
-    if @unwanted_row_count.nil?
+    # if @unwanted_row_count.nil?
       query = "select count(1) as cnt from #{@relname} where type = 'U'"
-      @unwanted_row_count =  DBConn.exec(query)[0]['cnt'].to_i
-    end
-    return @unwanted_row_count
+      return  DBConn.exec(query)[0]['cnt'].to_i
+    # end
+    # return @unwanted_row_count
   end
 end

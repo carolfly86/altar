@@ -17,23 +17,35 @@ module AutoFix
       # left Join, L side null is missing
       elsif (joinType.to_s == '1') && (joinSide == 'L')
         # the fix would be change join from Left JOin to FULL Join
-        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '3')  }.to_hash
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '2')  }.to_hash
       # left Join, L side null is missing  and R side null is unwanted
       elsif (joinType.to_s == '1') && (joinSide == 'L,R')
         # the fix would be change join from Left JOin to RIGHT Join
-        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '2')  }.to_hash
-      # right Join, l side null is unwanted
-      elsif (joinType.to_s == '2') && (joinSide == 'L')
-        # the fix would be change join from Left JOin to Inner Join
-        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '0')  }.to_hash
-      # right Join, R side null is unwanted
-      elsif (joinType.to_s == '2') && (joinSide == 'L')
-        # the fix would be change join from Left JOin to FULL Join
         fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '3')  }.to_hash
-      # right Join, R side null is missing  and L side null is unwanted
-      elsif (joinType.to_s == '2') && (joinSide == 'L,R')
+      # RIGHT JOIN FIX
+      elsif (joinType.to_s == '3') && (joinSide == 'R')
+        # the fix would be change join from RIGHT JOin to FULL Join
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '2')  }.to_hash
+      # left Join, L side null is missing
+      elsif (joinType.to_s == '3') && (joinSide == 'L')
+        # the fix would be change join from Left JOin to INNER Join
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '0')  }.to_hash
+      # left Join, L side null is missing  and R side null is unwanted
+      elsif (joinType.to_s == '3') && (joinSide == 'L,R')
         # the fix would be change join from Left JOin to LEFT Join
         fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '1')  }.to_hash
+      # FULL Join, l side null is unwanted
+      elsif (joinType.to_s == '2') && (joinSide == 'L')
+        # the fix would be change FULL join from FULL JOin to LEFT Join
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '1')  }.to_hash
+      # FULL Join, R side null is unwanted
+      elsif (joinType.to_s == '2') && (joinSide == 'R')
+        # the fix would be change join from FULL JOin to RIGHT Join
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '3')  }.to_hash
+      # FULL Join, R side null is missing  and L side null is unwanted
+      elsif (joinType.to_s == '2') && (joinSide == 'L,R')
+        # the fix would be change join from Left JOin to LEFT Join
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '0')  }.to_hash
       # inner join, R side null is missing
       elsif (joinType.to_s == '0') && (joinSide == 'R')
         # the fix would be change join from INNERT JOin to LEFT Join
@@ -41,11 +53,11 @@ module AutoFix
       # inner join, L side null is missing
       elsif (joinType.to_s == '0') && (joinSide == 'L')
         # the fix would be change join from INNERT JOin to RIGHT Join
-        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '2')  }.to_hash
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '3')  }.to_hash
       # inner join, L,R side null are missing
       elsif (joinType.to_s == '0') && (joinSide == 'L,R')
         # the fix would be change join from INNERT JOin to FULL Join
-        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '3')  }.to_hash
+        fromPT = JsonPath.for(fromPT).gsub('$..JOINEXPR') { |v| update_joinType_by_loc(v, loc, '2')  }.to_hash
 
       end
     end
@@ -76,24 +88,24 @@ module AutoFix
     ag = AcyclicGraph.new([])
     new_join_key_list = Set.new()
     0.upto(join_list.count-1) do |i|
-      binding.pry
       join = join_list.find{|j| j['id'] ==i }
       l_rel_list = join['l_rel_list']
       r_rel = join['r_rel_list'][0]
+      all_rels = join['l_rel_list'].map{|r| r.relname}
+      all_rels << r_rel.relname
       has_quals = (not join['quals'].nil?)
       join_type = ReverseParseTree.joinTypeConvert(join['jointype'].to_s, has_quals)
 
       l_arg = (i==0 ? "#{l_rel_list[0].relname} #{l_rel_list[0].relalias}" : "")
       from_query = from_query + "#{l_arg} #{join_type} #{r_rel.relname} #{r_rel.relalias} on "
-
       jk =  join_key_list.select do |kp|
                           rels = kp.map{|k| k.relname}
-                          rels_include_l_rels = (l_rel_list.map{|r| r.relname} - rels).empty?
-                          rels_include_r_rels = rels.include?(r_rel.relname)
+                          rels_is_included = (rels - all_rels).empty?
 
                           col_id_list = kp.map{|k| k.hash}
-                          ( rels_include_l_rels && rels_include_r_rels && ag.add_edge(col_id_list) )
+                          ( rels_is_included && ag.add_edge(col_id_list) )
                         end
+      binding.pry if jk.count == 0
       new_join_key_list = new_join_key_list + jk
       join_key_list = join_key_list - jk
 
@@ -121,7 +133,8 @@ module AutoFix
     return from_query, new_join_key_list
   end
   def self.fix_from_query(query,new_from)
-    old_from = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\swhere\s/i.match(query)[1]
+    binding.pry
+    old_from = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\s(where\s)?/i.match(query)[1]
     query.gsub(old_from,new_from)
   end
 end

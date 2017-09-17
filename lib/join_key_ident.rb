@@ -22,7 +22,14 @@ class JoinKeyIdent
     end
 
     t_full_table = @query_obj.create_full_rst_tbl
-
+    nullable_tbl = Table.new(@query_obj.nullable_tbl)
+    unless nullable_tbl.nil?
+      not_null_query = " where " + nullable_tbl.columns.map{|c| "#{c.colname} is not null"}.join(' AND ')
+      # null_query = " where " + nullable_tbl.columns.map{|c| "#{c.colname} is null"}.join(' OR ')
+    else
+      not_null_query = ''
+      # null_query = ''
+    end
     thresh_hold = 1
     res = DBConn.exec("select count(1) as cnt from #{t_full_table}")
     total_cnt = res[0]['cnt']
@@ -32,9 +39,10 @@ class JoinKeyIdent
       return []
     end
     renamed_pk = @query_obj.pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ')
-    query = "select #{renamed_pk} from #{t_full_table} limit 1"
+    query = "select #{renamed_pk} from #{t_full_table} #{not_null_query} limit 1"
     # check one example row first
     # if assiociation rule can be found in example row the process to all rows
+    # example pk must satisfy not null condition
     example_pk = DBConn.exec(query)[0]
     pk_cond = example_pk.map { |k,v|  k + ' = ' + v.to_s.str_int_rep }.join(' AND ')
     join_key_list =[]
@@ -51,12 +59,16 @@ class JoinKeyIdent
       unnest_colname = select_cols.map{|c| "'#{c.renamed_colname}'"}.join(',')
       unnest_colval = select_cols.map{|c| c.renamed_colname }.join(',')
       new_target_list = " unnest(array[#{unnest_colname}]) as colname, unnest(array[#{unnest_colval}]) as colval"
+      # if nullable_tbl.nil?
+      #   query = "select #{new_target_list} from #{t_full_table} where #{pk_cond}"
+      # else
       query = "select #{new_target_list} from #{t_full_table} where #{pk_cond}"
+      # end
       query = "with t as (#{query}) "+
               " select string_agg( t.colname ,',') as col_list from t "+
               " group by colval "+
               " having count(1) >1"
-      # pp query
+      pp query
       grouped_col_list = DBConn.exec(query)
       grouped_col_list.each do |cl|
         # binding.pry
@@ -73,8 +85,15 @@ class JoinKeyIdent
           next if col_pair.map{|c| c.relname }.uniq.count()==1
 
           eq_cols_cond = cp.join(' = ')
-          query = "select count(1)::float/#{total_cnt}::float as sat from #{t_full_table} where #{eq_cols_cond}"
-          # pp query
+          query = "select count(1)::float/#{total_cnt}::float as sat from #{t_full_table} "
+          if nullable_tbl.nil?
+            query = query + "where #{eq_cols_cond}"
+          else
+            null_query = cp.map{|c| "#{c} is null"}.join(' OR ')
+            query = query +"where #{null_query} OR (#{eq_cols_cond})"
+          end
+
+          pp query
           res = DBConn.exec(query)
           satisfactory = res[0]['sat']
 

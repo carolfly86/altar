@@ -34,6 +34,29 @@ class QueryObj
     create_tbl()
   end
 
+  # from section WITHOUT where predicate
+  def from_query()
+    if @from_query.nil?
+      if has_where_predicate?()
+        @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\swhere\s/i.match(query)[1]
+      else
+        @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\s(where\s)?/i.match(query)[1]
+      end
+    end
+    return @from_query
+  end
+
+  def where_predicate()
+    if @where_predicate.nil?
+      if has_where_predicate?()
+        @where_predicate = /\swhere\s([\w\s\.\=\>\<\_\-]+)/i.match(query)[1]
+      else
+        @where_predicate = ''
+      end
+    end
+    return @where_predicate
+  end
+
   def join_list()
     if @join_list.nil?
       @join_list = []
@@ -166,7 +189,11 @@ class QueryObj
     if @pk_list.nil?
       pkListQuery = QueryBuilder.find_pk_cols(@table)
       res = DBConn.exec(pkListQuery)
-
+      # pk not exist , use unique key instead
+      if res.count == 0
+        pkListQuery = QueryBuilder.find_uniq_key(@table)
+        res = DBConn.exec(pkListQuery)
+      end
       @pk_list = []
       res.each do |r|
         @pk_list << r['attname']

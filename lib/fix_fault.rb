@@ -24,7 +24,9 @@ def fix_join_cond(new_join_key,old_join_key,fqueryObj,fix_rst_list)
   new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj)
   unless (candidate_join_key - old_join_key).empty?
     puts 'Fixing join key'
-    fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
+    old_from = fqueryObj.from_query
+    fQueryNew = fqueryObj.query.gsub(old_from,new_from)
+    # fQueryNew = AutoFix.fix_from_query(fqueryObj.query,new_from)
     p 'New query after fixing condition error'
     pp fQueryNew
     endTime = Time.now

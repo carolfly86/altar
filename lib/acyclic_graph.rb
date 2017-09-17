@@ -61,6 +61,8 @@ class AcyclicGraph
       @edges << edge unless @edges.include?(edge)
       added = true
     end
+    # puts "added is #{added}"
+
     return added
 	end
 end

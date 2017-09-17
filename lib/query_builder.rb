@@ -8,7 +8,17 @@ module QueryBuilder
 	                                 AND a.attnum = ANY(i.indkey)
 	            WHERE  i.indrelid = '#{tbl}'::regclass
 	            AND    i.indisprimary;"
-    end
+  end
+
+  def self.find_uniq_key(tbl)
+    query = "SELECT a.attname, format_type(a.atttypid, a.atttypmod) AS data_type
+          FROM   pg_index i
+          JOIN   pg_attribute a ON a.attrelid = i.indrelid
+                               AND a.attnum = ANY(i.indkey)
+          WHERE  i.indrelid = '#{tbl}'::regclass
+          AND    i.indisunique;"
+
+  end
 
   # test if tbl1 is subset of tbl2
   def self.subset_test(tbl1, tbl2)

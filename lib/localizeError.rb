@@ -137,24 +137,38 @@ class LozalizeError
   end
 
 
+  def none_nullalble_failing_rows()
+    nullable_tbl = find_failing_nullable_rows()
+    return @ftuples_tbl.row_count() if nullable_tbl.nil?
+
+    target_list = nullable_tbl.columns.map{|c| c.colname}.join(', ')
+    except_query = @ftuples_tbl.except_query(nullable_tbl,target_list)
+    query = " with expt as (#{except_query}) select count(1) as cnt from expt"
+    return DBConn.exec(query)[0]['cnt'].to_i
+  end
+
   def find_failing_nullable_rows()
-    f_nullable_tbl = Table.new(@fQueryObj.nullable_tbl)
-    t_nullable_tbl = Table.new(@tQueryObj.nullable_tbl)
-    if t_nullable_tbl.row_count() == 0 and f_nullable_tbl.row_count() == 0
-      return nil
-    elsif t_nullable_tbl.row_count() == 0 and f_nullable_tbl.row_count() > 0
-      query = "select *, 'U'::varchar(2) as type from #{f_nullable_tbl.relname}"
-    elsif f_nullable_tbl.row_count() == 0 and t_nullable_tbl.row_count() > 0
-      query = "select *, 'M'::varchar(2) as type from #{t_nullable_tbl.relname}"
-    else
-      unwanted_query = "SELECT *, 'U'::varchar(2) as type from ("+f_nullable_tbl.intersect_query(t_nullable_tbl)+") as unwanted"
-      missing_query = "SELECT *, 'M'::varchar(2) as type from ("+t_nullable_tbl.intersect_query(f_nullable_tbl)+") as missing"
-      query = "(#{unwanted_query}) UNION (#{missing_query})"
+    # binding.pry
+    if @nullable_f_tbl.nil?
+      f_nullable_tbl = Table.new(@fQueryObj.nullable_tbl)
+      t_nullable_tbl = Table.new(@tQueryObj.nullable_tbl)
+      if t_nullable_tbl.row_count() == 0 and f_nullable_tbl.row_count() == 0
+        return nil
+      elsif t_nullable_tbl.row_count() == 0 and f_nullable_tbl.row_count() > 0
+        query = "select *, 'U'::varchar(2) as type from #{f_nullable_tbl.relname}"
+      elsif f_nullable_tbl.row_count() == 0 and t_nullable_tbl.row_count() > 0
+        query = "select *, 'M'::varchar(2) as type from #{t_nullable_tbl.relname}"
+      else
+        unwanted_query = "SELECT *, 'U'::varchar(2) as type from ("+f_nullable_tbl.intersect_query(t_nullable_tbl)+") as unwanted"
+        missing_query = "SELECT *, 'M'::varchar(2) as type from ("+t_nullable_tbl.intersect_query(f_nullable_tbl)+") as missing"
+        query = "(#{unwanted_query}) UNION (#{missing_query})"
+      end
+      tbl_name = 'nullable_f_tbl'
+      # binding.pry
+      DBConn.tblCreation(tbl_name, '', query)
+      @nullable_f_tbl = Failing_Row_Table.new(tbl_name)
     end
-    tbl_name = 'nullable_f_tbl'
-    DBConn.tblCreation(tbl_name, '', query)
-    nullable_f_tbl = Failing_Row_Table.new(tbl_name)
-    return nullable_f_tbl
+    return @nullable_f_tbl
   end
 
   # join error localization : Join Type, Join condition
@@ -198,10 +212,11 @@ class LozalizeError
       # 2. full join if there is no unwated rows
       next if (((joinType.to_s == '0') && (nullable_f_tbl.missing_row_count == 0) )\
               ||\
-              ((joinType.to_s == '3') && (nullable_f_tbl.unwanted_row_count == 0) ))
+              ((joinType.to_s == '2') && (nullable_f_tbl.unwanted_row_count == 0) ))
 
       if has_quals
         quals = join['quals']
+        joinSide =[]
         join_key_rel_alias = JsonPath.on(quals, '$..COLUMNREF').map{|key| key['fields'][0]}
 
         # remove rels not used in join key
@@ -219,13 +234,17 @@ class LozalizeError
         r_null_query = "DELETE FROM #{nullable_f_tbl.relname} WHERE type = '#{r_type}' AND "\
                       + l_null_query_template.gsub('#BOOL#', ' NOT ')+ ' AND '\
                       + r_null_query_template.gsub('#BOOL#', ' ')
-        # puts l_null_query
+        puts l_null_query
         res = DBConn.exec(l_null_query)
-        joinErrList << joinNullRst(joinType, 'L', lLoc, index) if res.cmd_tuples >0
-        # puts r_null_query
+        joinSide << 'L' if res.cmd_tuples >0
+        # joinErrList << joinNullRst(joinType, 'L', lLoc, index) 
+        puts r_null_query
         res = DBConn.exec(r_null_query)
-        joinErrList << joinNullRst(joinType, 'R', rLoc, index) if res.cmd_tuples >0
+        joinSide << 'R' if res.cmd_tuples >0
 
+        if joinSide.count >0
+          joinErrList << joinNullRst(joinType, joinSide.join(','), rLoc, index)
+        end
       end
     end
     return joinErrList
@@ -235,27 +254,27 @@ class LozalizeError
   def join_failing_row_type(join_type, is_l_null)
     if is_l_null
       case join_type
-      when 0
+      when 0 # INNER JOIN
         'M'
-      when 1
+      when 1 # LEFT JOIN
         'M'
-      when 2
+      when 2 # FULL JOIN
         'U'
-      when 3
+      when 3 # RIGHT JOIN
         'U'
       else
         ''
       end
     else
       case join_type
-      when 0
+      when 0 # INNER JOIN
         'M'
-      when 1
+      when 1 # LEFT JOIN
         'U'
-      when 2
+      when 2 # FULL JOIN
+        'U'
+      when 3 # RIGHT JOIN
         'M'
-      when 3
-        'U'
       else
         ''
       end
@@ -280,40 +299,41 @@ class LozalizeError
 
 
   def join_key_err
-
-    t_jk = JoinKeyIdent.new(@tQueryObj)
-    t_key_list = t_jk.extract_from_table
-
+    result_keys = []
     f_jk = JoinKeyIdent.new(@fQueryObj)
     f_key_list = f_jk.extract_from_parse_tree
+    if none_nullalble_failing_rows > 0
+      t_jk = JoinKeyIdent.new(@tQueryObj)
+      t_key_list = t_jk.extract_from_table
 
-    join_key_err_list = {}
-    unwanted_keys = f_key_list - t_key_list
-    missing_keys = t_key_list - f_key_list
-    missing_keys.each do |kp|
-      # if any unwanted tuple does not satisfy the missing key
-      # then this missing key is neccessary
-      # otherwise the missing key is not neccessary
 
-      # or if a missing tuple satisfy the missing key
-      # then the missing key is neccessary
-       joinkey_not_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' <> ')
-       joinkey_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' = ')
-       query = " select count(1) as cnt from ftuples "+
-               " where (type ='U' and #{joinkey_not_eq})" +
-               " or (type ='M' and #{joinkey_eq})"
-       # pp query
-       res = DBConn.exec(query)
-       result = res[0]['cnt']
-       if result.to_i ==  0
-         # binding.pry
-         missing_keys.delete(kp)
-       end
-    end
-    # binding.pry
-    result_keys = []
-    if unwanted_keys.count + missing_keys.count>0
-      result_keys = f_key_list - unwanted_keys + missing_keys
+      join_key_err_list = {}
+      unwanted_keys = f_key_list - t_key_list
+      missing_keys = t_key_list - f_key_list
+      missing_keys.each do |kp|
+        # if any unwanted tuple does not satisfy the missing key
+        # then this missing key is neccessary
+        # otherwise the missing key is not neccessary
+
+        # or if a missing tuple satisfy the missing key
+        # then the missing key is neccessary
+         joinkey_not_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' <> ')
+         joinkey_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' = ')
+         query = " select count(1) as cnt from ftuples "+
+                 " where (type ='U' and #{joinkey_not_eq})" +
+                 " or (type ='M' and #{joinkey_eq})"
+         # pp query
+         res = DBConn.exec(query)
+         result = res[0]['cnt']
+         if result.to_i ==  0
+           # binding.pry
+           missing_keys.delete(kp)
+         end
+      end
+      # binding.pry
+      if unwanted_keys.count + missing_keys.count>0
+        result_keys = f_key_list - unwanted_keys + missing_keys
+      end
     end
     return result_keys,f_key_list
   end
@@ -646,9 +666,9 @@ class LozalizeError
   end
 
   def ftuples_is_empty?
-    query = "select count(1) as cnt from ftuples"
-    res = DBConn.exec(query)
-    return res[0]['cnt'].to_i == 0
+    # query = "select count(1) as cnt from ftuples"
+    # res = DBConn.exec(query)
+    return @ftuples_tbl.row_count == 0
   end
   # create tuple node table
   def tnTableCreation(tableName)
@@ -899,6 +919,7 @@ class LozalizeError
     query =  ReverseParseTree.reverseAndreplace(@fPS, targetListReplacement, '1=2')
     pkList = @pkFullList.map { |pk| "#{pk['alias']}_pk" }.join(', ') + ',mutation_cols, type'
     query = QueryBuilder.create_tbl('ftuples', pkList, query)
+    @ftuples_tbl = Failing_Row_Table.new('ftuples')
     # pp query
     DBConn.exec(query)
   end
