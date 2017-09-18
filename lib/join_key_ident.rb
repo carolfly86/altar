@@ -13,6 +13,7 @@ class JoinKeyIdent
     @candidates = []
     tbl_list = @query_obj.rel_names.map{|r| "'#{r['relname']}'"}.join(',')
     col_list_query = QueryBuilder.group_cols_by_data_typcategory(tbl_list)
+    pp col_list_query
     col_list = DBConn.exec(col_list_query)
     col_list.each do |collist|
       if collist['count'].to_i > 1
@@ -43,8 +44,22 @@ class JoinKeyIdent
     # check one example row first
     # if assiociation rule can be found in example row the process to all rows
     # example pk must satisfy not null condition
-    example_pk = DBConn.exec(query)[0]
-    pk_cond = example_pk.map { |k,v|  k + ' = ' + v.to_s.str_int_rep }.join(' AND ')
+    res = DBConn.exec(query)
+    # if all rows are null then example pk can be nullable 
+    if res.count()==0
+      query = "select #{renamed_pk} from #{t_full_table} limit 1"
+      example_pk = DBConn.exec(query)[0]
+    else
+      example_pk = res[0]
+    end
+
+    pk_cond = example_pk.map do |k,v|
+                if v.nil?
+                  "#{k} is null"
+                else
+                  k + ' = ' + v.to_s.str_int_rep 
+                end
+              end.join(' AND ')
     join_key_list =[]
     # pp pk_cond
     # acyclic_graph = AcyclicGraph.new([])
@@ -57,18 +72,16 @@ class JoinKeyIdent
                       list.include?(col.relname_fullname)
                     end
       unnest_colname = select_cols.map{|c| "'#{c.renamed_colname}'"}.join(',')
-      unnest_colval = select_cols.map{|c| c.renamed_colname }.join(',')
+      unnest_colval = select_cols.map{|c| "#{c.renamed_colname}::text" }.join(',')
       new_target_list = " unnest(array[#{unnest_colname}]) as colname, unnest(array[#{unnest_colval}]) as colval"
-      # if nullable_tbl.nil?
-      #   query = "select #{new_target_list} from #{t_full_table} where #{pk_cond}"
-      # else
-      query = "select #{new_target_list} from #{t_full_table} where #{pk_cond}"
-      # end
+
+      query = "select #{new_target_list} from (select * from #{t_full_table} where #{pk_cond} limit 1) as t"
       query = "with t as (#{query}) "+
               " select string_agg( t.colname ,',') as col_list from t "+
+              " where colval is not null "+
               " group by colval "+
               " having count(1) >1"
-      pp query
+      # pp query
       grouped_col_list = DBConn.exec(query)
       grouped_col_list.each do |cl|
         # binding.pry
@@ -89,11 +102,15 @@ class JoinKeyIdent
           if nullable_tbl.nil?
             query = query + "where #{eq_cols_cond}"
           else
-            null_query = cp.map{|c| "#{c} is null"}.join(' OR ')
-            query = query +"where #{null_query} OR (#{eq_cols_cond})"
+            null_query = nullable_column_query(col_pair)
+            if null_query.empty?
+              query = query +"where #{eq_cols_cond}"
+            else
+              query = query +"where (#{null_query}) OR (#{eq_cols_cond})"
+            end
           end
 
-          pp query
+          # pp query
           res = DBConn.exec(query)
           satisfactory = res[0]['sat']
 
@@ -106,7 +123,7 @@ class JoinKeyIdent
         end
       end
     end
-    # pp join_key_list
+    pp join_key_list.map{|c| c.map{|col| col.renamed_colname} }
     join_key_list.to_set
   end
 
@@ -127,6 +144,50 @@ class JoinKeyIdent
     join_key_list.to_set
   end
 
+  def none_inner_join_list()
+    if @none_inner_join_list.nil?
+      join_list = @query_obj.join_list
+      @none_inner_join_list =join_list.select{|join| join['jointype'].to_i >0}
+    end
+    return @none_inner_join_list
+  end
 
+  def nullable_column_query(column_pair)
+    query = ''
+    none_inner_join_list = none_inner_join_list()
+    if none_inner_join_list.count>0
+      cp_rels = column_pair.map{|c| c.relname }
+      none_inner_join_list.each do |join|
+        r_rel_list = join['r_rel_list'].map{|r| r.relname} & cp_rels
+        l_rel_list = join['l_rel_list'].map{|r| r.relname} & cp_rels
+
+        if r_rel_list.count>0 && l_rel_list.count>0
+          jointype = join['jointype']
+          r_rel_col = column_pair.find{|c| c.relname == r_rel_list[0]}
+          l_rel_col = column_pair.find{|c| c.relname == l_rel_list[0]}
+          # case jointype
+          # when 1 # LEFT JOIN
+          #   l_is_not_null = "#{l_rel_col.renamed_colname} is not null"
+          #   r_is_null =  "#{r_rel_col.renamed_colname} is null"
+          #   query = "#{l_is_not_null} and #{r_is_null}"
+          # when 3 # RIGHT JOIN
+          #   l_is_null = "#{l_rel_col.renamed_colname} is null"
+          #   r_is_not_null =  "#{r_rel_col.renamed_colname} is not null"
+          #   query = "#{l_is_null} and #{r_is_not_null}"
+
+          # when 2 # FULL JOIN
+          #   l_is_not_null = "#{l_rel_col.renamed_colname} is not null"
+          #   r_is_not_null = "#{r_rel_col.renamed_colname} is not null"
+          #   query = "#{l_is_not_null} OR #{r_is_not_null}"
+          # else
+          #   query = ''
+          # end
+          query = "#{l_rel_col.renamed_colname} is null OR #{r_rel_col.renamed_colname} is null"
+          return query
+        end
+      end
+    end
+    return query
+  end
 
 end

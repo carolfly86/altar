@@ -159,12 +159,11 @@ class LozalizeError
       elsif f_nullable_tbl.row_count() == 0 and t_nullable_tbl.row_count() > 0
         query = "select *, 'M'::varchar(2) as type from #{t_nullable_tbl.relname}"
       else
-        unwanted_query = "SELECT *, 'U'::varchar(2) as type from ("+f_nullable_tbl.intersect_query(t_nullable_tbl)+") as unwanted"
-        missing_query = "SELECT *, 'M'::varchar(2) as type from ("+t_nullable_tbl.intersect_query(f_nullable_tbl)+") as missing"
+        unwanted_query = "SELECT *, 'U'::varchar(2) as type from ("+f_nullable_tbl.except_query(t_nullable_tbl)+") as unwanted"
+        missing_query = "SELECT *, 'M'::varchar(2) as type from ("+t_nullable_tbl.except_query(f_nullable_tbl)+") as missing"
         query = "(#{unwanted_query}) UNION (#{missing_query})"
       end
       tbl_name = 'nullable_f_tbl'
-      # binding.pry
       DBConn.tblCreation(tbl_name, '', query)
       @nullable_f_tbl = Failing_Row_Table.new(tbl_name)
     end
@@ -234,11 +233,11 @@ class LozalizeError
         r_null_query = "DELETE FROM #{nullable_f_tbl.relname} WHERE type = '#{r_type}' AND "\
                       + l_null_query_template.gsub('#BOOL#', ' NOT ')+ ' AND '\
                       + r_null_query_template.gsub('#BOOL#', ' ')
-        puts l_null_query
+        # puts l_null_query
         res = DBConn.exec(l_null_query)
         joinSide << 'L' if res.cmd_tuples >0
         # joinErrList << joinNullRst(joinType, 'L', lLoc, index) 
-        puts r_null_query
+        # puts r_null_query
         res = DBConn.exec(r_null_query)
         joinSide << 'R' if res.cmd_tuples >0
 
@@ -319,14 +318,15 @@ class LozalizeError
         # then the missing key is neccessary
          joinkey_not_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' <> ')
          joinkey_eq = kp.map{|k| "#{k.renamed_colname}"}.join(' = ')
+         joinkey_null =  kp.map{|k| "#{k.renamed_colname} is null "}.join('OR ')
          query = " select count(1) as cnt from ftuples "+
-                 " where (type ='U' and #{joinkey_not_eq})" +
-                 " or (type ='M' and #{joinkey_eq})"
+                 " where (type ='U' and (#{joinkey_not_eq} or #{joinkey_null}))" +
+                 " or (type ='M' and (#{joinkey_eq} or #{joinkey_null}) )"
          # pp query
          res = DBConn.exec(query)
          result = res[0]['cnt']
          if result.to_i ==  0
-           # binding.pry
+           binding.pry
            missing_keys.delete(kp)
          end
       end
@@ -856,11 +856,11 @@ class LozalizeError
 
   def find_unwanted_tuples
     pkNull = @pkSelect.gsub(',', ' IS NULL AND ')
-    select_query = 'SELECT #TARGETLIST#'\
-                   " FROM #{@fTable} f LEFT JOIN #{@tTable} t ON #{@pkJoin} where #{pkNull.gsub('f.', 't.')} IS NULL"
-
+    # select_query = 'SELECT #TARGETLIST#'\
+    #                " FROM #{@fTable} f LEFT JOIN #{@tTable} t ON #{@pkJoin} where #{pkNull.gsub('f.', 't.')} IS NULL"
+    select_query = "SELECT #TARGETLIST# FROM #{@fTable} except SELECT #TARGETLIST# FROM #{@tTable}"
     # Unwanted rows
-    targetList = @pkSelect
+    targetList = @pkSelect.gsub('f.', '')
 
     query = select_query.gsub('#TARGETLIST#', targetList)
     res = DBConn.exec(query)
@@ -887,10 +887,12 @@ class LozalizeError
   def find_missing_tuples
     pkNull = @pkSelect.gsub(',', ' IS NULL AND ')
 
-    select_query = 'SELECT #TARGETLIST#'\
-                   " FROM #{@tTable} t LEFT JOIN #{@fTable} f ON #{@pkJoin} where #{pkNull} IS NULL"
+    # select_query = 'SELECT #TARGETLIST#'\
+    #                " FROM #{@tTable} t LEFT JOIN #{@fTable} f ON #{@pkJoin} where #{pkNull} IS NULL"
+   
+    select_query = "SELECT #TARGETLIST# FROM #{@tTable} except SELECT #TARGETLIST# FROM #{@fTable}"
     # Unwanted rows
-    targetList = @pkSelect.gsub('f.', 't.')
+    targetList = @pkSelect.gsub('f.', '')
     query = select_query.gsub('#TARGETLIST#', targetList)
     res = DBConn.exec(query)
     @missing_tuple_count = res.count

@@ -40,7 +40,8 @@ class QueryObj
       if has_where_predicate?()
         @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\swhere\s/i.match(query)[1]
       else
-        @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\s(where\s)?/i.match(query)[1]
+        @from_query = query[query.downcase.index(' from ')+6..query.length]
+        # @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\s(where\s)?/i.match(query)[1]
       end
     end
     return @from_query
@@ -102,11 +103,18 @@ class QueryObj
     return @rel_list
   end
 
+  def is_plain_query()
+    # create plain table from query if
+    # 1. no join
+    # 2. all joins are inner join
+    return ((not has_join?()) or (join_types().select{|type| type.to_i != 0}.count() ==0))
+  end
+
   def create_tbl()
     # create plain table from query if
     # 1. no join
     # 2. all joins are inner join
-    is_plain_query = ((not has_join?()) or (join_types().select{|type| type.to_i != 0}.count() ==0))
+    is_plain_query = is_plain_query()
     if is_plain_query
       DBConn.tblCreation(@table, @pkList, @query)
 
@@ -251,9 +259,23 @@ class QueryObj
       renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
       targetListReplacement = "#{renamed_pk_col},#{@all_cols_select}"
       query =  ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, '')
-      query = QueryBuilder.create_tbl("#{@table}_full_rst", @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', '), query)
-      DBConn.exec(query)
       @full_rst_tbl = "#{@table}_full_rst"
+      pk = @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ')
+      if is_plain_query()
+        query = QueryBuilder.create_tbl(@full_rst_tbl, pk, query)
+        DBConn.exec(query)
+      else
+        query = QueryBuilder.create_tbl(@full_rst_tbl, '', query)
+        DBConn.exec(query)
+
+        # not_null_query = pk_list.flat.map{|pk| "#{pk} is not null"}.join(' AND ')
+        # add index on not null columns
+        pk_not_null = @pk_full_list.map { |pk| "#{pk['alias']}_pk is not null"}.join(' OR ')
+        create_indx = "CREATE UNIQUE INDEX idx_#{@full_rst_tbl} on #{@full_rst_tbl} (#{pk}) where #{pk_not_null}"
+        pp create_indx
+        DBConn.exec(create_indx)
+
+      end
     end
     return @full_rst_tbl
   end

@@ -170,6 +170,12 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         puts 'fquery score:'
         pp fqueryObj.score
         totalScore = fqueryObj.score['totalScore']
+
+        if auto_fix
+          test_result = localizeErr.get_test_result
+          pp test_result
+          fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method,fix_rst_list)
+        end
       else
         totalScore = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count 
       end
@@ -184,16 +190,15 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       duration = (endTime - beginTime).to_i
       puts "duration: #{duration}"
 
+      puts "total_score: #{totalScore}"
+
     end
     # pp tarantular_rank
     # return
     # tarantular_rank = tarantular.relevence(f_options[:relevent])
     # return
 
-    if auto_fix
-      test_result = localizeErr.get_test_result
-      fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method,fix_rst_list)
-    end
+
 
     # update fl result table
     fl_rst_list.each do |r|

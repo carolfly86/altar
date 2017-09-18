@@ -88,6 +88,7 @@ module AutoFix
     ag = AcyclicGraph.new([])
     new_join_key_list = Set.new()
     0.upto(join_list.count-1) do |i|
+      break if join_key_list.count == 0
       join = join_list.find{|j| j['id'] ==i }
       l_rel_list = join['l_rel_list']
       r_rel = join['r_rel_list'][0]
@@ -105,13 +106,21 @@ module AutoFix
                           col_id_list = kp.map{|k| k.hash}
                           ( rels_is_included && ag.add_edge(col_id_list) )
                         end
-      binding.pry if jk.count == 0
-      new_join_key_list = new_join_key_list + jk
-      join_key_list = join_key_list - jk
+      if jk.count == 0
+        # fail to find join key in new join key list
+        # reuse old join key
+        puts "fail to find new join keys from (#{all_rels.join(', ')}) !"
+        quals = join['quals']
+        q = ReverseParseTree.whereClauseConst(join['quals'])
+      else
+        new_join_key_list = new_join_key_list + jk
+        join_key_list = join_key_list - jk
 
-      q = jk.map do |kp|
-            kp.map{|k| "#{k.fullname}"}.join(" = ")
-          end.join(" AND ")
+        q = jk.map do |kp|
+              kp.map{|k| "#{k.fullname}"}.join(" = ")
+            end.join(" AND ")
+      end
+
       from_query = from_query + q
     end
     # append remaining keys
@@ -132,6 +141,8 @@ module AutoFix
     # pp from_query
     return from_query, new_join_key_list
   end
+
+
   def self.fix_from_query(query,new_from)
     binding.pry
     old_from = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\s(where\s)?/i.match(query)[1]

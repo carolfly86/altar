@@ -50,7 +50,7 @@ module QueryBuilder
     #         WHERE table_name   = '#{tbl}'"
     # puts "'#{col}'"
     query = "SELECT string_agg( c.relname||'.'||a.attname  ,',') as col_list,
- pg_catalog.format_type(a.atttypid, a.atttypmod) as data_type,
+ pg_catalog.format_type(a.atttypid, a.atttypmod) as data_type,typcategory,
  count(1) as count
  FROM pg_catalog.pg_attribute a
  join pg_type p
@@ -58,7 +58,7 @@ module QueryBuilder
  join pg_catalog.pg_class c
  on a.attrelid = c.oid
  where c.relname in (#{tbl_list}) AND a.attnum > 0 AND NOT a.attisdropped
- group by data_type"
+ group by data_type,typcategory"
 
     query
   end
