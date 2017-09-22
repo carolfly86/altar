@@ -110,6 +110,49 @@ class QueryObj
     return ((not has_join?()) or (join_types().select{|type| type.to_i != 0}.count() ==0))
   end
 
+  def relevant_cols()
+    # relevent cols include:
+    # 1. all columns in where predicate, and columns of the same data type
+    # 2. all columns in JOIN key, and columns of the same data type
+    if @relevant_cols.nil?
+      @relevant_cols = []
+      # join columns
+      if has_join?()
+        join_list = join_list()
+        rel_list = rel_list()
+        join_list.each do |join|
+          JsonPath.on(join['quals'],'$..fields').each do |col|
+            colname = col.count > 1 ? col[1] : col[0]
+            relalias = col.count > 1 ? col[0] : nil
+            relname = rel_list.find{|rel| rel.relname == relalias or rel.relalias == relalias}.relname
+            column = @all_cols.find{|c| c.relname == relname && c.colname == colname}
+            @relevant_cols << column unless @relevant_cols.include?(column)
+          end
+        end
+      end
+      # where predicate columns
+      if has_where_predicate?()
+        @predicate_tree.branches.each do |br|
+          br.nodes.each do |nd|
+            @relevant_cols = (@relevant_cols + nd.columns).uniq
+          end
+        end
+      end
+      # same data type columns
+      if @relevant_cols.count>0
+        typcategory_list = @relevant_cols.map{|c| c.typcategory}.uniq
+        @all_cols.each do |col|
+          if typcategory_list.include?(col.typcategory) 
+            @relevant_cols << col unless @relevant_cols.include?(col)
+          end
+        end
+      end
+    end
+    return @relevant_cols
+
+  end
+
+
   def create_tbl()
     # create plain table from query if
     # 1. no join

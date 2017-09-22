@@ -1,6 +1,7 @@
 require 'timeout'
 def ds_learning(script)
   dbname = script[0...-4]
+  script_type = script[-3]
   query_json = JSON.parse(File.read("sql/#{dbname}/#{script}.json"))
   f_options_list = []
   t_options = {}
@@ -20,11 +21,16 @@ def ds_learning(script)
 
   excluded_tbl = tqueryObj.create_excluded_tbl
   satisfied_tbl = tqueryObj.create_satisfied_tbl
-  attributes = tqueryObj.all_cols.select do |col|
-                 col.typcategory != 'U'
-                end
+  attributes = tqueryObj.relevant_cols()
+  # attributes = tqueryObj.all_cols.select do |col|
+  #                col.typcategory != 'U'
+  #               end
   dcm = DecisionTreeMutation.new(attributes)
-  dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, true)
+  if script_type == 'j'
+    dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, false, nil ,2)
+  else
+    dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, false, nil, 3)
+  end
 
 end
 

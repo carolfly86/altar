@@ -1,8 +1,8 @@
 default:
-  host: 'bh20-pgs-008.core.cvent.org'
-  # host: localhost
-  database: 'adventureworks'
-  user: 'dba'
-  password: 'Di0tim@'
-  # user: 'myuser'
-  # password: 'password'
+  # host: 'bh20-pgs-008.core.cvent.org'
+  host: localhost
+  database: 'employees'
+  user: 'myuser'
+  password: 'password'
+  # user: 'dba'
+  # password: 'Di0tim@'

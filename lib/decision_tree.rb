@@ -12,7 +12,7 @@ class DecisionTreeMutation
     attr_stats = {}
     init_select = "select * from #{tbl} where " + (predicate.to_s.empty? ? '' : "#{predicate} AND ")
     @attributes.each do |attr|
-      binding.pry if attr.renamed_colname =='salesorderdetail_rowguid'
+      # binding.pry if attr.renamed_colname =='salesorderdetail_rowguid'
       attr_stats[attr.renamed_colname]=stats.get_stats(attr)
       attr_stats[attr.renamed_colname]['type']=attr.typcategory
     end
@@ -42,8 +42,14 @@ class DecisionTreeMutation
   def construct_expr(val,type)
     val.nil? ? "is null" : "= #{val.to_s.str_numeric_rep(type)}"
   end
+  
 
-  def python_training(included_tbl,excluded_tbl,dbname,script_name,is_sampling=false,included_pred=nil)
+  # features variable defines the kind of attributes used
+  # 1---native attributes
+  # 2---synthetic attributes
+  # 3---both native and synthetic
+
+  def python_training(included_tbl,excluded_tbl,dbname,script_name,is_sampling=false,included_pred=nil, features=1)
     if is_sampling
       included_sample_tbl = sampling(included_tbl,included_pred)
       excluded_sample_tbl = sampling(excluded_tbl)
@@ -51,7 +57,24 @@ class DecisionTreeMutation
       included_sample_tbl = included_tbl
       excluded_sample_tbl = excluded_tbl
     end
-    cols = col_name_mapping
+
+    natvie_cols = col_name_mapping
+    syn_cols = synthetic_cols()
+
+    case features
+    when 1
+      cols = natvie_cols
+      feature_list = @attributes
+    when 2
+      cols = syn_cols.map{|c| c.col_def + ' as '+ c.colname }.join(', ')
+      feature_list = syn_cols
+    when 3
+      cols = natvie_cols +', ' +syn_cols.map{|c| c.col_def + ' as '+ c.colname }.join(', ')
+      feature_list = @attributes+syn_cols
+    else
+      abort('unknown features')
+    end
+
     base_name = "/Users/yguo/RubymineProjects/altar/graph/#{dbname}/#{script_name}"
     feature_file = "#{base_name}-feature"
     data_file = "#{base_name}-x.out"
@@ -59,8 +82,7 @@ class DecisionTreeMutation
     included_query = "(select #{cols} from #{included_sample_tbl} ) "
     excluded_query = "(select #{cols} from #{excluded_sample_tbl} )"
 
-    Export_Data.export_feature(feature_file,@attributes)
-
+    Export_Data.export_feature(feature_file,feature_list)
     query = "#{included_query} union all #{excluded_query}"
     Export_Data.export_data(data_file,query)
 
@@ -110,13 +132,42 @@ class DecisionTreeMutation
   end
 
   def col_name_mapping()
-    @attributes.map do |field|
-      if field.typcategory == 'D'
-        " extract( EPOCH FROM #{field.renamed_colname}) as #{field.renamed_colname}"
-      else
-        field.renamed_colname
-      end
+    native_cols = @attributes.map do |field|
+      col_reformat(field)
     end.join(', ')
+   return native_cols
+    # return native_cols + ', ' + syn_cols.map{|c| c.col_def + ' as '+ c.colname }.join(', ')
+    # return 
+  end
+
+  def col_reformat(column, append_colname = true)
+    if column.typcategory == 'D'
+        " extract( EPOCH FROM #{column.renamed_colname})" \
+        + (append_colname ? " as #{column.renamed_colname}" : "")
+    else
+      column.renamed_colname
+    end
+  end
+
+  def synthetic_cols()
+
+    if @synthetic_cols.nil?
+      @synthetic_cols = []
+
+      @attributes.group_by {|col| col.typcategory}.each do |typcategory, colgroup|
+        next if colgroup.count < 2
+        colgroup.combination(2).map do |col_pair|
+          syn_col = Synthetic_Column.new()
+          syn_col.colname = col_pair.map{|col| col.renamed_colname}.join('_') 
+          syn_col.col_def = "case when "\
+          + col_pair.map{|col| col_reformat(col, false)}.join(' = ') \
+          + ' then 1 else 0 end'
+          @synthetic_cols << syn_col
+        end
+      end
+      @synthetic_cols.uniq!
+    end
+    return @synthetic_cols
   end
 
   def convert_to_python_dtype(column)

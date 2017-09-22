@@ -8,7 +8,7 @@ module Export_Data
   def self.export_data(filename,select_query)
     query = "COPY ( #{select_query} )"+
             "to '#{filename}' DELIMITER as '~' NULL AS ''"
-    # puts query
+    puts query
     DBConn.exec(query)
   end
 

@@ -402,9 +402,11 @@ class LozalizeError
 
   def find_failed_tuples
     # Unwanted rows
-    @unWantedPK = find_unwanted_tuples
+    # @unWantedPK = find_unwanted_tuples
+    find_unwanted_tuples
     # Missing rows
-    @missingPK = find_missing_tuples
+    # @missingPK = find_missing_tuples
+    find_missing_tuples
   end
 
   # where cond error localization
@@ -448,14 +450,14 @@ class LozalizeError
     # binding.pry
     @column_combinations = method.start_with?('o') ? Columns_Combination.new(@all_columns) : @all_columns
     case method
-    when 'o'
-      puts 'old exonerate algorithm'
+    # when 'o'
+    #   puts 'old exonerate algorithm'
 
-      true_query_PT_construct
-      constraint_query = constraint_predicate_construct
-      # column_combinations_construct
-      tuple_mutation_test(@missingPK, 'M', constraint_query, false)
-      tuple_mutation_test(@unWantedPK, 'U', constraint_query, false)
+    #   true_query_PT_construct
+    #   constraint_query = constraint_predicate_construct
+    #   # column_combinations_construct
+    #   tuple_mutation_test(@missingPK, 'M', constraint_query, false)
+    #   tuple_mutation_test(@unWantedPK, 'U', constraint_query, false)
     when 'or'
       puts 'old exonerate algorithm with duplicate removal'
       # reset suspicious score
@@ -472,12 +474,12 @@ class LozalizeError
       puts Time.now()
 
       tuple_mutation_test_with_dup_removal('U', constraint_query)
-    when 'n'
-      puts 'new exonerate algorithm'
-      true_query_PT_construct
-      constraint_query = constraint_predicate_construct
-      tuple_mutation_test_reverse(@missingPK, 'M', constraint_query, false)
-      tuple_mutation_test_reverse(@unWantedPK, 'U', constraint_query, false)
+    # when 'n'
+    #   puts 'new exonerate algorithm'
+    #   true_query_PT_construct
+    #   constraint_query = constraint_predicate_construct
+    #   tuple_mutation_test_reverse(@missingPK, 'M', constraint_query, false)
+    #   tuple_mutation_test_reverse(@unWantedPK, 'U', constraint_query, false)
 
     when 'b'
       puts 'baseline'
@@ -863,8 +865,12 @@ class LozalizeError
     targetList = @pkSelect.gsub('f.', '')
 
     query = select_query.gsub('#TARGETLIST#', targetList)
-    res = DBConn.exec(query)
-    @unwanted_tuple_count = res.count
+    # res = DBConn.exec(query)
+    count_query = "select count(1) as cnt from (#{query}) t"
+    # res = DBConn.exec(query)
+    res =  DBConn.exec(count_query)
+    @unwanted_tuple_count = res[0]['cnt']
+
 
     # Insert into ftuples_tbl
     renamedPKCol = @pkFullList.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
@@ -880,7 +886,7 @@ class LozalizeError
     DBConn.exec(query)
     # puts 'unwanted rows query'
     # puts query
-    pkArryGen(res)
+    # pkArryGen(res)
     # return query,res
   end
 
@@ -894,8 +900,10 @@ class LozalizeError
     # Unwanted rows
     targetList = @pkSelect.gsub('f.', '')
     query = select_query.gsub('#TARGETLIST#', targetList)
-    res = DBConn.exec(query)
-    @missing_tuple_count = res.count
+    count_query = "select count(1) as cnt from (#{query}) t"
+    # res = DBConn.exec(query)
+    res =  DBConn.exec(count_query)
+    @missing_tuple_count = res[0]['cnt']
 
     # Insert into ftuples_tbl
     renamedPKCol = @pkFullList.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
@@ -910,7 +918,7 @@ class LozalizeError
     DBConn.exec(query)
     # puts 'unwanted rows query'
     # puts query
-    pkArryGen(res)
+    # pkArryGen(res)
     # return query, res
   end
 

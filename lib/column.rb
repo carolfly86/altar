@@ -100,3 +100,12 @@ class Column
     end
   end
 end
+
+class Synthetic_Column < Column
+  attr_accessor :colname, :col_def
+
+  def renamed_colname
+    # relname_colname
+    @renamed_colname = @colname
+  end
+end
