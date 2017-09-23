@@ -176,7 +176,12 @@ class QueryObj
       pk_col_list = []
 
       tbls.each do |tbl|
-        pk_col_list << tbl.pk_column_list
+        pkcol = tbl.pk_column_list
+        if pkcol.empty?
+          pk_col_list << tbl.columns
+        else
+          pk_col_list << pkcol
+        end
       end
       # not_null_query = pk_list.flat.map{|pk| "#{pk} is not null"}.join(' AND ')
       # add index on not null columns

@@ -13,12 +13,17 @@ docker build --rm=true -t docker.cvent.net/dbtools/altar:ruby .
 
 # publish
 docker push docker.cvent.net/dbtools/altar:latest
+docker push docker.cvent.net/dbtools/altar:ruby
 
 # pull
 docker pull docker.cvent.net/dbtools/altar:latest
+docker pull docker.cvent.net/dbtools/altar:ruby
 
 # run public
 docker run --rm --name "altar" -v /Users/yguo/RubymineProjects/altar/graph:/altar/graph:rw docker.cvent.net/dbtools/altar:latest "./python-training.sh DBNAME" 
+
+docker run --rm --name "altar" -v /home/yguo/altar/graph:/altar/graph:rw docker.cvent.net/dbtools/altar:latest "/altar/python-training.sh" "employees" 
+
 
 
 

@@ -9,6 +9,10 @@ module DBConn
     @conn.exec(query)
   end
 
+  def self.conn
+    @conn
+  end
+
   def self.exec_golden_record_script(script)
     # file = File.open(script, "r")
     # contents = file.read

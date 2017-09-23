@@ -6,10 +6,17 @@ module Export_Data
   end
 
   def self.export_data(filename,select_query)
-    query = "COPY ( #{select_query} )"+
-            "to '#{filename}' DELIMITER as '~' NULL AS ''"
-    puts query
-    DBConn.exec(query)
+    # query = "COPY ( #{select_query} )"+
+    #         "to '#{filename}' DELIMITER as '~' NULL AS ''"
+    # # puts query
+    # DBConn.exec(query)
+    File.open(filename, "w") do |f|
+      DBConn.conn.copy_data "COPY (#{select_query}) TO STDOUT CSV DELIMITER as '~' NULL AS ''" do
+        while row=DBConn.conn.get_copy_data
+          f.write(row)
+        end
+      end
+    end
   end
 
   def self.export_target(filename,included_cnt,excluded_cnt)

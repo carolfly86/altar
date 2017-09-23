@@ -74,8 +74,8 @@ class DecisionTreeMutation
     else
       abort('unknown features')
     end
-
-    base_name = "/Users/yguo/RubymineProjects/altar/graph/#{dbname}/#{script_name}"
+    graph_dir = File.join(File.dirname(__FILE__), '../graph')
+    base_name = "#{graph_dir}/#{dbname}/#{script_name}"
     feature_file = "#{base_name}-feature"
     data_file = "#{base_name}-x.out"
     target_file = "#{base_name}-y.out"

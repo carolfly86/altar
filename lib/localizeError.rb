@@ -283,7 +283,12 @@ class LozalizeError
 
   def rel_pk_null_query(rel_list)
     rel_list.map do |rel|
-      rel.pk_column_list.map{|col| "#{col.renamed_colname} is#BOOL#null"}.join(' AND ')
+      pkcols = rel.pk_column_list
+      if pkcols.count == 0
+        rel.columns.map{|col| "#{col.renamed_colname} is#BOOL#null"}.join(' AND ')        
+      else
+        rel.pk_column_list.map{|col| "#{col.renamed_colname} is#BOOL#null"}.join(' AND ')
+      end
     end.join(' AND ')
   end
 
@@ -326,7 +331,6 @@ class LozalizeError
          res = DBConn.exec(query)
          result = res[0]['cnt']
          if result.to_i ==  0
-           binding.pry
            missing_keys.delete(kp)
          end
       end
@@ -869,7 +873,7 @@ class LozalizeError
     count_query = "select count(1) as cnt from (#{query}) t"
     # res = DBConn.exec(query)
     res =  DBConn.exec(count_query)
-    @unwanted_tuple_count = res[0]['cnt']
+    @unwanted_tuple_count = res[0]['cnt'].to_i
 
 
     # Insert into ftuples_tbl
@@ -903,7 +907,7 @@ class LozalizeError
     count_query = "select count(1) as cnt from (#{query}) t"
     # res = DBConn.exec(query)
     res =  DBConn.exec(count_query)
-    @missing_tuple_count = res[0]['cnt']
+    @missing_tuple_count = res[0]['cnt'].to_i
 
     # Insert into ftuples_tbl
     renamedPKCol = @pkFullList.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')

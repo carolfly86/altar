@@ -1,0 +1,32 @@
+{
+  "T":
+  {
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid, lastmodified"
+  },
+  "F":
+  [
+
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid join respondents r on a.respondentid = r.id join answersets aws on a.answerint = aws.surveyid and r.id=a.respondentid",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid, lastmodified",
+      "relevent": ["join cond 5"]
+    },
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid and a.surveyid = s.id join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid,lastmodified",
+      "relevent": ["join cond 3"]
+    },
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id left join answers a on q.id = a.questionid left join respondents r on a.respondentid = r.id left join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid,lastmodified",
+      "relevent": ["join type 3, 4"]
+    },
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id left join answers a on q.id = a.questionid and a.surveyid = s.id left join respondents r on a.respondentid = r.id left join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid,lastmodified",
+      "relevent": ["join type 4", "join cond 4"]
+    }
+  ]
+
+}

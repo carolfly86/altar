@@ -24,7 +24,7 @@ class JoinKeyIdent
 
     t_full_table = @query_obj.create_full_rst_tbl
     nullable_tbl = Table.new(@query_obj.nullable_tbl)
-    unless nullable_tbl.nil?
+    if nullable_tbl.row_count() >0
       not_null_query = " where " + nullable_tbl.columns.map{|c| "#{c.colname} is not null"}.join(' AND ')
       # null_query = " where " + nullable_tbl.columns.map{|c| "#{c.colname} is null"}.join(' OR ')
     else
@@ -99,7 +99,7 @@ class JoinKeyIdent
 
           eq_cols_cond = cp.join(' = ')
           query = "select count(1)::float/#{total_cnt}::float as sat from #{t_full_table} "
-          if nullable_tbl.nil?
+          if nullable_tbl.row_count() == 0
             query = query + "where #{eq_cols_cond}"
           else
             null_query = nullable_column_query(col_pair)
