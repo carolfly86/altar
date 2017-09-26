@@ -126,6 +126,7 @@ def convert_dot_to_predicate(filename,out_dir):
 
 	return [satisfy_score,predicate]
 
+start = datetime.now()
 cur_path = os.path.dirname(os.path.realpath(__file__))
 graph_dir = os.path.join(cur_path,"../../graph/")+ sys.argv[1]+ "/"+sys.argv[2]
 feature_file = graph_dir + "-feature"
@@ -144,13 +145,15 @@ y = genfromtxt(y_file,dtype='i4')
 if len(feature_names)==1:
 	X=X.reshape(-1, 1)
 
-start = datetime.now()
 clf = Id3Estimator()
 clf.fit(X, y, check_input=True)
 end = datetime.now()
 delta = end - start
 
-export_graphviz(clf.tree_, dot_file, feature_names)
+# try:
+# 	export_graphviz(clf.tree_, dot_file, feature_names)
+# except:
+#     print("Unexpected error:", sys.exc_info()[0])
 
 result = convert_dot_to_predicate(dot_file,graph_dir)
 

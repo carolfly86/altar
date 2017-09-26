@@ -1,7 +1,7 @@
 {
   "T":
   {
-    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id = a.respondentid",
     "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid, lastmodified"
   },
   "F":

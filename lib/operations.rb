@@ -6,6 +6,8 @@ def ds_learning(script)
   f_options_list = []
   t_options = {}
 
+  beginTime = Time.now
+
   query_json.each do |key, value|
     if key == 'T'
       query = value['query']
@@ -19,7 +21,6 @@ def ds_learning(script)
 
   tqueryObj.predicate_tree_construct('t', true, 0)
 
-  excluded_tbl = tqueryObj.create_excluded_tbl
   satisfied_tbl = tqueryObj.create_satisfied_tbl
   attributes = tqueryObj.relevant_cols()
   # attributes = tqueryObj.all_cols.select do |col|
@@ -27,10 +28,15 @@ def ds_learning(script)
   #               end
   dcm = DecisionTreeMutation.new(attributes)
   if script_type == 'j'
+    excluded_tbl = tqueryObj.create_join_excluded_tbl
     dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, false, nil ,2)
   else
+    excluded_tbl = tqueryObj.create_excluded_tbl
     dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, false, nil, 3)
   end
+  endTime = Time.now
+  duration = (endTime - beginTime).to_i
+  puts "#{script} duration: #{duration}"
 
 end
 

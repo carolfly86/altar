@@ -171,5 +171,20 @@ module DBConn
       field.typcategory = c['typcategory']
       fieldsList << field
     end
+  end
+
+  def self.create_tbl_pk_or_uq(tbl,pklist,query,is_plain_query)
+    if is_plain_query
+      self.tblCreation(tbl, pklist, query)
+    else
+      # create table without pk
+      self.tblCreation(tbl, '', query)
+
+      pk_not_null = pklist.split(',').map{|pk| "#{pk} is not null"}.join(' OR ')
+      create_indx = "CREATE UNIQUE INDEX idx_#{tbl} on #{tbl} (#{pklist}) where #{pk_not_null}"
+      # pp create_indx
+      DBConn.exec(create_indx)
+
     end
+  end
 end

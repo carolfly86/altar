@@ -40,7 +40,7 @@ class QueryObj
       if has_where_predicate?()
         @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\swhere\s/i.match(query)[1]
       else
-        @from_query = query[query.downcase.index(' from ')+6..query.length]
+        @from_query = query[query.downcase.index(' from ')+6..query.length].rstrip()
         # @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\s(where\s)?/i.match(query)[1]
       end
     end
@@ -126,7 +126,9 @@ class QueryObj
             relalias = col.count > 1 ? col[0] : nil
             relname = rel_list.find{|rel| rel.relname == relalias or rel.relalias == relalias}.relname
             column = @all_cols.find{|c| c.relname == relname && c.colname == colname}
-            @relevant_cols << column unless @relevant_cols.include?(column)
+            if ((not @relevant_cols.include?(column)))
+              @relevant_cols << column 
+            end
           end
         end
       end
@@ -299,7 +301,7 @@ class QueryObj
     @rel_names ||= JsonPath.on(@parseTree['SELECT']['fromClause'].to_json, '$..RANGEVAR')
   end
 
-  # create the table containing all columns
+  # create the table containing all columns and no where predicate
   def create_full_rst_tbl
     unless defined? @full_rst_tbl
       self.all_cols_select
@@ -328,9 +330,60 @@ class QueryObj
     return @full_rst_tbl
   end
 
+  # create cartesian product except satisfied table
+  def create_join_excluded_tbl
+    if @excluded_join_tbl.nil?
+      join_list =join_list()
+      cross_join_from = ''
+      full_join_from = ''
+      satisfied_tbl = create_satisfied_tbl()
+      0.upto(join_list.count-1) do |i|
+        join = join_list.find{|j| j['id'] ==i }
+        l_rel_list = join['l_rel_list']
+        quals = join['quals']
+        q = ReverseParseTree.whereClauseConst(quals)
+        has_quals = (not join['quals'].nil?)
+        join_type = ReverseParseTree.joinTypeConvert(join['jointype'].to_s, has_quals)
+
+        r_rel = join['r_rel_list'][0]
+        l_arg = (i==0 ? "#{l_rel_list[0].relname} #{l_rel_list[0].relalias}" : "")
+        # for efficiency only change the last join to cross join
+        if i == join_list.count-1
+          cross_join_from =  cross_join_from + "#{l_arg} CROSS JOIN #{r_rel.relname} #{r_rel.relalias} "
+        else
+          cross_join_from =  cross_join_from + "#{l_arg} #{join_type} #{r_rel.relname} #{r_rel.relalias} on #{q}"
+        end
+        # full_join_from =  full_join_from + "#{l_arg} CROSS JOIN #{r_rel.relname} #{r_rel.relalias} on #{q}"
+      end
+      @excluded_join_tbl = "#{@table}_join_excluded"
+      renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+      targetListReplacement = "#{renamed_pk_col},#{@all_cols_select}"
+      query = ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, '')
+      old_from = from_query()
+      # cross join
+      all_cols_renamed()
+      cross_join_query = query.gsub(/#{old_from}/i,cross_join_from)
+      # pk_join_satisfied_tbl = @pk_full_list.map { |pk| "t.#{pk['alias']}_pk = s.#{pk['alias']}_pk" }.join(' AND ')
+      # pk_not_in_satisfied_tbl = @pk_full_list.map { |pk| "s.#{pk['alias']}_pk is null" }.join(' OR ')
+
+      create_tbl_query = "select * from #{satisfied_tbl} where 1=2"
+      create_tbl_query = QueryBuilder.create_tbl(@excluded_join_tbl, '', create_tbl_query)
+      DBConn.exec(create_tbl_query)
+
+      cross_join_query = "with cross_join as (#{cross_join_query}) INSERT INTO #{@excluded_join_tbl} select t.* from cross_join as t except select * from #{satisfied_tbl} "
+      DBConn.exec(cross_join_query)
+
+      # # full join
+      # full_join_query = query.gsub(old_from,full_join_from)
+      # full_join_query = "(#{full_join_query} except select #{@all_cols_renamed} from #{satisfied_tbl})"
+      # full_join_query = "INSERT INTO #{@excluded_tbl} #{full_join_query}"
+      # DBConn.exec(query)
+    end
+    return @excluded_join_tbl
+  end
 
 
-  # create a table containing all rows excluded from query
+  # create a table containing all rows excluded by where predicate
   def create_excluded_tbl
     unless defined? @excluded_tbl
       self.all_cols_select
@@ -373,31 +426,43 @@ class QueryObj
       self.pk_full_list
       renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
       renamed_col_list = "#{renamed_pk_col},#{@all_cols_select}"
-
-      branch_queries = get_all_branch_queries
       @satisfied_tbl = "#{@table}_satisfied"
-      pk_list =  @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ') + ', branch'
-      branch_queries.each_with_index do |brq,idx|
-        branch = brq.keys[0]
-        predicate = brq[branch]
-        targetListReplacement = renamed_col_list + ",'#{branch}'::text as branch"
-        query = ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, predicate)
-        if idx == 0
-          query = QueryBuilder.create_tbl(@satisfied_tbl,pk_list, query)
-        else
-          query = "INSERT INTO #{@satisfied_tbl} #{query}"
+      if has_where_predicate?
+        branch_queries = get_all_branch_queries
+        pk_list =  @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ') + ', branch'
+        branch_queries.each_with_index do |brq,idx|
+          branch = brq.keys[0]
+          predicate = brq[branch]
+          targetListReplacement = renamed_col_list + ",'#{branch}'::text as branch"
+          query = ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, predicate)
+          if idx == 0
+            query = QueryBuilder.create_tbl(@satisfied_tbl,pk_list, query)
+          else
+            query = "INSERT INTO #{@satisfied_tbl} #{query}"
+          end
+          # puts query
+          DBConn.exec(query)
         end
-        # puts query
-        DBConn.exec(query)
+      else
+        pk_list =  @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ')
+        query = ReverseParseTree.reverseAndreplace(@parseTree, renamed_col_list, '')
+        # query = QueryBuilder.create_tbl(@satisfied_tbl,pk_list, pk_list)
+        # DBConn.exec(query)
+        is_plain_query = is_plain_query()
+        DBConn.create_tbl_pk_or_uq(@satisfied_tbl, pk_list, query,is_plain_query )
       end
     end
     return @satisfied_tbl
   end
 
   def get_excluded_query()
-    @predicate_tree.branches.map do |br|
-      br.nodes.map { |nd| nd.query }.join(' AND ')
-    end.map{|q| "NOT (#{q})"}.join(' AND ')
+    if has_where_predicate?
+      @predicate_tree.branches.map do |br|
+        br.nodes.map { |nd| nd.query }.join(' AND ')
+      end.map{|q| "NOT (#{q})"}.join(' AND ')
+    else
+      ''
+    end
   end
 
   def get_branch_query(branch_name)
@@ -407,10 +472,12 @@ class QueryObj
 
   def get_all_branch_queries()
     br_queries = []
-    @predicate_tree.branches.each do |br|
-      brq = {}
-      brq[br.name] = get_branch_query(br.name)
-      br_queries << brq
+    if has_where_predicate?
+      @predicate_tree.branches.each do |br|
+        brq = {}
+        brq[br.name] = get_branch_query(br.name)
+        br_queries << brq
+      end
     end
     br_queries
   end

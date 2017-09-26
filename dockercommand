@@ -12,11 +12,11 @@ docker build --rm=true -t docker.cvent.net/dbtools/altar:python .
 docker build --rm=true -t docker.cvent.net/dbtools/altar:ruby .
 
 # publish
-docker push docker.cvent.net/dbtools/altar:latest
+docker push docker.cvent.net/dbtools/altar:python
 docker push docker.cvent.net/dbtools/altar:ruby
 
 # pull
-docker pull docker.cvent.net/dbtools/altar:latest
+docker pull docker.cvent.net/dbtools/altar:python
 docker pull docker.cvent.net/dbtools/altar:ruby
 
 # run public
