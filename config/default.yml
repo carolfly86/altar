@@ -1,8 +1,8 @@
 default:
-  host: 'bh20-pgs-008.core.cvent.org'
-  # host: localhost
+  # host: 'bh20-pgs-008.core.cvent.org'
+  host: localhost
   database: 'polling_etl'
-  # user: 'myuser'
-  # password: 'password'
-  user: 'dba'
-  password: 'Di0tim@'
+  user: 'myuser'
+  password: 'password'
+  # user: 'dba'
+  # password: 'Di0tim@'

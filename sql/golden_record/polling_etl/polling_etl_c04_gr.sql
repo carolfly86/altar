@@ -41,7 +41,7 @@ CREATE TABLE golden_record (
     choices_active boolean,
     choices_imageid bigint,
     choices_choiceposition integer,
-    choices_style hstore,
+    choices_style character varying(10),
     choices_etl_time timestamp without time zone,
     choices_externalsystemid integer,
     choices_metadata hstore,
@@ -60,8 +60,8 @@ COPY golden_record (questions_id, questions_minresponses, questions_maxresponses
 b94f781b-5301-48a1-b941-55008e450feb	0	0	f	1083	What is his or her role in choosing a solution?	ENABLED	2000	0	2016-12-28 00:00:00	6	60		01d3192b-fe58-44ff-a6f5-0e84268424fd	b94f781b-5301-48a1-b941-55008e450feb	SIMPLE_CHOICE	Not Applicable	Not Applicable	t	393	3	\N	2017-12-08 00:00:00	48		satisfied	PH3
 f006e9bb-fd84-45d6-91ef-84230f903f35	0	0	t	619	What is the timeframe for choosing a solution?	ENABLED	706	0	2016-12-28 00:00:00	5	60		03cc073c-9bbb-4104-a492-d49b09b7274c	f006e9bb-fd84-45d6-91ef-84230f903f35	SIMPLE_CHOICE	Not Applicable	Not Applicable	t	2000	2	\N	2017-01-30 22:48:43.801035	48		satisfied	PH2
 088b8518-c7eb-4d8c-9a09-a23f45c9cebe	0	1	f	5	Notes	ENABLED	2000	4	2016-12-28 00:00:00	1	60		9226daa0-e965-47ac-9bd4-765a3cf8a52a	088b8518-c7eb-4d8c-9a09-a23f45c9cebe	LONG_TEXT	Enter Response Here.		t	2000	2	\N	2017-12-08 00:00:00	57		satisfied	PH1
-1e682c5c-6986-45a8-bb18-469dc5d9340f	0	0	f	5	Lead Score	ENABLED	2000	0	2016-12-07 11:23:54.362387	0	76		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	t	2000	2	"name"=>"SLIDING_SCALE", "lowerBound"=>"{\\"value\\":1,\\"label\\":\\"0\\"}", "upperBound"=>"{\\"value\\":5,\\"label\\":\\"5\\"}", "hasFixedBounds"=>"false"	2017-12-08 00:00:00	102		satisfied	PH0
-1e682c5c-6986-45a8-bb18-469dc5d9340f	0	0	f	5	Lead Score	ENABLED	2000	0	2016-12-28 00:00:00	0	60		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	f	2000	2	"name"=>"SLIDING_SCALE", "lowerBound"=>"{\\"value\\":1,\\"label\\":\\"0\\"}", "upperBound"=>"{\\"value\\":5,\\"label\\":\\"5\\"}", "hasFixedBounds"=>"false"	2017-12-08 00:00:00	102		excluded	
+1e682c5c-6986-45a8-bb18-469dc5d9340f	0	0	f	5	Lead Score	ENABLED	2000	0	2016-12-07 11:23:54.362387	0	76		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	t	2000	2	GOLD	2017-12-08 00:00:00	102		satisfied	PH0
+1e682c5c-6986-45a8-bb18-469dc5d9340f	0	0	f	5	Lead Score	ENABLED	2000	0	2016-12-28 00:00:00	0	60		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	f	2000	2	GOLD	2017-12-08 00:00:00	102		excluded	
 \.
 
 

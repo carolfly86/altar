@@ -41,7 +41,7 @@ CREATE TABLE golden_record (
     choices_active boolean,
     choices_imageid bigint,
     choices_choiceposition integer,
-    choices_style hstore,
+    choices_style character varying(10),
     choices_etl_time timestamp without time zone,
     choices_externalsystemid integer,
     choices_metadata hstore,

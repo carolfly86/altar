@@ -570,10 +570,10 @@ class Mutation
       elsif ex_col_stat['is_null_count'] == ex_col_stat['count'] && in_col_stat['is_null_count'] ==0 && ex_col_stat['is_null_count'] >0
         element['opr'] = ['IS NOT']
         element['const'] = 'NULL'
-      elsif in_col_stat['min'] == in_col_stat['max']
+      elsif in_col_stat['min'] == in_col_stat['max'] && in_col_stat['dist_count']==1
         element['opr'] = ['=']
         element['const'] = in_col_stat['min']
-      elsif ex_col_stat['min'] == ex_col_stat['max']
+      elsif ex_col_stat['min'] == ex_col_stat['max'] && ex_col_stat['dist_count']==1
         element['opr'] = ['<>']
         element['const'] = ex_col_stat['min']
       elsif ex_col_stat['max'] < in_col_stat['min']
@@ -598,7 +598,6 @@ class Mutation
           if in_col_stat['dist_count'] <= ex_col_stat['dist_count']
             element['const'] = @included_stat.get_distinct_vals(col)
             if element['const'].include?(nil)
-              binding.pry
               element = {}
             else
               element['opr'] = ['in']

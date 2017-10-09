@@ -548,7 +548,9 @@ class TupleMutation
       guilty_nodes = suspicious_nodes - nodes
       # pp "guilty_nodes"
       # pp guilty_nodes
-      abort('no guilty_nodes! ') if guilty_nodes.count == 0
+      if guilty_nodes.count == 0
+        abort('no guilty_nodes! ') 
+      end
       eliminate_redundant_tuples(guilty_nodes, 'e')
     else
       nodes.each do |nd|

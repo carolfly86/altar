@@ -1,9 +1,8 @@
-FROM python:2
+FROM ruby:2.3
+RUN gem install bundler
+RUN apt-get update
+RUN apt-get install -f -y postgresql postgresql-contrib 
 
-RUN pip install pygraphviz numpy scipy
-RUN pip install decision-tree-id3
-
-RUN apt-get update && apt-get install -f -y graphviz
-
-ADD . /altar
-WORKDIR /altar
+ADD . /altar/
+WORKDIR /altar/
+RUN bundle install

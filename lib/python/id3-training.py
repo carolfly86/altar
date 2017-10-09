@@ -89,7 +89,7 @@ def get_clause(graph,node,prev_clause=''):
 		return 'none'
 	predecessor = graph.predecessors(node)[0]
 	col = predecessor.attr['label'].replace('\n','')
-	print(col)
+	# print(col)
 	expr = graph.in_edges(node)[0].attr['label']
 	previous_clause = prev_clause + " AND " if len(prev_clause)>0 else ''
 	cur_clause = previous_clause + col + " "+ expr
@@ -101,13 +101,13 @@ def get_clause(graph,node,prev_clause=''):
 
 def convert_dot_to_predicate(filename,out_dir):
 	B=pgv.AGraph(filename) # create a new graph from file
-	B.draw(out_dir+".png",prog='dot')
+	# B.draw(out_dir+".png",prog='dot')
 	branches = []
 	satisfy_score = 0
 	for node in B.nodes():
-		print(node)
+		# print(node)
 		# labels = node.attr['label'].split('\n')
-		print(node.attr['label'])
+		# print(node.attr['label'])
 
 		if is_leaf(B,node) and get_node_type(node) == '1':
 			# score_str = labels[1].replace('(','').replace(")","")
@@ -150,10 +150,10 @@ clf.fit(X, y, check_input=True)
 end = datetime.now()
 delta = end - start
 
-# try:
-# 	export_graphviz(clf.tree_, dot_file, feature_names)
-# except:
-#     print("Unexpected error:", sys.exc_info()[0])
+try:
+	export_graphviz(clf.tree_, dot_file, feature_names)
+except:
+    print("Unexpected error:", sys.exc_info()[0])
 
 result = convert_dot_to_predicate(dot_file,graph_dir)
 

@@ -41,7 +41,7 @@ CREATE TABLE golden_record (
     choices_active boolean,
     choices_imageid bigint,
     choices_choiceposition integer,
-    choices_style hstore,
+    choices_style character varying(10),
     choices_etl_time timestamp without time zone,
     choices_externalsystemid integer,
     choices_metadata hstore,
@@ -59,8 +59,8 @@ ALTER TABLE golden_record OWNER TO myuser;
 COPY golden_record (questions_id, questions_minresponses, questions_maxresponses, questions_required, questions_surveyid, questions_label, questions_status, questions_imageid, questions_questioncode, questions_etl_time, questions_questionposition, questions_externalsystemid, questions_metadata, choices_id, choices_questionid, choices_type, choices_value, choices_label, choices_active, choices_imageid, choices_choiceposition, choices_style, choices_etl_time, choices_externalsystemid, choices_metadata, type, branch) FROM stdin;
 b94f781b-5301-48a1-b941-55008e450feb	0	0	f	1083	What is his or her role in choosing a solution?	ENABLED	2000	0	2016-12-28 00:00:00	6	60		01d3192b-fe58-44ff-a6f5-0e84268424fd	b94f781b-5301-48a1-b941-55008e450feb	SIMPLE_CHOICE	Not Applicable	Not Applicable	t	393	3	\N	2016-12-08 00:00:00	48		satisfied	PH2
 facafb7e-7466-42da-8551-381b8cdb284b	0	0	t	4	AccessTokens	ENABLED	69	0	2016-12-28 00:00:00	0	60		7d1dedda-efa1-4b11-b794-7d2b55494383	facafb7e-7466-42da-8551-381b8cdb284b	SIMPLE_CHOICE	Normal	Normal	t	2000	2	\N	2017-03-02 16:16:56.585257	55		satisfied	PH1
-1e682c5c-6986-45a8-bb18-469dc5d9340f	0	1	f	5	Lead Score	ENABLED	2000	6	2016-12-07 11:23:54.362387	0	76		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	t	2000	2	"name"=>"SLIDING_SCALE", "lowerBound"=>"{\\"value\\":1,\\"label\\":\\"0\\"}", "upperBound"=>"{\\"value\\":5,\\"label\\":\\"5\\"}", "hasFixedBounds"=>"false"	2016-12-08 00:00:00	102		satisfied	PH0
-1e682c5c-6986-45a8-bb18-469dc5d9340f	0	0	f	5	Lead Score	ENABLED	2000	0	2016-12-28 00:00:00	0	60		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	f	2000	2	"name"=>"SLIDING_SCALE", "lowerBound"=>"{\\"value\\":1,\\"label\\":\\"0\\"}", "upperBound"=>"{\\"value\\":5,\\"label\\":\\"5\\"}", "hasFixedBounds"=>"false"	2016-12-08 00:00:00	102		excluded	
+1e682c5c-6986-45a8-bb18-469dc5d9340f	0	1	f	5	Lead Score	ENABLED	2000	6	2016-12-07 11:23:54.362387	0	76		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	t	2000	2	GOLD	2016-12-08 00:00:00	102		satisfied	PH0
+1e682c5c-6986-45a8-bb18-469dc5d9340f	0	0	f	5	Lead Score	ENABLED	2000	0	2016-12-28 00:00:00	0	60		ff76cb05-9c6e-4348-909c-791252df4b77	1e682c5c-6986-45a8-bb18-469dc5d9340f	NUMERIC	\N	\N	f	2000	2	GOLD	2016-12-08 00:00:00	102		excluded	
 \.
 
 

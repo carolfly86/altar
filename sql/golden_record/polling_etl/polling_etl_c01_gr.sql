@@ -41,7 +41,7 @@ CREATE TABLE golden_record (
     choices_active boolean,
     choices_imageid bigint,
     choices_choiceposition integer,
-    choices_style hstore,
+    choices_style character varying(10),
     choices_etl_time timestamp without time zone,
     choices_externalsystemid integer,
     choices_metadata hstore,
@@ -57,8 +57,8 @@ ALTER TABLE golden_record OWNER TO myuser;
 --
 
 COPY golden_record (questions_id, questions_minresponses, questions_maxresponses, questions_required, questions_surveyid, questions_label, questions_status, questions_imageid, questions_questioncode, questions_etl_time, questions_questionposition, questions_externalsystemid, questions_metadata, choices_id, choices_questionid, choices_type, choices_value, choices_label, choices_active, choices_imageid, choices_choiceposition, choices_style, choices_etl_time, choices_externalsystemid, choices_metadata, type, branch) FROM stdin;
-35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	0	1	t	642	Lead Score	ENABLED	718	9	2016-12-14 11:22:58.782003	0	76		9ddc254f-e0ef-4d3d-8e6b-c4b8b743d6a0	35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	NUMERIC	\N	\N	t	33951	0	"name"=>"SLIDING_SCALE", "lowerBound"=>"{\\"value\\":1,\\"label\\":\\"0\\"}", "upperBound"=>"{\\"value\\":5,\\"label\\":\\"5\\"}", "hasFixedBounds"=>"false"	2017-02-09 11:22:58.792648	57		satisfied	PH0
-35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	0	0	f	642	Lead Score	ENABLED	2000	0	2016-12-08 00:00:00	0	60		9ddc254f-e0ef-4d3d-8e6b-c4b8b743d6a0	35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	NUMERIC	\N	\N	f	100	0	"name"=>"SLIDING_SCALE", "lowerBound"=>"{\\"value\\":1,\\"label\\":\\"0\\"}", "upperBound"=>"{\\"value\\":5,\\"label\\":\\"5\\"}", "hasFixedBounds"=>"false"	2016-12-08 00:00:00	57		excluded	
+35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	0	1	t	642	Lead Score	ENABLED	718	9	2016-12-14 11:22:58.782003	0	76		9ddc254f-e0ef-4d3d-8e6b-c4b8b743d6a0	35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	NUMERIC	\N	\N	t	33951	0	GOLD	2017-02-09 11:22:58.792648	57		satisfied	PH0
+35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	0	0	f	642	Lead Score	ENABLED	2000	0	2016-12-08 00:00:00	0	60		9ddc254f-e0ef-4d3d-8e6b-c4b8b743d6a0	35b53e3a-6b2b-4dbf-a87b-4e3b261215f4	NUMERIC	\N	\N	f	100	0	GOLD	2016-12-08 00:00:00	57		excluded	
 \.
 
 

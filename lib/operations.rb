@@ -28,8 +28,9 @@ def ds_learning(script)
   #               end
   dcm = DecisionTreeMutation.new(attributes)
   if script_type == 'j'
-    excluded_tbl = tqueryObj.create_join_excluded_tbl
-    dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, false, nil ,2)
+    puts 'ignore join...'
+    # excluded_tbl = tqueryObj.create_join_excluded_tbl
+    # dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, false, nil ,2)
   else
     excluded_tbl = tqueryObj.create_excluded_tbl
     dcm.python_training(satisfied_tbl,excluded_tbl,dbname,script, false, nil, 3)
@@ -185,8 +186,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
         if auto_fix
           test_result = localizeErr.get_test_result
-          pp test_result
-          fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method,fix_rst_list)
+          totalScore = fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method,fix_rst_list,f_options[:relevent].count()*3)
         end
       else
         totalScore = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count 

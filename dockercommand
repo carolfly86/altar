@@ -20,10 +20,12 @@ docker pull docker.cvent.net/dbtools/altar:python
 docker pull docker.cvent.net/dbtools/altar:ruby
 
 # run public
-docker run --rm --name "altar" -v /Users/yguo/RubymineProjects/altar/graph:/altar/graph:rw docker.cvent.net/dbtools/altar:latest "./python-training.sh DBNAME" 
+docker run --rm --name "altar" -v /Users/yguo/RubymineProjects/altar/graph:/altar/graph:rw docker.cvent.net/dbtools/altar:ru "./python-training.sh DBNAME" 
 
-docker run --rm --name "altar" -v /home/yguo/altar/graph:/altar/graph:rw docker.cvent.net/dbtools/altar:latest "/altar/python-training.sh" "employees" 
+docker run --rm --name "altar" -v /home/yguo/altar/graph:/altar/graph:rw docker.cvent.net/dbtools/altar:python "/altar/python-training.sh" "employees"
 
+docker run --rm --name "altar" -v /home/yguo/altar/config:/altar/config  -v /home/yguo/altar/graph:/altar/graph -v /home/yguo/altar/.pgpass:/home/root/.pgpass docker.cvent.net/dbtools/altar:python "/altar/python-training.sh" "polling_etl"
 
+docker run --rm --name "altar" -v /home/yguo/altar/config:/altar/config  -v /home/yguo/altar/graph:/altar/graph -v /home/yguo/altar/.pgpass:/home/root/.pgpass docker.cvent.net/dbtools/altar:ruby "/altar/altar.rb" "-a" "y" "-o" "ds"
 
 

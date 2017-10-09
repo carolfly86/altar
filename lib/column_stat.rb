@@ -32,7 +32,7 @@ class Column_Stat
                 else  STATS
                 end
     stats.merge!(COUNT_STATS)
-    binding.pry if col.typcategory == 'U'
+    # binding.pry if col.typcategory == 'U'
     select_list = stats.map do |stat, info|
                   info[:func] % [col.renamed_colname, col.renamed_colname] +" as #{stat}"
                 end.join(', ')
