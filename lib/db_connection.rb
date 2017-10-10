@@ -6,6 +6,7 @@ module DBConn
   @conn = PG::Connection.open(host: @cfg['default']['host'] ,dbname: @cfg['default']['database'], user: @cfg['default']['user'], password: @cfg['default']['password'])
 
   def self.exec(query)
+    # puts query
     @conn.exec(query)
   end
 

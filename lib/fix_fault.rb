@@ -22,7 +22,7 @@ def fix_join_cond(new_join_key,old_join_key,fqueryObj,fix_rst_list)
   # pp new_from
   startTime = Time.now
   new_from,candidate_join_key = AutoFix.join_key_fix(new_join_key, fqueryObj)
-  unless (candidate_join_key - old_join_key).empty?
+  unless (candidate_join_key - old_join_key).empty? && (old_join_key - candidate_join_key).empty?
     puts 'Fixing join key'
     old_from = fqueryObj.from_query
     fQueryNew = fqueryObj.query.gsub(old_from,new_from)

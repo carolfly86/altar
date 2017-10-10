@@ -176,20 +176,22 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       end
 
 
-      if fqueryObj.has_where_predicate?()
+      # if fqueryObj.has_where_predicate?()
+      if script_type != 'j'
         # Where condition fault localization
         localizeErr.selecionErr(method)
         fqueryObj.score = localizeErr.getSuspiciouScore
         puts 'fquery score:'
         pp fqueryObj.score
-        totalScore = fqueryObj.score['totalScore']
-
+        # totalScore = fqueryObj.score['totalScore']
+        totalScore = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count
         if auto_fix
           test_result = localizeErr.get_test_result
           totalScore = fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method,fix_rst_list,f_options[:relevent].count()*3)
         end
       else
-        totalScore = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count 
+        # binding.pry
+        totalScore = localizeErr.missing_tuple_count + localizeErr.unwanted_tuple_count
       end
 
       puts 'fault localization end'

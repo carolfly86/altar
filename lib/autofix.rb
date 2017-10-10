@@ -138,7 +138,7 @@ module AutoFix
       new_join_key_list = new_join_key_list + jk
     end
     from_query = from_query + (q == "" ? "": " AND ") + q
-    # pp from_query
+    pp from_query
     return from_query, new_join_key_list
   end
 
