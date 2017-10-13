@@ -63,7 +63,6 @@ class JoinKeyIdent
     join_key_list =[]
     # pp pk_cond
     # acyclic_graph = AcyclicGraph.new([])
-
     @candidates.each do |list|
 
       # list = @candidates.split(',')
@@ -98,19 +97,20 @@ class JoinKeyIdent
           next if col_pair.map{|c| c.relname }.uniq.count()==1
 
           eq_cols_cond = cp.join(' = ')
-          query = "select count(1)::float/#{total_cnt}::float as sat from #{t_full_table} "
+          query = "select count(1)/#{total_cnt} as sat from #{t_full_table} "
           if nullable_tbl.row_count() == 0
             query = query + "where #{eq_cols_cond}"
           else
             null_query = nullable_column_query(col_pair)
             if null_query.empty?
-              query = query +"where #{eq_cols_cond}"
+              cp_null = cp.map{|c| "#{c} IS NULL"}.join(" AND ")
+              query = query +"where #{eq_cols_cond} or (#{cp_null})"
             else
               query = query +"where (#{null_query}) OR (#{eq_cols_cond})"
             end
           end
 
-          # pp query
+          pp query
           res = DBConn.exec(query)
           satisfactory = res[0]['sat']
 

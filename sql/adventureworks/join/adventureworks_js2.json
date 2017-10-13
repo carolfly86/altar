@@ -1,0 +1,30 @@
+{
+  "T":
+  {
+  	"query": "select sh.salesorderid, sod.salesorderdetailid, sp.businessentityid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderid left join salesperson sp on sh.salespersonid = sp.businessentityid",
+  	"pkList": "salesorderid,salesorderdetailid, businessentityid"
+  },
+	"F":
+	[	{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, sp.businessentityid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderid join salesperson sp on sh.salespersonid = sp.businessentityid",
+		"pkList": "salesorderid,salesorderdetailid, businessentityid",
+		"relevent": ["join type"]
+		},
+		{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, sp.businessentityid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderdetailid left join salesperson sp on sh.salespersonid = sp.businessentityid",
+		"pkList": "salesorderid,salesorderdetailid, businessentityid",
+		"relevent": ["J1"]
+		},
+		{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, sp.businessentityid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderid and sh.salesorderid = sod.salesorderdetailid left join salesperson sp on sh.salespersonid = sp.businessentityid",
+		"pkList": "salesorderid,salesorderdetailid, businessentityid",
+		"relevent": ["J1"]
+		},
+		{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, sp.businessentityid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderdetailid join salesperson sp on sh.salespersonid = sp.businessentityid",
+		"pkList": "salesorderid,salesorderdetailid, businessentityid",
+		"relevent": ["both"]
+		}
+	]
+
+}

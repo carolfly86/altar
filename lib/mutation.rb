@@ -41,7 +41,24 @@ class Mutation
           modify_branch(target_branch.name,test_rst.columns,'modify')
         else
           # if location is 0 then add missing node
-          add_missing_branch(test_rst.branch_name,test_rst.columns)
+
+          # if the missing branch contains only 1 column,
+          # first try to find a existing branch containing the same column
+          # and mutate that branch
+          # if such branch does not exists then try to add missing branch
+          if test_rst.columns.count() == 1
+            target_branch = @queryObj.predicate_tree.branches.select{|br| br.columns == test_rst.columns }.first
+            if target_branch.nil?
+              add_missing_branch(test_rst.branch_name,test_rst.columns)
+            else
+              binding.pry
+              @included_pred = "branch = '#{target_branch.name}'"
+              @included_stat = Column_Stat.new(@satisfied_tbl,@included_pred)
+              modify_branch(target_branch.name,test_rst.columns,'modify')
+            end
+          else
+            add_missing_branch(test_rst.branch_name,test_rst.columns)
+          end
         end
 
       else
@@ -121,7 +138,7 @@ class Mutation
             if br.name == branch
               # add missing node to branch
               if action == 'add'
-                branch_query = branch_query + ' AND '+ new_clauses
+                branch_query = branch_query + ' AND '+ new_clauses if new_clauses!=''
               # modify branch
               elsif action == 'modify'
                 # modify entire branch when node is nil
@@ -148,7 +165,8 @@ class Mutation
             branch_query == '' ? '' : '( ' + branch_query + ' )'
           end.select{|q| q!=''}.join(' OR ')
     if branch =~ /missing_branch/
-      query = query + ' OR ( '+new_clauses+')'
+      binding.pry if new_clauses==''
+      query = query + ' OR ( '+new_clauses+')' if new_clauses!=''
     end
     query
   end
@@ -292,6 +310,7 @@ class Mutation
 
     else
       # remove node if element is {}
+
       new_where_clause = mutate_predicate(branch,node,'','delete')
     end
     unless @is_ds
@@ -558,6 +577,7 @@ class Mutation
           if col.is_string_type?
             element = const_like_clause(in_col_stat['min'],in_col_stat['max'])
           else
+
             puts 'unable to derive! remove the node instead'
 
           end

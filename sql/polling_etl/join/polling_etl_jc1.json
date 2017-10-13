@@ -1,0 +1,32 @@
+{
+  "T":
+  {
+  	"query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid  from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid join respondents r on a.respondentid = r.id",
+  	"pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid"
+  },
+	"F":
+	[
+
+		{
+  		"query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid join respondents r on a.questionid = r.id",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+  		"relevent": ["join cond 4"]
+		},
+		{
+  		"query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid join respondents r on a.respondentid = r.id and a.choiceid=c.id",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+  		"relevent": ["join cond 4"]
+		},
+		{
+  		"query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid right join respondents r on a.respondentid = r.id",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+  		"relevent": ["join type 4"]
+		},
+		{
+  		"query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid right join respondents r on a.respondentid = r.id and a.choiceid=c.id",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+  		"relevent": ["join type 4", "join cond 4"]
+		}
+	]
+
+}

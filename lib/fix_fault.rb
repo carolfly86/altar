@@ -72,7 +72,7 @@ def where_cond_mutate(test_result,current_queryObj,tqueryObj,excluded_tbl,satisf
     iterate_cnt = iterate_cnt + 1
 
   end
-  return current_score,newlocalizeErr
+  return current_queryObj,current_score,newlocalizeErr
 
 end
 
@@ -93,9 +93,9 @@ def fix_where_cond(tqueryObj,fqueryObj,test_result,dbname,script,idx,method,fix_
     # test_result = localizeErr.get_test_result
     it = 1
     while current_score.to_i >0
-      pp test_result
-      pp current_query
-      current_score,newlocalizeErr = where_cond_mutate(
+      # pp test_result
+      # pp current_query
+      current_queryObj,current_score,newlocalizeErr = where_cond_mutate(
                                           test_result,
                                           current_queryObj,
                                           tqueryObj,

@@ -647,7 +647,7 @@ class LozalizeError
       # puts "begin: #{Time.now}"
       pkArry = pkArryGen(res)
       # whereCondTest(pkArry,type)
-      pp pkArry
+      # pp pkArry
       # # puts test
       # puts 'going to tuple_mutation_test'
       tuple_mutation_test(pkArry, type, constraint_predicate, true)

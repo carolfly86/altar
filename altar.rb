@@ -48,7 +48,7 @@ if opts[:allscripts] == 'y'
   dbname = cfg['default']['database']
   create_all_test_result_tbl
   create_all_fix_result_tbl
-  Dir["sql/#{dbname}/*.json"].each do |file|
+  Dir["sql/#{dbname}/*j*.json"].each do |file|
     script = File.basename file, '.json'
     puts "processing  #{script}"
     if opts[:operation] == 'fl'

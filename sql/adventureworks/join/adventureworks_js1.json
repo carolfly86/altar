@@ -1,0 +1,30 @@
+{
+  "T":
+  {
+  	"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID",
+  	"pkList": "productid, businessentityid"
+  },
+	"F":
+	[	{
+		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID",
+		"pkList": "productid, businessentityid",
+		"relevent": ["join type"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.businessentityid left join vendor v on pv.businessentityid = v.BusinessEntityID",
+		"pkList": "productid, businessentityid",
+		"relevent": ["J1"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.businessentityid left join vendor v on pv.businessentityid = v.BusinessEntityID",
+		"pkList": "productid, businessentityid",
+		"relevent": ["J1"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.businessentityid join vendor v on pv.businessentityid = v.BusinessEntityID",
+		"pkList": "productid, businessentityid",
+		"relevent": ["both"]
+		}
+	]
+
+}

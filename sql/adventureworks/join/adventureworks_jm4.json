@@ -1,0 +1,30 @@
+{
+  "T":
+  {
+  	"query": "select p.productid,pv.businessentityid from product p join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid",
+  	"pkList": "productid, businessentityid"
+  },
+	"F":
+	[	{
+		"query": "select p.productid,pv.businessentityid from product p join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID left join productmodel pm on pm.productmodelid = p.productmodelid",
+		"pkList": "productid, businessentityid",
+		"relevent": ["join type"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid from product p join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productid",
+		"pkList": "productid, businessentityid",
+		"relevent": ["J3"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid from product p join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid and pm.productmodelid = p.productid",
+		"pkList": "productid, businessentityid",
+		"relevent": ["J3"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID left join productmodel pm on pm.productmodelid = p.productid",
+		"pkList": "productid, businessentityid",
+		"relevent": ["both"]
+		}
+	]
+
+}

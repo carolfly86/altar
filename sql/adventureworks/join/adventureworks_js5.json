@@ -1,0 +1,31 @@
+{
+  "T":
+  {
+  	"query": "select sh.salesorderid, sod.salesorderdetailid, so.specialofferid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderid right join specialoffer so on sod.specialofferid = so.specialofferid",
+  	"pkList": "salesorderid,salesorderdetailid, specialofferid"
+  },
+	"F":
+	[	
+		{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, so.specialofferid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderdetailid right join specialoffer so on sod.specialofferid = so.specialofferid",
+		"pkList": "salesorderid,salesorderdetailid, specialofferid",
+		"relevent": ["J1"]
+		},
+		{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, so.specialofferid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderid join specialoffer so on sod.specialofferid = so.specialofferid",
+		"pkList": "salesorderid,salesorderdetailid, specialofferid",
+		"relevent": ["join type"]
+		},
+		{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, so.specialofferid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderid and sh.salesorderid = sod.salesorderdetailid right join specialoffer so on sod.specialofferid = so.specialofferid",
+		"pkList": "salesorderid,salesorderdetailid, specialofferid",
+		"relevent": ["J1"]
+		},
+		{
+		"query": "select sh.salesorderid, sod.salesorderdetailid, so.specialofferid from salesorderheader sh join salesorderdetail sod on sh.salesorderid = sod.salesorderdetailid join specialoffer so on sod.specialofferid = so.specialofferid",
+		"pkList": "salesorderid,salesorderdetailid, specialofferid",
+		"relevent": ["both"]
+		}
+	]
+
+}

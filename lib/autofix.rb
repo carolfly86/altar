@@ -123,6 +123,7 @@ module AutoFix
 
       from_query = from_query + q
     end
+
     # append remaining keys
     q = ""
     if join_key_list.count>0
