@@ -144,6 +144,7 @@ class LozalizeError
     target_list = nullable_tbl.columns.map{|c| c.colname}.join(', ')
     except_query = @ftuples_tbl.except_query(nullable_tbl,target_list)
     query = " with expt as (#{except_query}) select count(1) as cnt from expt"
+    puts query
     return DBConn.exec(query)[0]['cnt'].to_i
   end
 
@@ -164,6 +165,7 @@ class LozalizeError
         query = "(#{unwanted_query}) UNION (#{missing_query})"
       end
       tbl_name = 'nullable_f_tbl'
+      puts query
       DBConn.tblCreation(tbl_name, '', query)
       @nullable_f_tbl = Failing_Row_Table.new(tbl_name)
     end
@@ -886,7 +888,7 @@ class LozalizeError
     @unwantedQuery = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
 
     query = "INSERT INTO ftuples #{@unwantedQuery}"
-    # puts query
+    puts query
     DBConn.exec(query)
     # puts 'unwanted rows query'
     # puts query
@@ -918,7 +920,7 @@ class LozalizeError
     end.join(' AND ')
     @missingQuery = "select tbl2.* from (#{query}) as tbl1 JOIN (#{val_query}) as tbl2 ON #{pkjoin}"
     query = "INSERT INTO ftuples #{@missingQuery}"
-    # pp query
+    pp query
     DBConn.exec(query)
     # puts 'unwanted rows query'
     # puts query
@@ -934,7 +936,6 @@ class LozalizeError
     pkList = @pkFullList.map { |pk| "#{pk['alias']}_pk" }.join(', ') + ',mutation_cols, type'
     query = QueryBuilder.create_tbl('ftuples', pkList, query)
     @ftuples_tbl = Failing_Row_Table.new('ftuples')
-    # pp query
     DBConn.exec(query)
   end
 end

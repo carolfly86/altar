@@ -8,22 +8,22 @@
 	[	{
 		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID",
 		"pkList": "productid, businessentityid",
-		"relevent": ["join type"]
+		"relevent": ["2innerjoin"]
 		},
 		{
 		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.businessentityid left join vendor v on pv.businessentityid = v.BusinessEntityID",
 		"pkList": "productid, businessentityid",
-		"relevent": ["J1"]
+		"relevent": ["PH0-N1"]
 		},
 		{
-		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.businessentityid left join vendor v on pv.businessentityid = v.BusinessEntityID",
+		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.productid and p.productid = pv.businessentityid left join vendor v on pv.businessentityid = v.BusinessEntityID",
 		"pkList": "productid, businessentityid",
-		"relevent": ["J1"]
+		"relevent": ["PH0-N2"]
 		},
 		{
 		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.businessentityid join vendor v on pv.businessentityid = v.BusinessEntityID",
 		"pkList": "productid, businessentityid",
-		"relevent": ["both"]
+		"relevent": ["PH0-N1","2innerjoin"]
 		}
 	]
 

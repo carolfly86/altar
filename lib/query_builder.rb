@@ -64,6 +64,27 @@ module QueryBuilder
   end
 
   # find cols for tbl
+  def self.group_cols_by_typecategory(tbl_list)
+    # query = "SELECT column_name,data_type
+    #         FROM information_schema.columns
+    #         WHERE table_name   = '#{tbl}'"
+    # puts "'#{col}'"
+    query = "SELECT string_agg( c.relname||'.'||a.attname  ,',') as col_list,
+ typcategory,
+ count(1) as count
+ FROM pg_catalog.pg_attribute a
+ join pg_type p
+ on a.atttypid = p.oid
+ join pg_catalog.pg_class c
+ on a.attrelid = c.oid
+ where c.relname in (#{tbl_list}) AND a.attnum > 0 AND NOT a.attisdropped
+ group by typcategory"
+
+    query
+  end
+
+
+  # find cols for tbl
   def self.find_cols_by_data_typcategory(tbl, data_type = '', col = '')
     # query = "SELECT column_name,data_type
     #         FROM information_schema.columns
@@ -112,6 +133,31 @@ module QueryBuilder
     pkCreate = pkList.to_s.empty? ? '' : "ALTER TABLE #{tblName} ADD PRIMARY KEY (#{pkList});"
     query =  "DROP TABLE IF EXISTS #{tblName} CASCADE; #{insert}; #{pkCreate}"
   end
+
+  # create table with unique index on not null columns
+  def self.create_tbl_uix(tblName, uix, selectQuery)
+    insertQuery = selectQuery.dup
+    insert = insertQuery.insert(insertQuery.downcase.index(' from '), " INTO #{tblName} ")
+
+    ix_not_null = uix.split(',').map{|pk| "#{pk} is not null"}.join(' AND ')
+    create_indx = "CREATE UNIQUE INDEX idx_#{tblName} on #{tblName} (#{uix}) where #{ix_not_null}"
+
+    query =  "DROP TABLE IF EXISTS #{tblName} CASCADE; #{insert}; #{create_indx}"
+  end
+
+  # create table with pk or unique index
+  def self.exec_create_tbl(tblName, pkList, selectQuery)
+    create_query = self.create_tbl(tblName, pkList, selectQuery)
+    begin
+      # puts create_query
+      DBConn.exec(create_query)
+    rescue PG::NotNullViolation => e
+      create_query = self.create_tbl_uix(tblName, pkList, selectQuery)
+      # puts create_query
+      DBConn.exec(create_query)
+    end
+  end
+
   # def QueryBuilder.satisfactionMap(tblName,fDataset,fPKList)
   #    query = "DROP TABLE if exists #{tblName}; "
   #    pkArray = fPKList.split(',')

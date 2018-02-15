@@ -12,7 +12,8 @@ class JoinKeyIdent
     # @candidates is sets of columns in the same data typecategory
     @candidates = []
     tbl_list = @query_obj.rel_names.map{|r| "'#{r['relname']}'"}.join(',')
-    col_list_query = QueryBuilder.group_cols_by_data_typcategory(tbl_list)
+    # col_list_query = QueryBuilder.group_cols_by_data_typcategory(tbl_list)
+    col_list_query = QueryBuilder.group_cols_by_typecategory(tbl_list)
     pp col_list_query
     col_list = DBConn.exec(col_list_query)
     col_list.each do |collist|

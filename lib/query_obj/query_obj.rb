@@ -40,7 +40,7 @@ class QueryObj
       if has_where_predicate?()
         @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\swhere\s/i.match(query)[1]
       else
-        @from_query = query[query.downcase.index(' from ')+6..query.length].rstrip()
+        @from_query = query[query.downcase.index(' from ')+6..query.length].gsub(';','').strip()
         # @from_query = /\sfrom\s([\w\s\.\=\>\<\_\-]+)\s(where\s)?/i.match(query)[1]
       end
     end
@@ -351,7 +351,7 @@ class QueryObj
         if i == join_list.count-1
           cross_join_from =  cross_join_from + "#{l_arg} CROSS JOIN #{r_rel.relname} #{r_rel.relalias} "
         else
-          cross_join_from =  cross_join_from + "#{l_arg} #{join_type} #{r_rel.relname} #{r_rel.relalias} on #{q}"
+          cross_join_from =  cross_join_from + "#{l_arg} #{join_type} #{r_rel.relname} #{r_rel.relalias} on #{q} "
         end
         # full_join_from =  full_join_from + "#{l_arg} CROSS JOIN #{r_rel.relname} #{r_rel.relalias} on #{q}"
       end
@@ -369,8 +369,9 @@ class QueryObj
       create_tbl_query = "select * from #{satisfied_tbl} where 1=2"
       create_tbl_query = QueryBuilder.create_tbl(@excluded_join_tbl, '', create_tbl_query)
       DBConn.exec(create_tbl_query)
-
-      cross_join_query = "with cross_join as (#{cross_join_query}) INSERT INTO #{@excluded_join_tbl} select t.* from cross_join as t except select * from #{satisfied_tbl} "
+      # limit to 1000 rows due to resource limitation
+      cross_join_query = "with cross_join as (#{cross_join_query} limit 1000) INSERT INTO #{@excluded_join_tbl} select * from (select t.* from cross_join as t except select * from #{satisfied_tbl}) as tmp"
+      puts cross_join_query
       DBConn.exec(cross_join_query)
 
       # # full join
@@ -427,7 +428,7 @@ class QueryObj
       renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
       renamed_col_list = "#{renamed_pk_col},#{@all_cols_select}"
       @satisfied_tbl = "#{@table}_satisfied"
-      if has_where_predicate?
+      if (has_where_predicate? &&  !@predicate_tree.nil?)
         branch_queries = get_all_branch_queries
         pk_list =  @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ') + ', branch'
         branch_queries.each_with_index do |brq,idx|

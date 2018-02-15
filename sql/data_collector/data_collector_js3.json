@@ -1,0 +1,33 @@
+{
+  "T":
+  {
+  	"query": "select i.instance_id, s.stat_id from  instances i join index_stats s on i.instance_id = s.instance_id ",
+  	"pkList": "instance_id, stat_id"
+  },
+	"F":
+	[
+
+		{
+ 	 	"query": "select i.instance_id, s.stat_id from  instances i full join index_stats s on i.instance_id = s.instance_id ",
+  		"pkList": "instance_id, stat_id",
+		"relevent": ["1fulljoin"]
+		},
+		{
+ 	 	"query": "select i.instance_id, s.stat_id from  instances i join index_stats s on i.instance_id = s.idx_tup_fetch ",
+  		"pkList": "instance_id, stat_id",
+		"relevent": ["PH0-N1"]
+		},
+		{
+ 	 	"query": "select i.instance_id, s.stat_id from  instances i join index_stats s on i.instance_id = s.instance_id and i.instance_id = s.idx_tup_fetch",
+  		"pkList": "instance_id, stat_id",
+		"relevent": ["PH0-N2"]
+		},
+		{
+ 	 	"query": "select i.instance_id, s.stat_id from  instances i full join index_stats s on i.instance_id = s.instance_id and i.instance_id = s.idx_tup_fetch",
+  		"pkList": "instance_id, stat_id",
+		"relevent": ["1fulljoin","PH0-N2"]
+		}
+	]
+
+}
+

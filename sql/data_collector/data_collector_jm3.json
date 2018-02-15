@@ -1,0 +1,33 @@
+{
+  "T":
+  {
+  	"query": "select i.instance_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join pg_table_stats tbl on tbl.database_id = db.database_id join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id ",
+  	"pkList": "instance_id,database_id,table_id,stat_id"
+  },
+	"F":
+	[
+
+		{
+  		"query": "select i.instance_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join pg_table_stats tbl on tbl.database_id = db.database_id full join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id ",
+  		"pkList": "instance_id,database_id,table_id,stat_id",
+		"relevent": ["3join"]
+		},
+		{
+  		"query": "select i.instance_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join pg_table_stats tbl on tbl.table_id = db.database_id join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.fillfactor ",
+  		"pkList": "instance_id,database_id,table_id,stat_id",
+		"relevent": ["PH0-N4"]
+		},
+		{
+  		"query": "select i.instance_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join pg_table_stats tbl on tbl.database_id = db.database_id and tbl.table_id = db.database_id join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id and tbl.table_id = ix.fillfactor",
+  		"pkList": "instance_id,database_id,table_id,stat_id",
+		"relevent": ["PH0-N5"]
+		},
+		{
+  		"query": "select i.instance_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join pg_table_stats tbl on tbl.database_id = db.database_id and tbl.table_id = db.application_id full join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id",
+  		"pkList": "instance_id,database_id,table_id,stat_id",
+		"relevent": ["3join","PH0-N3"]
+		}
+	]
+
+}
+

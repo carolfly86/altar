@@ -1,0 +1,33 @@
+{
+  "T":
+  {
+  	"query": "select i.instance_id,app.id as app_id, lg.login_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join logins lg on lg.instance_id = i.instance_id join applications app on app.id = db.application_id join pg_table_stats tbl on tbl.database_id = db.database_id join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id ",
+  	"pkList": "instance_id,app_id,login_id,database_id,table_id,stat_id"
+  },
+	"F":
+	[
+
+		{
+  		"query": "select i.instance_id,app.id as app_id, lg.login_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join logins lg on lg.instance_id = i.instance_id join applications app on app.id = db.application_id join pg_table_stats tbl on tbl.database_id = db.database_id right join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id ",
+  		"pkList": "instance_id,app_id,login_id,database_id,table_id,stat_id",
+		"relevent": ["4join"]
+		},
+		{
+  		"query": "select i.instance_id,app.id as app_id, lg.login_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join logins lg on lg.instance_id = i.instance_id join applications app on app.id = db.application_id join pg_table_stats tbl on tbl.database_id = db.database_id join index_stats ix on ix.index_id = tbl.database_id and tbl.table_id = ix.table_id ",
+  		"pkList": "instance_id,app_id,login_id,database_id,table_id,stat_id",
+		"relevent": ["PH0-N6"]
+		},
+		{
+  		"query": "select i.instance_id,app.id as app_id, lg.login_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join logins lg on lg.instance_id = i.instance_id join applications app on app.id = db.application_id join pg_table_stats tbl on tbl.database_id = db.database_id join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id and tbl.database_id = ix.index_id",
+  		"pkList": "instance_id,app_id,login_id,database_id,table_id,stat_id",
+		"relevent": ["PH0-N7"]
+		},
+		{
+  		"query": "select i.instance_id,app.id as app_id, lg.login_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join logins lg on lg.instance_id = i.instance_id join applications app on app.id = db.application_id join pg_table_stats tbl on tbl.database_id = db.database_id right join index_stats ix on ix.index_id = tbl.database_id and tbl.table_id = ix.table_id ",
+  		"pkList": "instance_id,app_id,login_id,database_id,table_id,stat_id",
+		"relevent": ["4join","PH0-N5"]
+		}
+	]
+
+}
+

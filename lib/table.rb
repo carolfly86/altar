@@ -44,6 +44,11 @@ class Table
     if @pk_column_list.nil?
       tbl_pk_query = QueryBuilder.find_pk_cols(@relname)
       tbl_pk_list = DBConn.exec(tbl_pk_query)
+      # if cannot find pk, then use unique key instead
+      if tbl_pk_list.count == 0
+        tbl_pk_query = QueryBuilder.find_uniq_key(@relname)
+        tbl_pk_list = DBConn.exec(tbl_pk_query)
+      end
       @pk_column_list = tbl_pk_list.map do |pk|
                         column = Column.new
                         column.colname = pk['attname']

@@ -1,18 +1,28 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    activesupport (5.1.4)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (~> 0.7)
+      minitest (~> 5.1)
+      tzinfo (~> 1.1)
     coderay (1.1.0)
+    concurrent-ruby (1.0.5)
+    decisiontree (0.5.0)
     diff-lcs (1.2.5)
     distribution (0.7.3)
     fortune (0.0.3)
     hashie (3.4.3)
+    i18n (0.9.3)
+      concurrent-ruby (~> 1.0)
     json (1.8.6)
-    jsonpath (0.5.8)
+    jsonpath (0.8.6)
       multi_json
     method_source (0.8.2)
-    multi_json (1.12.1)
+    minitest (5.11.3)
+    multi_json (1.13.1)
     pg (0.18.2)
-    pg_query (0.11.4)
+    pg_query (0.13.2)
       json (>= 1.8, < 3)
     pry (0.10.3)
       coderay (~> 1.1.0)
@@ -36,22 +46,27 @@ GEM
       structured_warnings (~> 0.2)
     slop (3.6.0)
     structured_warnings (0.3.0)
+    thread_safe (0.3.6)
     trollop (2.1.1)
+    tzinfo (1.2.5)
+      thread_safe (~> 0.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  activesupport
+  decisiontree
   distribution
   fortune
   hashie
-  jsonpath (= 0.5.8)
+  jsonpath (= 0.8.6)
   pg
-  pg_query (= 0.11.4)
+  pg_query (= 0.13.2)
   pry
   rspec
   rubytree
   trollop
 
 BUNDLED WITH
-   1.15.1
+   1.16.0

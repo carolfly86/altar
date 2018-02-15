@@ -21,9 +21,13 @@ module SFL_Ranking
 
   def self.tie_check(name)
     query = "select count(1) as cnt from (select distinct #{name}_score from tarantular_result) as t;"
-    res = DBConn.exec(query)
-    if res[0]['cnt'].to_i == 1
+    distinct_cnt = DBConn.exec(query)[0]['cnt'].to_i
+
+    query = "select count(1) as cnt from tarantular_result"
+    cnt = DBConn.exec(query)[0]['cnt'].to_i
+    if ( distinct_cnt == 1 && cnt > 1)
       query = "update tarantular_result SET #{name}_rank = 0"
-       end
+      DBConn.exec(query)
+    end
   end
 end

@@ -87,7 +87,8 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
     fqueryObj = QueryObj.new(f_options)
     if method == 'b'
       beginTime = Time.now
-      tarantular = Tarantular.new(fqueryObj, tqueryObj, 1)
+      is_join = script_type == 'j'
+      tarantular = Tarantular.new(fqueryObj, tqueryObj, 1, is_join)
       tarantular.predicateTest
       endTime = Time.now
       tarantular_duration = (endTime - beginTime).to_i
@@ -124,7 +125,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         fl_jc_start_time = Time.now
         new_join_key,old_join_key = localizeErr.join_key_err
         fl_jc_end_time = Time.now
-        puts fl_jc_end_time
+        # puts fl_jc_end_time
         fl_jc_duration = (fl_jc_end_time - beginTime).to_i
         # update_test_result_tbl(idx, 'jc',fqueryObj.query, tqueryObj.query, 0, fl_jc_duration, 0, f_options[:relevent], 0, 0, 0)
         fix_rst = {'test_type' => 'jc', 'query' => fqueryObj.query,

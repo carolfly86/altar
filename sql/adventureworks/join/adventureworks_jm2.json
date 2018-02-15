@@ -8,17 +8,17 @@
 	[	{
 		"query": "select p.productid,pv.businessentityid from product p right join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode",
 		"pkList": "productid, businessentityid",
-		"relevent": ["join type"]
+		"relevent": ["1rightjoin"]
 		},
 		{
 		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.weightunitmeasurecode",
 		"pkList": "productid, businessentityid",
-		"relevent": ["join condition"]
+		"relevent": ["PH0-N4"]
 		},
 		{
 		"query": "select p.productid,pv.businessentityid from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid left join unitmeasure u on u.unitmeasurecode = p.weightunitmeasurecode",
 		"pkList": "productid, businessentityid",
-		"relevent": ["both"]
+		"relevent": ["PH0-N4", "3leftjoin"]
 		}
 	]
 

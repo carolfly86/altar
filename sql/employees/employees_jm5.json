@@ -1,33 +1,33 @@
 {
   "T":
   {
-  	"query": "select e.emp_no,s.from_date, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date and t.to_date = s.to_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
-  	"pkList": "emp_no, from_date,dept_no"
+  	"query": "select e.emp_no,s.from_date, de.emp_no as dept_emp_emp_no, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date and t.to_date = s.to_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
+  	"pkList": "emp_no,from_date,dept_emp_emp_no,dept_no"
   },
 	"F":
 	[
 		{
-	  	"query": "select e.emp_no,s.from_date, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.to_date and t.to_date = s.to_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
-		"pkList": "emp_no,from_date, dept_no",
-		"relevent": ["J3"]
+	  	"query": "select e.emp_no,s.from_date, de.emp_no as dept_emp_emp_no, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.to_date and t.to_date = s.to_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
+		"pkList": "emp_no,from_date,dept_emp_emp_no,dept_no",
+		"relevent": ["PH0-N3"]
 
 		},
 		{
-	  	"query": "select e.emp_no,s.from_date, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
-		"pkList": "emp_no,from_date,dept_no",
-		"relevent": ["J3"]
+	  	"query": "select e.emp_no,s.from_date, de.emp_no as dept_emp_emp_no, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
+		"pkList": "emp_no,from_date,dept_emp_emp_no,dept_no",
+		"relevent": ["PH0-N4-missing"]
 
 		},
 		{
-	  	"query": "select e.emp_no,s.from_date, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date and t.to_date = s.to_date and t.emp_no = s.salary join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
-		"pkList": "emp_no, from_date,dept_no",
-		"relevent": ["J4"]
+	  	"query": "select e.emp_no,s.from_date, de.emp_no as dept_emp_emp_no, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date and t.to_date = s.to_date and t.emp_no = s.salary join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
+		"pkList": "emp_no,from_date,dept_emp_emp_no,dept_no",
+		"relevent": ["PH0-N5"]
 
 		},
 		{
-	  	"query": "select e.emp_no,s.from_date, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no left join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date and t.to_date = s.to_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
-		"pkList": "emp_no, from_date,dept_no",
-		"relevent": ["J3"]
+	  	"query": "select e.emp_no,s.from_date, de.emp_no as dept_emp_emp_no, de.dept_no from employees e join salaries s on e.emp_no = s.emp_no left join titles t on e.emp_no = t.emp_no and t.from_date = s.from_date and t.to_date = s.to_date join dept_emp de on de.emp_no = e.emp_no where s.to_date > '1995-11-29'",
+		"pkList": "emp_no,from_date,dept_emp_emp_no,dept_no",
+		"relevent": ["2leftjoin"]
 
 		}
     ]

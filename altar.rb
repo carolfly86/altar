@@ -13,6 +13,7 @@ Dir['lib/*.rb', 'lib/*/*.rb'].each { |file| require_relative file }
 # ./altar.rb -s employees_s01 -g i -m or -o fl
 # ./altar.rb -s polling_etl_s01 -g i -m or -o fl
 # ./altar.rb -a y -g i -m or -o fl
+# ./altar.rb -a y -m b  -o fl
 # ./altar.rb -a y -o ds
 # ./altar.rb -s balance_m01 -m o -u n
 # Dir.glob("lib/*.rb").each {|file| puts file; require_relative file }

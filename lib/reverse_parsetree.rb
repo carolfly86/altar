@@ -6,14 +6,28 @@ require 'rubytree'
 require_relative 'string_util'
 require_relative 'query_builder'
 module ReverseParseTree
+  def self.convert_to_cross_join(parseTree, targetListReplacement = '')
+    targetList = if targetListReplacement.to_s.empty?
+                   get_targetList(parseTree)
+                 else
+                   targetListReplacement
+                 end
+    rel_list = rel_in_from(parseTree['SELECT']['fromClause'])
+    cross_join = rel_list.map do |rel|
+      rel['relalias'].to_s.empty? ? rel['relname'] : "#{rel['relname']} #{rel['relalias']}"
+    end.join(' CROSS JOIN ')
+
+    "SELECT #{targetList} FROM #{cross_join}"
+  end
   def self.reverse(parseTree)
     # distinct = parseTree['SELECT']['distinctClause']||''
     distinct = parseTree['SELECT']['distinctClause'].is_a?(Array) ? 'DISTINCT ' : ''
     # p parseTree['SELECT']['distinctClause']
     # p "Distinct: #{distinct}"
-    targetList = parseTree['SELECT']['targetList'].map do |t|
-      colNameConstr(t)['fullname']
-    end.join(', ')
+    # targetList = parseTree['SELECT']['targetList'].map do |t|
+    #   colNameConstr(t)['fullname']
+    # end.join(', ')
+    targetList = get_targetList(parseTree)
     # p "targetList: #{targetList}"
 
     fromPT = parseTree['SELECT']['fromClause']
@@ -34,9 +48,7 @@ module ReverseParseTree
     distinct = parseTree['SELECT']['distinctClause'].is_a?(Array) ? 'DISTINCT ' : ''
     # p parseTree['SELECT']['distinctClause']
     targetList = if targetListReplacement.to_s.empty?
-                   parseTree['SELECT']['targetList'].map do |t|
-                     colNameConstr(t)['fullname']
-                   end.join(', ')
+                   get_targetList(parseTree)
                  else
                    targetListReplacement
                  end
@@ -63,6 +75,12 @@ module ReverseParseTree
     rst['fullname'] = rel['alias'].nil? ? relname : "#{relname} #{relalias}"
     rst
     # p relname
+  end
+
+  def self.get_targetList(parseTree)
+    parseTree['SELECT']['targetList'].map do |t|
+       colNameConstr(t)['fullname']
+    end.join(', ')
   end
 
   def self.colNameConstr(t)

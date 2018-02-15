@@ -1,0 +1,31 @@
+{
+  "T":
+  {
+  	"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid, s.id as sid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id join studies s on d.study_id = s.id ;",
+  	"pkList": "mdid, did, iid, aid, sid"
+  },
+	"F":
+	[
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid, s.id as sid from medidata_depots md join depots d on d.medidata_depot_id = md.id right join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id join studies s on d.study_id = s.id ;",
+		"pkList": "mdid, did, iid, aid, sid",
+		"relevent": ["2rightjoin"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid, s.id as sid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.id = l.id join article_types a on l.article_type_id = a.id join studies s on d.study_id = s.id ;",
+		"pkList": "mdid, did, iid, aid, sid",
+		"relevent": ["3joinkey"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid, s.id as sid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id and i.id = l.id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id join studies s on d.study_id = s.id ;",
+		"pkList": "mdid, did, iid, aid, sid",
+		"relevent": ["3extrajoinkey"]
+		},
+		{
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid, s.id as sid from medidata_depots md join depots d on d.medidata_depot_id = md.id right join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.id = l.id join article_types a on l.article_type_id = a.id join studies s on d.study_id = s.id ;",
+		"pkList": "mdid, did, iid, aid, sid",
+		"relevent": [ "2rightjoin","3joinkey"]
+		}
+	]
+
+}

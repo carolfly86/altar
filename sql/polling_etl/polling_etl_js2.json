@@ -1,0 +1,32 @@
+{
+  "T":
+  {
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, q.surveyid as sid from questions q join choices c on q.id = c.questionid left join answers a on q.id = a.questionid ",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid"
+  },
+  "F":
+  [
+
+    {
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, q.surveyid as sid from questions q join choices c on q.id = c.questionid left join answers a on q.id = a.context ",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["PH0-N2"]
+    },
+    {
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, q.surveyid as sid from questions q join choices c on q.id = c.questionid left join answers a on q.id = a.questionid and a.choiceid = c.id",
+      "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["PH0-N3"]
+    },
+    {
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, q.surveyid as sid from questions q join choices c on q.id = c.questionid join answers a on q.id = a.questionid ",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["2innerjoin"]
+    },
+    {
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, q.surveyid as sid from questions q join choices c on q.id = c.questionid join answers a on q.id = a.questionid and a.choiceid = c.id",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["2innerjoin", "PH0-N3"]
+    }
+  ]
+
+}

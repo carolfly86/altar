@@ -1,0 +1,32 @@
+{
+  "T":
+  {
+    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid and s.id = a.surveyid and a.choiceid = c.id",
+    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid"
+  },
+  "F":
+  [
+
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid and s.id = a.surveyid and a.choiceid = c.questionid",
+      "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["PH0-N5"]
+    },
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on q.id = a.questionid and s.id = a.surveyid",
+      "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["PH0-N5-missing"]
+    },
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id left join answers a on q.id = a.questionid and s.id = a.surveyid and a.choiceid = c.id",
+      "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["3leftjoin"]
+    },
+    {
+      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id left join answers a on q.id = a.questionid and s.id = a.surveyid and a.choiceid = c.questionid",
+      "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid",
+      "relevent": ["3leftjoin", "PH0-N5"]
+    }
+  ]
+
+}
