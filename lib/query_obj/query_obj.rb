@@ -302,7 +302,7 @@ class QueryObj
   end
 
   # create the table containing all columns and no where predicate
-  def create_full_rst_tbl
+  def create_full_rst_tbl(preserve_null_pk = true)
     unless defined? @full_rst_tbl
       self.all_cols_select
       self.pk_full_list
@@ -311,27 +311,33 @@ class QueryObj
       query =  ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, '')
       @full_rst_tbl = "#{@table}_full_rst"
       pk = @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ')
-      if is_plain_query()
-        query = QueryBuilder.create_tbl(@full_rst_tbl, pk, query)
-        DBConn.exec(query)
-      else
-        query = QueryBuilder.create_tbl(@full_rst_tbl, '', query)
-        DBConn.exec(query)
-
-        # not_null_query = pk_list.flat.map{|pk| "#{pk} is not null"}.join(' AND ')
-        # add index on not null columns
-        pk_not_null = @pk_full_list.map { |pk| "#{pk['alias']}_pk is not null"}.join(' OR ')
-        create_indx = "CREATE UNIQUE INDEX idx_#{@full_rst_tbl} on #{@full_rst_tbl} (#{pk}) where #{pk_not_null}"
-        pp create_indx
-        DBConn.exec(create_indx)
-
+      # binding.pry
+      DBConn.tblCreation(@full_rst_tbl, pk, query)
+      
+      unless preserve_null_pk
+        DBConn.update_null_columns(@full_rst_tbl,pk)
       end
+      # if is_plain_query()
+      #   query = QueryBuilder.create_tbl(@full_rst_tbl, pk, query)
+      #   DBConn.exec(query)
+      # else
+      #   query = QueryBuilder.create_tbl(@full_rst_tbl, '', query)
+      #   DBConn.exec(query)
+
+      #   # not_null_query = pk_list.flat.map{|pk| "#{pk} is not null"}.join(' AND ')
+      #   # add index on not null columns
+      #   pk_not_null = @pk_full_list.map { |pk| "#{pk['alias']}_pk is not null"}.join(' OR ')
+      #   create_indx = "CREATE UNIQUE INDEX idx_#{@full_rst_tbl} on #{@full_rst_tbl} (#{pk}) where #{pk_not_null}"
+      #   pp create_indx
+      #   DBConn.exec(create_indx)
+
+      # end
     end
     return @full_rst_tbl
   end
 
   # create cartesian product except satisfied table
-  def create_join_excluded_tbl
+  def create_join_excluded_tbl(preserve_null_pk = true)
     if @excluded_join_tbl.nil?
       join_list =join_list()
       cross_join_from = ''
@@ -374,6 +380,10 @@ class QueryObj
       puts cross_join_query
       DBConn.exec(cross_join_query)
 
+      unless preserve_null_pk
+        pk = @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(',')
+        DBConn.update_null_columns(@excluded_join_tbl,pk)
+      end
       # # full join
       # full_join_query = query.gsub(old_from,full_join_from)
       # full_join_query = "(#{full_join_query} except select #{@all_cols_renamed} from #{satisfied_tbl})"

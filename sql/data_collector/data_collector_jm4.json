@@ -8,7 +8,7 @@
 	[
 
 		{
-  		"query": "select i.instance_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join pg_table_stats tbl on tbl.database_id = db.database_id left join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id ",
+  		"query": "select i.instance_id,db.database_id,tbl.table_id,ix.stat_id from instances i join databases db on i.instance_id = db.instance_id join pg_table_stats tbl on tbl.database_id = db.database_id  join index_stats ix on ix.database_id = tbl.database_id and tbl.table_id = ix.table_id ",
   		"pkList": "instance_id,database_id,table_id,stat_id",
 		"relevent": ["3join"]
 		},

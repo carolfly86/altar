@@ -14,17 +14,17 @@
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid from medidata_depots md join depots d on d.id = md.id join unnumbered_inventory_items i on d.id = i.depot_id;",
 		"pkList": "mdid, did, iid",
-		"relevent": ["1joinkey"]
+		"relevent": ["PH0-N1"]
 		},
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid from medidata_depots md join depots d on d.medidata_depot_id = md.id and d.id = md.id join unnumbered_inventory_items i on d.id = i.depot_id;",
 		"pkList": "mdid, did, iid",
-		"relevent": ["1extrajoinkey"]
+		"relevent": ["PH0-N2"]
 		},
 		{
   		"query": "select md.id as mdid,  d.id as did,  i.id as iid from medidata_depots md join depots d on d.medidata_depot_id = md.id and d.id = md.id left join unnumbered_inventory_items i on d.id = i.depot_id;",
 		"pkList": "mdid, did, iid",
-		"relevent": ["1extrajoinkey and 2leftjoin"]
+		"relevent": ["PH0-N2", "2leftjoin"]
 		}
 	]
 

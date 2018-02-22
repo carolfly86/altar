@@ -3,7 +3,7 @@ require 'pg_query'
 class Tarantular
   # attr_accessor :fPS
   # def initialize(fQuery, tQuery, parseTree)
-  attr_reader :total_test_cnt, :ranks
+  attr_reader :total_test_cnt, :ranks, :mw_duration
   def initialize(fQueryObj, tQueryObj, test_id, is_join = false)
     # @fQuery=fqueryObj['query']
     # @tQuery=tqueryObj['query']
@@ -178,8 +178,10 @@ class Tarantular
     DBConn.exec(query)
 
     # Mann whitney ranking
+    begin_time = Time.now
     Mann_whitney.ranking_calculation
-
+    end_time = Time.now
+    @mw_duration = (end_time - begin_time).to_i
     # crosstab ranking
     Crosstab.ranking_calculation
 
@@ -293,7 +295,13 @@ class Tarantular
   def failed_tuple_count
     query = "select count(1) as failed_cnt from tarantular_execution where type = 'f'"
     res = DBConn.exec(query)
-    res[0]['failed_cnt']
+    res[0]['failed_cnt'].to_i
+  end
+
+  def passed_tuple_count
+    query = "select count(1) as passed_cnt from tarantular_execution where type = 'p'"
+    res = DBConn.exec(query)
+    res[0]['passed_cnt'].to_i
   end
 
   private
@@ -333,9 +341,12 @@ CREATE TABLE tarantular_result
     global_tbl_name = create_global_tbl
     global_tbl = Table.new(global_tbl_name)
     pklist = global_tbl.pk_column_list
-    pkjoin = pklist.map{|c| "(t.#{c.colname} = g.#{c.colname} or (t.#{c.colname} is null and g.#{c.colname} is null))"}.join (' AND ')
+    pkjoin = pklist.map{|c| "t.#{c.colname} = g.#{c.colname}"}.join (' AND ')
+    # pk_null =pklist.map{|c| "(t.#{c.colname} = g.#{c.colname}) or (t.#{c.colname} is null and g.#{c.colname} is null)"}.join (' AND ')
+
     pkselect = pklist.map{|c| c.colname }.join (', ')
     # pkselect = @pkSelect.gsub('f.', '')
+    # update null columns to resolve null value comparasion issue
 
     included_select_query = "select t.*, 'p'::varchar(1) as type from #{@t_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'p'"
     missing_select_query = "select t.*, 'f'::varchar(1) as type from #{@t_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'f'"
@@ -346,24 +357,30 @@ CREATE TABLE tarantular_result
                     "(#{unwanted_select_query}) UNION ALL "\
                     "(#{missing_select_query})) as tmp"
 
-    QueryBuilder.exec_create_tbl('tarantular_execution', pkselect , select_query)
-
+    DBConn.tblCreation('tarantular_execution', pkselect , select_query)
 
     # if is join query, add 1000 excluded rows from cross join
     if is_join
-      join_excluded_tbl = @tQueryObj.create_join_excluded_tbl
+      # create join_excluded_tbl and update null pk
+      join_excluded_tbl = @tQueryObj.create_join_excluded_tbl(false)
       pkjoin = pklist.map{|c| "excld.#{c.colname} = te.#{c.colname}"}.join (' AND ')
 
       excluded_query = "insert into tarantular_execution "\
                        "select *, 'p' from #{join_excluded_tbl} excld "\
                        "where not exists (select 1 from tarantular_execution te where #{pkjoin}) limit 100"
       puts excluded_query
+      # binding.pry
       DBConn.exec(excluded_query)
 
       # binding.pry
       # target_list =  ReverseParseTree.get_targetList(@fPS)
       # all_query = ReverseParseTree.convert_to_cross_join(@fPS, "#{target_list}, 'p'::varchar(1) as type")
     end
+
+    if ( passed_tuple_count == 0 || failed_tuple_count == 0)
+      binding.pry
+    end
+
     # query = QueryBuilder.create_tbl('tarantular_execution', pkList, pk_selectquery)
     # puts query
     # DBConn.exec(query)
@@ -390,8 +407,11 @@ CREATE TABLE tarantular_result
   def create_global_tbl
     # full table contains all columns without where predicate
     # so for where predicate it also contains excluded rows
-    @t_full_tbl = @tQueryObj.create_full_rst_tbl
-    @f_full_tbl = @fQueryObj.create_full_rst_tbl
+
+    # create full rst_tbl and update null pk
+    @t_full_tbl = @tQueryObj.create_full_rst_tbl(false)
+    @f_full_tbl = @fQueryObj.create_full_rst_tbl(false)
+
     tbl = Table.new(@t_full_tbl)
     global_name = 'tf_global'
     pkList = tbl.pk_column_list.map{|c| c.colname}.join(', ')
@@ -399,8 +419,13 @@ CREATE TABLE tarantular_result
                   "from (select #{pkList} from #{@t_full_tbl} UNION ALL "\
                   "select #{pkList} from #{@f_full_tbl}) as tmp "\
                   "group by #{pkList}"
-    puts insert_query
-    QueryBuilder.exec_create_tbl(global_name, pkList, insert_query)
+    # puts insert_query
+    # QueryBuilder.exec_create_tbl(global_name, pkList, insert_query)
+    DBConn.tblCreation(global_name, pkList, insert_query)
+    # update null columns to resolve null value comparasion issue
+    # binding.pry
+    # DBConn.update_null_columns(global_name,pkList)
+
     return global_name
   end
   # def create_t_f_union_table

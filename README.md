@@ -12,8 +12,8 @@ Currently it supports PostgresSQL.
 
 1. Create a directory in `/sql` directory, the name of the directory should be the database name.
 2. Create a JSON file in the same format as `/sql/adventureworks/adventureworks_s01.json`
-3. Execute ALTAR with this command `./test_parse.rb -s #json_file_name# -o t -g c -m r`
-4. Statistics and Similarity based fault localization techniques can be applied with this command `./test_parse.rb -s #json_file_name# -o t -g c -m b` to
+3. Execute ALTAR with this command `./altar.rb -s #json_file_name# -o t -g c -m r`
+4. Statistics and Similarity based fault localization techniques can be applied with this command `./altar.rb -s #json_file_name# -o t -g c -m b` to
 5. Fault localization result will be store in a table name `test_result` in your database.
 
 ## Experiment Result

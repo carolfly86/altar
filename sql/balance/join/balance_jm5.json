@@ -1,30 +1,30 @@
 {
   "T":
   {
-  	"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id right join article_types a on l.article_type_id = a.id ;",
-  	"pkList": "mdid, did, iid, aid"
+  	"query": "select md.id as mdid,  d.id as did,  i.id as iid, l.id as lid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id right join article_types a on l.article_type_id = a.id ;",
+  	"pkList": "mdid, did, iid, lid, aid"
   },
 	"F":
 	[
 		{
-  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id ;",
-		"pkList": "mdid, did, iid, aid",
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, l.id as lid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id ;",
+		"pkList": "mdid, did, iid, lid, aid",
 		"relevent": ["4join"]
 		},
 		{
-  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id right join article_types a on l.article_type_id = a.id ;",
-		"pkList": "mdid, did, iid, aid",
-		"relevent": ["1joinkey"]
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, l.id as lid, a.id as aid from medidata_depots md join depots d on d.id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id right join article_types a on l.article_type_id = a.id ;",
+		"pkList": "mdid, did, iid, lid, aid",
+		"relevent": ["PH0-N1"]
 		},
 		{
-  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id and d.id = md.idjoin unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id right join article_types a on l.article_type_id = a.id ;",
-		"pkList": "mdid, did, iid, aid",
-		"relevent": ["1extrajoinkey"]
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, l.id as lid, a.id as aid from medidata_depots md join depots d on d.medidata_depot_id = md.id and d.id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id right join article_types a on l.article_type_id = a.id ;",
+		"pkList": "mdid, did, iid, lid, aid",
+		"relevent": ["PH0-N2"]
 		},
 		{
-  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots d on d.id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id ;",
-		"pkList": "mdid, did, iid, aid",
-		"relevent": [ "4rightjoin","1joinkey"]
+  		"query": "select md.id as mdid,  d.id as did,  i.id as iid, l.id as lid, a.id as aid from medidata_depots md join depots d on d.id = md.id join unnumbered_inventory_items i on d.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id ;",
+		"pkList": "mdid, did, iid, lid, aid",
+		"relevent": [ "4rightjoin","PH0-N1"]
 		}
 	]
 

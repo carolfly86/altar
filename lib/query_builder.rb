@@ -20,6 +20,18 @@ module QueryBuilder
 
   end
 
+  def self.get_column_data_typcategory(tbl_list,col_list)
+        query = "SELECT c.relname, a.attname as colname,
+ pg_catalog.format_type(a.atttypid, a.atttypmod) as data_type,typcategory
+ FROM pg_catalog.pg_attribute a
+ join pg_type p
+ on a.atttypid = p.oid
+ join pg_catalog.pg_class c
+ on a.attrelid = c.oid
+ where c.relname in (#{tbl_list}) AND a.attname in (#{col_list}) AND a.attnum > 0 AND NOT a.attisdropped"
+    query
+  end
+
   # test if tbl1 is subset of tbl2
   def self.subset_test(tbl1, tbl2)
     query = 'SELECT CASE WHEN (SELECT COUNT(*) FROM ( ' + tbl1 + ' ) as tbl1 )=0 '\
@@ -146,17 +158,17 @@ module QueryBuilder
   end
 
   # create table with pk or unique index
-  def self.exec_create_tbl(tblName, pkList, selectQuery)
-    create_query = self.create_tbl(tblName, pkList, selectQuery)
-    begin
-      # puts create_query
-      DBConn.exec(create_query)
-    rescue PG::NotNullViolation => e
-      create_query = self.create_tbl_uix(tblName, pkList, selectQuery)
-      # puts create_query
-      DBConn.exec(create_query)
-    end
-  end
+  # def self.exec_create_tbl(tblName, pkList, selectQuery)
+  #   create_query = self.create_tbl(tblName, pkList, selectQuery)
+  #   begin
+  #     # puts create_query
+  #     DBConn.exec(create_query)
+  #   rescue PG::NotNullViolation => e
+  #     create_query = self.create_tbl_uix(tblName, pkList, selectQuery)
+  #     # puts create_query
+  #     DBConn.exec(create_query)
+  #   end
+  # end
 
   # def QueryBuilder.satisfactionMap(tblName,fDataset,fPKList)
   #    query = "DROP TABLE if exists #{tblName}; "

@@ -5,7 +5,7 @@ def create_all_test_result_tbl
 	harmonic_mean float(2), jaccard float(2), column_cnt int,
 	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
 	sober_hm float(2), liblit_hm float(2),mw_hm float(2),crosstab_hm float(2),
-	tarantular_duration int, total_test_cnt int);)
+	tarantular_duration int,mw_duration int, total_test_cnt int);)
   # pp query
   DBConn.exec(query)
 end
@@ -30,6 +30,7 @@ def dump_test_result(script)
 	mw_hm ,
 	crosstab_hm ,
 	tarantular_duration ,
+  mw_duration ,
 	total_test_cnt
 	from test_result"
   DBConn.exec(query)
@@ -44,7 +45,7 @@ def create_test_result_tbl
 	sober_rank varchar(50), liblit_rank varchar(50),mw_rank varchar(50),
 	tarantular_hm float(2), ochihai_hm float(2), kulczynski2_hm float(2), naish2_hm float(2),wong1_hm float(2),
 	sober_hm float(2), liblit_hm float(2),mw_hm float(2),crosstab_hm float(2),
-	tarantular_duration int, total_test_cnt int);)
+	tarantular_duration int, mw_duration int, total_test_cnt int);)
   # pp query
   DBConn.exec(query)
 
@@ -56,7 +57,7 @@ def create_test_result_tbl
   DBConn.exec(query)
 end
 
-def update_test_result_tbl(test_id, test_type, fquery, tquery, m_u_tuple_count, duration, total_score, relevent, rank, tarantular_duration, total_test_cnt)
+def update_test_result_tbl(test_id, test_type, fquery, tquery, m_u_tuple_count, duration, total_score, relevent, rank, tarantular_duration, mw_duration, total_test_cnt)
   fquery = fquery.gsub("'", "''")
   tquery = tquery.gsub("'", "''")
   query =  %(INSERT INTO test_result
@@ -88,6 +89,7 @@ def update_test_result_tbl(test_id, test_type, fquery, tquery, m_u_tuple_count, 
 				'#{rank['mw_hm']}',
 				'#{rank['crosstab_hm']}',
 				#{tarantular_duration},
+        #{mw_duration},
 				#{total_test_cnt}
 
 			)

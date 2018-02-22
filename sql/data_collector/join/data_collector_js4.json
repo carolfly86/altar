@@ -1,31 +1,31 @@
 {
   "T":
   {
-  	"query": "select s.stat_id from instances i left join index_stats s on i.instance_id = s.instance_id ",
-  	"pkList": "stat_id"
+  	"query": "select i.instance_id, s.stat_id from  instances i left join index_stats s on i.instance_id = s.instance_id ",
+  	"pkList": "instance_id, stat_id"
   },
 	"F":
 	[
 
 		{
- 	 	"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id ",
-  		"pkList": "stat_id",
+ 	 	"query": "select i.instance_id, s.stat_id from  instances i join index_stats s on i.instance_id = s.instance_id ",
+  		"pkList": "instance_id, stat_id",
 		"relevent": ["1join"]
 		},
 		{
-  		"query": "select s.stat_id from instances i left join index_stats s on i.instance_id = s.idx_scan ",
-  		"pkList": "stat_id",
-		"relevent": ["1joinkey"]
+  		"query": "select i.instance_id, s.stat_id from  instances i left join index_stats s on i.instance_id = s.idx_scan ",
+  		"pkList": "instance_id, stat_id",
+		"relevent": ["PH0-N1"]
 		},
 		{
-  		"query": "select s.stat_id from instances i left join index_stats s on i.instance_id = s.instance_id and i.instance_id = s.idx_scan",
-  		"pkList": "stat_id",
-		"relevent": ["1extrajoinkey"]
+  		"query": "select i.instance_id, s.stat_id from  instances i left join index_stats s on i.instance_id = s.instance_id and i.instance_id = s.idx_scan",
+  		"pkList": "instance_id, stat_id",
+		"relevent": ["PH0-N2"]
 		},
 		{
-  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id and i.instance_id = s.idx_scan",
-  		"pkList": "stat_id",
-		"relevent": ["1join","1extrajoinkey"]
+  		"query": "select i.instance_id, s.stat_id from  instances i join index_stats s on i.instance_id = s.instance_id and i.instance_id = s.idx_scan",
+  		"pkList": "instance_id, stat_id",
+		"relevent": ["1join","PH0-N2"]
 		}
 	]
 

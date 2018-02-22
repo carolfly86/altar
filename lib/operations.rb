@@ -91,17 +91,20 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
       tarantular = Tarantular.new(fqueryObj, tqueryObj, 1, is_join)
       tarantular.predicateTest
       endTime = Time.now
-      tarantular_duration = (endTime - beginTime).to_i
+      duration = (endTime - beginTime).to_i
+      mw_duration = duration
+      tarantular_duration = duration - tarantular.mw_duration
       tarantular_rank = tarantular.relevence(f_options[:relevent])
       total_test_cnt = tarantular.total_test_cnt
       m_u_tuple_count = tarantular.failed_tuple_count
+      binding.pry if m_u_tuple_count == 0
       totalScore = m_u_tuple_count
-      duration = tarantular_duration
       fix_rst = {'test_type' => 'w', 'query' => fqueryObj.query,
           'm_u_tuple_count' => m_u_tuple_count,
           'duration' => duration,
           'tarantular_rank' => tarantular_rank,
           'tarantular_duration' => tarantular_duration,
+          'mw_duration' => mw_duration,
           'total_test_cnt' => total_test_cnt
           }
       fl_rst_list << fix_rst
@@ -133,6 +136,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
           'duration' => fl_jc_duration, 
           'tarantular_rank' => tarantular_rank,
           'tarantular_duration' => tarantular_duration,
+          'mw_duration' => tarantular_duration,
           'total_test_cnt' => total_test_cnt
           }
         fl_rst_list << fix_rst
@@ -217,7 +221,10 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
     # update fl result table
     fl_rst_list.each do |r|
-      update_test_result_tbl(idx,r['test_type'],r['query'], tqueryObj.query, r['m_u_tuple_count'], r['duration'], totalScore, f_options[:relevent], r['tarantular_rank'], r['tarantular_duration'], r['total_test_cnt'])
+      update_test_result_tbl(idx,r['test_type'],r['query'],
+       tqueryObj.query, r['m_u_tuple_count'], r['duration'], 
+       totalScore, f_options[:relevent], r['tarantular_rank'], 
+       r['tarantular_duration'], r['mw_duration'],r['total_test_cnt'])
     end
     # update fix result table
     fix_rst_list.each do |r|

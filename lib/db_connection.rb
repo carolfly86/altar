@@ -32,9 +32,16 @@ module DBConn
   end
 
   def self.tblCreation(tblName, pkList, query)
-    q = QueryBuilder.create_tbl(tblName, pkList, query)
-    # puts q
-    exec(q)
+    create_query = QueryBuilder.create_tbl(tblName, pkList, query)
+    # create table with pk or unique index if pk contains null
+    begin
+      # puts create_query
+      exec(create_query)
+    rescue PG::NotNullViolation => e
+      create_query = QueryBuilder.create_tbl_uix(tblName, pkList, query)
+      # puts create_query
+      exec(create_query)
+    end
   end
 
   # Find all the relations(tbls) from FROM Clause including their numericDataTypes columns
@@ -187,5 +194,30 @@ module DBConn
       DBConn.exec(create_indx)
 
     end
+  end
+
+
+  def self.update_null_columns(tbl,col_list)
+    cols = col_list.split(',').map{|c| "'#{c.strip}'"}.join(',')
+    query = QueryBuilder.get_column_data_typcategory("'#{tbl}'",cols)
+
+    col_types = DBConn.exec(query)
+    update_query = "UPDATE #{tbl} SET "\
+                 + (
+                  col_types.map do |col|
+                    if col['typcategory'] == 'S'
+                      replacement = "'null'"
+                    elsif col['typcategory'] == 'N'
+                      replacement = "-999"
+                    elsif col['typcategory'] == 'U'
+                      replacement = "'00000000-0000-0000-0000-999999999999'"
+                    elsif col['typcategory'] == 'D'
+                      replacement = "'2999-10-23'::#{col['data_type']}"
+                    end
+                    "#{col['colname']} = COALESCE(#{col['colname']},#{replacement})"
+                  end.join(',')
+                  )
+    puts update_query
+    DBConn.exec(update_query)
   end
 end
