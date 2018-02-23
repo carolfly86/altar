@@ -306,7 +306,14 @@ class QueryObj
     unless defined? @full_rst_tbl
       self.all_cols_select
       self.pk_full_list
-      renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+      if preserve_null_pk
+        renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+      else
+        renamed_pk_col = @pk_full_list.map do |pk|
+                          pkcol = @all_cols.find{|col| col.colname == pk['colname'] and col.relname==pk['relname']}
+                          "COALESCE(#{pk['col']},#{pkcol.null_replacement}) as #{pk['alias']}_pk"
+                        end.join(',')
+      end
       targetListReplacement = "#{renamed_pk_col},#{@all_cols_select}"
       query =  ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, '')
       @full_rst_tbl = "#{@table}_full_rst"
@@ -314,9 +321,9 @@ class QueryObj
       # binding.pry
       DBConn.tblCreation(@full_rst_tbl, pk, query)
       
-      unless preserve_null_pk
-        DBConn.update_null_columns(@full_rst_tbl,pk)
-      end
+      # unless preserve_null_pk
+      #   DBConn.update_null_columns(@full_rst_tbl,pk)
+      # end
       # if is_plain_query()
       #   query = QueryBuilder.create_tbl(@full_rst_tbl, pk, query)
       #   DBConn.exec(query)
@@ -362,7 +369,16 @@ class QueryObj
         # full_join_from =  full_join_from + "#{l_arg} CROSS JOIN #{r_rel.relname} #{r_rel.relalias} on #{q}"
       end
       @excluded_join_tbl = "#{@table}_join_excluded"
-      renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+      # renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+      
+      if preserve_null_pk
+        renamed_pk_col = @pk_full_list.map { |pk| "#{pk['col']} as #{pk['alias']}_pk" }.join(', ')
+      else
+        renamed_pk_col = @pk_full_list.map do |pk|
+                          pkcol = @all_cols.find{|col| col.colname == pk['colname'] and col.relname==pk['relname']}
+                          "COALESCE(#{pkcol.select_name},#{pkcol.null_replacement}) as #{pkcol.colalias}_pk"
+                        end.join(',')
+      end
       targetListReplacement = "#{renamed_pk_col},#{@all_cols_select}"
       query = ReverseParseTree.reverseAndreplace(@parseTree, targetListReplacement, '')
       old_from = from_query()
@@ -380,10 +396,10 @@ class QueryObj
       puts cross_join_query
       DBConn.exec(cross_join_query)
 
-      unless preserve_null_pk
-        pk = @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(',')
-        DBConn.update_null_columns(@excluded_join_tbl,pk)
-      end
+      # unless preserve_null_pk
+      #   pk = @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(',')
+      #   DBConn.update_null_columns(@excluded_join_tbl,pk)
+      # end
       # # full join
       # full_join_query = query.gsub(old_from,full_join_from)
       # full_join_query = "(#{full_join_query} except select #{@all_cols_renamed} from #{satisfied_tbl})"

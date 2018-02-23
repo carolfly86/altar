@@ -25,6 +25,7 @@ opts = Trollop.options do
   opt :golden_record, 'c(reate)|i(mport)', type: :string, default: 'i'
   opt :method, 'o(ld)r(emoval)|b(aseline SBFL)|o(ld)', type: :string
   opt :autofix, 'y|n', type: :string, default: 'y'
+  opt :query_type, 'w(here)|j(join)', default: 'j'
   # opt :expectation, "location of expectation file", :type => :string
 end
 cfg = YAML.load_file(File.join(File.dirname(__FILE__), 'config/default.yml'))
@@ -49,7 +50,8 @@ if opts[:allscripts] == 'y'
   dbname = cfg['default']['database']
   create_all_test_result_tbl
   create_all_fix_result_tbl
-  Dir["sql/#{dbname}/*j*.json"].each do |file|
+  query_type = opts[:query_type]
+  Dir["sql/#{dbname}/*#{query_type}*.json"].each do |file|
     script = File.basename file, '.json'
     puts "processing  #{script}"
     if opts[:operation] == 'fl'

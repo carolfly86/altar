@@ -31,6 +31,19 @@ class Column
     @relalias.nil? ? [@colname] : [@relalias, @colname]
   end
 
+  def null_replacement
+    case @typcategory
+    when 'S'
+      "'null'::#{@datatype}"
+    when 'N'
+      "-999::#{@datatype}"
+    when 'U'
+       "'00000000-0000-0000-0000-999999999999'"
+    when 'D'
+      "'2999-10-23'::#{@datatype}"
+    end
+  end
+
   def is_numeric_type?
     @typcategory == 'N'
   end

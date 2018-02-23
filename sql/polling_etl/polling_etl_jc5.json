@@ -1,31 +1,31 @@
 {
   "T":
   {
-    "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id = a.respondentid",
-    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid, lastmodified"
+    "query": "select a.etl_time, c.id as cid, q.id as qid, s.id as sid, r.id as rid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id = a.respondentid",
+    "pkList": "etl_time, cid, qid, sid, rid, lastmodified"
   },
   "F":
   [
 
     {
-      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid join respondents r on a.respondentid = r.id join answersets aws on a.answerint = aws.surveyid and r.id=a.respondentid",
-    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid, lastmodified",
+      "query": "select a.etl_time, c.id as cid, q.id as qid, s.id as sid, r.id as rid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid join respondents r on a.respondentid = r.id join answersets aws on a.answerint = aws.surveyid and r.id=a.respondentid",
+    "pkList": "etl_time, cid, qid, sid, rid, lastmodified",
       "relevent": ["PH0-N5"]
     },
     {
-      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid and a.surveyid = s.id join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
-    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid,lastmodified",
+      "query": "select a.etl_time, c.id as cid, q.id as qid, s.id as sid, r.id as rid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid and a.surveyid = s.appid join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "pkList": "etl_time, cid, qid, sid, rid, lastmodified",
       "relevent": ["PH0-N4"]
     },
     {
-      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id left join answers a on s.id = a.surveyid left join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
-    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid,lastmodified",
-      "relevent": ["3leftjoin", "4leftjoin"]
+      "query": "select a.etl_time, c.id as cid, q.id as qid, s.id as sid, r.id as rid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid full join respondents r on a.respondentid = r.id full join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "pkList": "etl_time, cid, qid, sid, rid, lastmodified",
+      "relevent": [ "4fulljoin", "5fulljoin"]
     },
     {
-      "query": "select a.choiceid, a.respondentid, a.surveyid, a.questionid, a.context, c.id as cid, s.id as sid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid and a.surveyid = s.id left join respondents r on a.respondentid = r.id join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
-    "pkList": "choiceid, respondentid, surveyid, questionid, context, cid, sid,lastmodified",
-      "relevent": ["4leftjoin", "PH0-N4"]
+      "query": "select a.etl_time, c.id as cid, q.id as qid, s.id as sid, r.id as rid, aws.lastmodified from questions q join choices c on q.id = c.questionid join surveys s on q.surveyid = s.id join answers a on s.id = a.surveyid and a.surveyid = s.appid full join respondents r on a.respondentid = r.id full join answersets aws on a.surveyid = aws.surveyid and r.id=a.respondentid",
+    "pkList": "etl_time, cid, qid, sid, rid, lastmodified",
+      "relevent": ["4fulljoin", "5fulljoin", "PH0-N4"]
     }
   ]
 
