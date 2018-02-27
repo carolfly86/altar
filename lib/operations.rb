@@ -77,7 +77,11 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   # pp tqueryObj.parseTree
   # return
   # create Golden record
-  createGR(golden_record_opr, script, tqueryObj)
+  if method != 'b'
+    createGR(golden_record_opr, script, tqueryObj)
+  else
+    tqueryObj.predicate_tree_construct('t', true, 0)
+  end
   # pp 'test'
   f_options_list.each_with_index do |f_options, idx|
     puts "#{idx}:****************************************"
@@ -131,9 +135,10 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         # puts fl_jc_end_time
         fl_jc_duration = (fl_jc_end_time - beginTime).to_i
         # update_test_result_tbl(idx, 'jc',fqueryObj.query, tqueryObj.query, 0, fl_jc_duration, 0, f_options[:relevent], 0, 0, 0)
-        fix_rst = {'test_type' => 'jc', 'query' => fqueryObj.query,
+        fix_rst = {'test_type' => 'jc',
+          'query' => fqueryObj.query,
           'm_u_tuple_count' => 0,
-          'duration' => fl_jc_duration, 
+          'duration' => fl_jc_duration,
           'tarantular_rank' => tarantular_rank,
           'tarantular_duration' => tarantular_duration,
           'mw_duration' => tarantular_duration,
@@ -164,6 +169,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
           'duration' => fl_jt_duration,
           'tarantular_rank' => tarantular_rank,
           'tarantular_duration' => tarantular_duration,
+          'mw_duration' => tarantular_duration,
           'total_test_cnt' => total_test_cnt
           }
         fl_rst_list << fix_rst

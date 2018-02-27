@@ -1,0 +1,25 @@
+{
+  "T":
+  {
+  	"query": "select p.productid,pv.businessentityid,pd.productid as pd_productid, pd.documentnode from product p join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode join productdocument pd on p.productid = pd.productid",
+  	"pkList": "productid, businessentityid, pd_productid, documentnode"
+  },
+	"F":
+	[	{
+		"query": "select p.productid,pv.businessentityid,pd.productid as pd_productid, pd.documentnode from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode join productdocument pd on p.productid = pd.productid",
+		"pkList": "productid, businessentityid, pd_productid, documentnode",
+		"relevent": ["1leftjoin", "2leftjoin"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid,pd.productid as pd_productid, pd.documentnode from product p join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.weightunitmeasurecode join productdocument pd on p.productid = pd.productid",
+		"pkList": "productid, businessentityid, pd_productid, documentnode",
+		"relevent": ["PH0-N4"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid,pd.productid as pd_productid, pd.documentnode from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.weightunitmeasurecode join productdocument pd on p.productid = pd.productid",
+		"pkList": "productid, businessentityid, pd_productid, documentnode",
+		"relevent": ["1leftjoin", "2leftjoin", "PH0-N4"]
+		}
+	]
+
+}

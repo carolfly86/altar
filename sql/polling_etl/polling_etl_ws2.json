@@ -1,38 +1,38 @@
 {
   "T":
   {
-  	"query": "select id,surveyid from questions where (required = 't' and questioncode >'4') or questionposition = 0",
+  	"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode >'4') or q.questionposition = 0",
   	"pkList": "id,surveyid"
   },
 	"F":
 	[
 		{
-  		"query": "select id,surveyid from questions where (required = 'f' and questioncode >'4') or questionposition = 0",
+  		"query": "select id,surveyid from questions q where (q.required = 'f' and q.questioncode >'4') or q.questionposition = 0",
   		"pkList": "id,surveyid",
 		"relevent": ["PH0-N1"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 't' and questioncode <'4') or questionposition = 0",
+  		"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode <'4') or q.questionposition = 0",
   		"pkList": "id,surveyid",
 		"relevent": ["PH0-N2"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'4') or (questionposition = 0 and maxresponses = -1)",
+  		"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode >'4') or (q.questionposition = 0 and q.maxresponses = -1)",
   		"pkList": "id,surveyid",
 		"relevent": ["PH1-N4"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 't' and externalsystemid >'4') or questionposition = 0",
+  		"query": "select id,surveyid from questions q where (q.required = 't' and q.externalsystemid >'4') or q.questionposition = 0",
   		"pkList": "id,surveyid",
 		"relevent": ["PH0-N2"]
 		},
 		{
-  		"query": "select id,surveyid from questions where required = 't' and questioncode >'4'",
+  		"query": "select id,surveyid from questions q where q.required = 't' and q.questioncode >'4'",
   		"pkList": "id,surveyid",
 		"relevent": ["missing_branch1-missing_node1"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 'f' and questioncode >'4') or questionposition = 1",
+  		"query": "select id,surveyid from questions q where (q.required = 'f' and q.questioncode >'4') or q.questionposition = 1",
   		"pkList": "id,surveyid",
 		"relevent": ["PH0-N1","PH1-N3"]
 		}

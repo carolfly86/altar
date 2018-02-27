@@ -57,7 +57,7 @@ def create_test_result_tbl
   DBConn.exec(query)
 end
 
-def update_test_result_tbl(test_id, test_type, fquery, tquery, m_u_tuple_count, duration, total_score, relevent, rank, tarantular_duration, mw_duration, total_test_cnt)
+def update_test_result_tbl(test_id, test_type, fquery, tquery, m_u_tuple_count, duration, total_score, relevent, rank, tarantular_duration, mw_duration=0, total_test_cnt)
   fquery = fquery.gsub("'", "''")
   tquery = tquery.gsub("'", "''")
   query =  %(INSERT INTO test_result
@@ -93,7 +93,7 @@ def update_test_result_tbl(test_id, test_type, fquery, tquery, m_u_tuple_count, 
 				#{total_test_cnt}
 
 			)
-  # pp query
+   pp query
   DBConn.exec(query)
 
   query = %(INSERT INTO test_result_detail

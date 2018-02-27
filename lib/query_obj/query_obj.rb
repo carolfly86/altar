@@ -301,7 +301,7 @@ class QueryObj
     @rel_names ||= JsonPath.on(@parseTree['SELECT']['fromClause'].to_json, '$..RANGEVAR')
   end
 
-  # create the table containing all columns and no where predicate
+  # create the table containing all columns
   def create_full_rst_tbl(preserve_null_pk = true)
     unless defined? @full_rst_tbl
       self.all_cols_select
@@ -320,7 +320,7 @@ class QueryObj
       pk = @pk_full_list.map { |pk| "#{pk['alias']}_pk" }.join(', ')
       # binding.pry
       DBConn.tblCreation(@full_rst_tbl, pk, query)
-      
+
       # unless preserve_null_pk
       #   DBConn.update_null_columns(@full_rst_tbl,pk)
       # end

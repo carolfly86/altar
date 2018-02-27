@@ -1,0 +1,43 @@
+{
+  "T":
+  {
+  	"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where ( s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't' and s.bloat_ratio >0) or (i.platform='postgres' and i.cpu = 4 and s.size_mb >1 and s.relname not like 'qrtz%' and s.idx_scan =0)",
+  	"pkList": "stat_id"
+  },
+	"F":
+	[
+
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where ( s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't' and s.bloat_ratio >1) or (i.platform='postgres' and i.cpu = 4 and s.size_mb >1 and s.relname not like 'qrtz%' and s.idx_scan =0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N5"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where ( s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't' and s.bloat_ratio >=0) or (i.platform='postgres' and i.cpu = 4 and s.size_mb >1 and s.relname not like 'qrtz%' and s.idx_scan =0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N5"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where ( s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't' and s.bloat_ratio >0 and idx_blks_hit_ratio <0) or (i.platform='postgres' and i.cpu = 4 and s.size_mb >1 and s.relname not like 'qrtz%' and s.idx_scan =0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N6"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where ( s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't' and i.application_id >0 ) or (i.platform='postgres' and i.cpu = 4 and s.size_mb >1 and s.relname not like 'qrtz%' and s.idx_scan =0)",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where ( s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't' and s.bloat_ratio >0) or (i.platform='postgres' and i.cpu = 4 and s.size_mb >1 and s.relname not like 'qrtz%' )",
+  		"pkList": "stat_id",
+		"relevent": ["PH1-missing_node1"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where ( s.dbname = 'obp' and s.idx_scan =0 and i.environment = 'production' and i.is_running = 't' and s.bloat_ratio >=0) or (i.platform='postgres' and i.cpu = 4 and s.size_mb >1 and s.relname not like 'qrtz%')",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N5","PH1-missing_node1"]
+		}
+	]
+
+}
+

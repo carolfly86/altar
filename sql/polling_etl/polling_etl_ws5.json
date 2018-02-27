@@ -1,38 +1,38 @@
 {
   "T":
   {
-  	"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  questionposition = 1 or ( externalsystemid >75 and etl_time > '2016-12-14')",
+  	"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode >'7') or  q.questionposition = 1 or ( q.externalsystemid >75 and q.etl_time > '2016-12-14')",
   	"pkList": "id,surveyid"
   },
 	"F":
 	[
 		{
-  		"query": "select id,surveyid from questions where (required = 'f' and questioncode >'7') or  questionposition = 1 or ( externalsystemid >75 and etl_time > '2016-12-14')",
+  		"query": "select id,surveyid from questions q where (q.required = 'f' and q.questioncode >'7') or  q.questionposition = 1 or ( q.externalsystemid >75 and q.etl_time > '2016-12-14')",
   		"pkList": "id,surveyid",
 		"relevent": ["PH0-N1"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  questionposition = 1 or ( externalsystemid >85 and etl_time > '2016-12-14')",
+  		"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode >'7') or  q.questionposition = 1 or ( q.externalsystemid >85 and q.etl_time > '2016-12-14')",
   		"pkList": "id,surveyid",
 		"relevent": ["PH2-N4"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  ( questionposition = 1 and questioncode >'7')or ( externalsystemid >75 and etl_time > '2016-12-14')",
+  		"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode >'7') or  ( q.questionposition = 1 and q.questioncode >'7')or ( q.externalsystemid >75 and q.etl_time > '2016-12-14')",
   		"pkList": "id,surveyid",
 		"relevent": ["PH1-N4"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  surveyid = 1 or ( externalsystemid >75 and etl_time > '2016-12-14')",
+  		"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode >'7') or  q.surveyid = 1 or ( q.externalsystemid >75 and q.etl_time > '2016-12-14')",
   		"pkList": "id,surveyid",
 		"relevent": ["PH2-N4"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 't' and questioncode >'7') or  questionposition = 1 or ( externalsystemid >75 )",
+  		"query": "select id,surveyid from questions q where (q.required = 't' and q.questioncode >'7') or  q.questionposition = 1 or ( q.externalsystemid >75 )",
   		"pkList": "id,surveyid",
 		"relevent": ["PH2-missing_node1"]
 		},
 		{
-  		"query": "select id,surveyid from questions where (required = 'f' and questioncode >'7') or  questionposition = 2 or ( externalsystemid >75 and etl_time > '2016-12-28')",
+  		"query": "select id,surveyid from questions q where (q.required = 'f' and q.questioncode >'7') or  q.questionposition = 2 or ( q.externalsystemid >75 and q.etl_time > '2016-12-28')",
   		"pkList": "id,surveyid",
 		"relevent": ["PH0-N1","PH1-N3","PH2-N5"]
 		}

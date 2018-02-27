@@ -1,0 +1,25 @@
+{
+  "T":
+  {
+  	"query": "select p.productid,pv.businessentityid, pm.productmodelid from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid",
+  	"pkList": "productid, businessentityid, productmodelid"
+  },
+	"F":
+	[	{
+		"query": "select p.productid,pv.businessentityid, pm.productmodelid from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid",
+		"pkList": "productid, businessentityid, productmodelid",
+		"relevent": ["2innerjoin"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, pm.productmodelid from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productid",
+		"pkList": "productid, businessentityid, productmodelid",
+		"relevent": ["PH0-N3"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, pm.productmodelid from product p left join productvendor pv on p.productid = pv.productid left join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid and pm.productmodelid = p.productid",
+		"pkList": "productid, businessentityid, productmodelid",
+		"relevent": ["PH0-N4"]
+		}
+	]
+
+}

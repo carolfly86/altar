@@ -1,0 +1,15 @@
+{
+  "T":
+  {
+  	"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.parent_id = 239 and ms.is_production = 'f') or (ms.id > 1000 and ms.is_production = 'f')",
+  	"pkList": "msid, sid"
+  },
+	"F":
+	[
+		{
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.parent_id = s.external_id where (ms.parent_id = 239 and ms.is_production = 'f') or (ms.id > 3000 and ms.is_production = 'f')",
+		"pkList": "msid, sid",
+		"relevent": ["PH1-N3"]
+		}
+	]
+}

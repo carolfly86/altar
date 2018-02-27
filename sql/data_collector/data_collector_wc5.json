@@ -1,0 +1,43 @@
+{
+  "T":
+  {
+  	"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  s.instance_id >132  and s.size_mb >1 and i.is_running = 't' and s.idx_scan =0 and i.instance_name = 'SQLEXPRESS' and i.environment = 'production' and s.bloat_ratio  >0  and i.version <> 'unknown' and s.idx_blks_hit_ratio>0 and s.schemaname ='public'",
+  	"pkList": "stat_id"
+  },
+	"F":
+	[
+
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  s.instance_id >132  and s.size_mb >0 and i.is_running = 't' and s.idx_scan =0 and i.instance_name = 'SQLEXPRESS' and i.environment = 'production' and s.bloat_ratio  >0  and i.version <> 'unknown' and s.idx_blks_hit_ratio>0 and s.schemaname ='public'",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  s.instance_id >132  and s.size_mb >=1 and i.is_running = 't' and s.idx_scan =0 and i.instance_name = 'SQLEXPRESS' and i.environment = 'production' and s.bloat_ratio  >0  and i.version <> 'unknown' and s.idx_blks_hit_ratio>0 and s.schemaname ='public'",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  s.instance_id >132  and s.size_mb >1 and i.is_running = 't' and s.idx_scan =0 and i.instance_name = 'SQLEXPRESS' and i.environment = 'production' and s.bloat_ratio  >0  and i.version <> 'unknown' and s.idx_blks_hit_ratio>0 and s.schemaname ='public' and s.stat_id >  50000",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N11"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  s.instance_id >132  and i.application_id >1 and i.is_running = 't' and s.idx_scan =0 and i.instance_name = 'SQLEXPRESS' and i.environment = 'production' and s.bloat_ratio  >0  and i.version <> 'unknown' and s.idx_blks_hit_ratio>0 and s.schemaname ='public'",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  s.instance_id >132  and s.size_mb >1 and i.is_running = 't' and s.idx_scan =0 and i.environment = 'production' and s.bloat_ratio  >0  and i.version <> 'unknown' and s.idx_blks_hit_ratio>0 and s.schemaname ='public'",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-missing_node1"]
+		},
+		{
+  		"query": "select s.stat_id from instances i join index_stats s on i.instance_id = s.instance_id where  s.instance_id >132  and s.size_mb >=1 and i.is_running = 't' and s.idx_scan =0 and i.environment = 'production' and s.bloat_ratio  >0  and i.version <> 'unknown' and s.idx_blks_hit_ratio>0 and s.schemaname ='public'",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N2","PH0-missing_node1"]
+		}
+	]
+
+}
+

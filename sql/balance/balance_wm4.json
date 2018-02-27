@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id = 38 and su.randomized_at ='2013-11-22 15:52:08-05') or (su.regime_id = 14 and  su.randomized_at ='2013-10-08 22:44:26-04' and su.removed_from_dispensing = 'f') or (s.id = 8 and su.regime_id = 13);",
+  	"pkList": "suid, sid, msid"
+  },
+	"F":
+	[
+		{
+  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id = 38 and su.randomized_at ='2013-11-22 15:49:04-05') or (su.regime_id = 14 and  su.randomized_at ='2013-10-08 22:44:26-04' and su.removed_from_dispensing = 'f') or (s.id = 8 and su.regime_id = 13);",
+		"pkList": "suid, sid, msid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id = 38 and su.randomized_at <'2013-11-22 15:52:08-05') or (su.regime_id = 14 and  su.randomized_at ='2013-10-08 22:44:26-04' and su.removed_from_dispensing = 'f') or (s.id = 8 and su.regime_id = 13);",
+		"pkList": "suid, sid, msid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id = 38 and su.randomized_at ='2013-11-22 15:52:08-05') or (su.regime_id = 14 and  su.randomized_at ='2013-10-08 22:44:26-04' and su.removed_from_dispensing = 'f') or (s.id = 8 and su.regime_id = 13 and su.id = 260);",
+		"pkList": "suid, sid, msid",
+		"relevent": ["PH2-N8"]
+		},
+		{
+  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id = 38 and su.created_at ='2013-11-22 15:52:08-05') or (su.regime_id = 14 and  su.randomized_at ='2013-10-08 22:44:26-04' and su.removed_from_dispensing = 'f') or (s.id = 8 and su.regime_id = 13);",
+		"pkList": "suid, sid, msid",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id = 38 and su.randomized_at ='2013-11-22 15:52:08-05') or (su.regime_id = 14 and  su.randomized_at ='2013-10-08 22:44:26-04' and su.removed_from_dispensing = 'f') or (s.id = 8);",
+		"pkList": "suid, sid, msid",
+		"relevent": ["PH2-missing_node1"]
+		},
+		{
+  		"query": "SELECT su.id as suid, s.id as sid, ms.id as msid FROM subjects su join sites s on su.site_id = s.id join medidata_sites ms on s.external_id= ms.id where ( s.study_id = 38 and su.randomized_at ='2013-11-22 15:49:04-05') or (su.regime_id = 14 and su.remove_from_rand ='f' and su.randomized_at ='2013-10-08 22:54:58-04') or (s.id = 8 );",
+		"pkList": "suid, sid, msid",
+		"relevent": ["PH0-N2","PH1-N4","PH1-N5","PH2-missing_node2"]
+		}
+	]
+
+}

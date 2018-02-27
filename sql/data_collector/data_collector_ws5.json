@@ -1,0 +1,42 @@
+{
+  "T":
+  {
+  	"query": "select stat_id from index_stats where instance_id =132 or idx_tup_read >70000000 or  dbname = 'obp' or stat_id = 1504532 ",
+  	"pkList": "stat_id"
+  },
+	"F":
+	[
+		{
+  		"query": "select stat_id from index_stats where instance_id =132 or idx_tup_read >70000000 or  dbname = 'obp' or stat_id = 1504533 ",
+  		"pkList": "stat_id",
+		"relevent": ["PH3-N4"]
+		},
+		{
+  		"query": "select stat_id from index_stats where instance_id =132 or idx_tup_read >70000000 or  dbname = 'obp' or stat_id > 1504532 ",
+  		"pkList": "stat_id",
+		"relevent": ["PH3-N4"]
+		},
+		{
+  		"query": "select stat_id from index_stats where ( instance_id =132 and idx_scan =0) or idx_tup_read >70000000 or  dbname = 'obp' or stat_id = 1504532 ",
+  		"pkList": "stat_id",
+		"relevent": ["PH0-N2"]
+		},
+		{
+  		"query": "select stat_id from index_stats where instance_id =132 or idx_tup_read >70000000 or  dbname = 'obp' or instance_id = 1504532 ",
+  		"pkList": "stat_id",
+		"relevent": ["PH3-N4"]
+		},
+		{
+  		"query": "select stat_id from index_stats where instance_id =132 or idx_tup_read >70000000 or  dbname = 'obp' ",
+  		"pkList": "stat_id",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  		"query": "select stat_id from index_stats where instance_id =132 or idx_tup_read >80000000 or  dbname = 'obp' or stat_id > 1504532 ",
+  		"pkList": "stat_id",
+		"relevent": ["PH1-N2","PH3-N4"]
+		}
+	]
+
+}
+

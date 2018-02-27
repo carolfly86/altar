@@ -1,0 +1,30 @@
+{
+  "T":
+  {
+  	"query": "select p.productid,pv.businessentityid, pm.productmodelid, u.unitmeasurecode from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode",
+  	"pkList": "productid, businessentityid, productmodelid, unitmeasurecode"
+  },
+	"F":
+	[	{
+		"query": "select p.productid,pv.businessentityid, pm.productmodelid, u.unitmeasurecode from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid left join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode",
+		"pkList": "productid, businessentityid, productmodelid, unitmeasurecode",
+		"relevent": ["4leftjoin"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, pm.productmodelid, u.unitmeasurecode from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.weightunitmeasurecode",
+		"pkList": "productid, businessentityid, productmodelid, unitmeasurecode",
+		"relevent": ["PH0-N4"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, pm.productmodelid, u.unitmeasurecode from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode and u.unitmeasurecode = p.weightunitmeasurecode",
+		"pkList": "productid, businessentityid, productmodelid, unitmeasurecode",
+		"relevent": ["PH0-N5"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, pm.productmodelid, u.unitmeasurecode from product p left join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid left join unitmeasure u on u.unitmeasurecode = p.weightunitmeasurecode",
+		"pkList": "productid, businessentityid, productmodelid, unitmeasurecode",
+		"relevent": ["PH0-N4","4leftjoin"]
+		}
+	]
+
+}

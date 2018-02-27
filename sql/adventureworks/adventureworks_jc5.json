@@ -1,0 +1,30 @@
+{
+  "T":
+  {
+  	"query": "select p.productid,pv.businessentityid, piv.productid as piv_productid, piv.locationid, pm.productmodelid, u.unitmeasurecode from product p join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid left join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode join productinventory piv on p.productid = piv.productid",
+  	"pkList": "productid,businessentityid,piv_productid,locationid,productmodelid,unitmeasurecode"
+  },
+	"F":
+	[	{
+		"query": "select p.productid,pv.businessentityid, piv.productid as piv_productid, piv.locationid, pm.productmodelid, u.unitmeasurecode from product p join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode join productinventory piv on p.productid = piv.productid",
+		"pkList": "productid,businessentityid,piv_productid,locationid,productmodelid,unitmeasurecode",
+		"relevent": ["4innerjoin"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, piv.productid as piv_productid, piv.locationid, pm.productmodelid, u.unitmeasurecode from product p join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productid left join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode join productinventory piv on p.productid = piv.productid",
+		"pkList": "productid,businessentityid,piv_productid,locationid,productmodelid,unitmeasurecode",
+		"relevent": ["PH0-N3"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, piv.productid as piv_productid, piv.locationid, pm.productmodelid, u.unitmeasurecode from product p join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productid join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode join productinventory piv on p.productid = piv.productid",
+		"pkList": "productid,businessentityid,piv_productid,locationid,productmodelid,unitmeasurecode",
+		"relevent": ["PH0-N3", "4innerjoin"]
+		},
+		{
+		"query": "select p.productid,pv.businessentityid, piv.productid as piv_productid, piv.locationid, pm.productmodelid, u.unitmeasurecode from product p join productvendor pv on p.productid = pv.productid join vendor v on pv.businessentityid = v.BusinessEntityID join productmodel pm on pm.productmodelid = p.productmodelid and pm.productmodelid = p.productid left join unitmeasure u on u.unitmeasurecode = p.sizeunitmeasurecode join productinventory piv on p.productid = piv.productid",
+		"pkList": "productid,businessentityid,piv_productid,locationid,productmodelid,unitmeasurecode",
+		"relevent": ["PH0-N4"]
+		}
+	]
+
+}

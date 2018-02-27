@@ -1,0 +1,40 @@
+{
+  "T":
+  {
+  	"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.parent_id = 239 and ms.is_production = 'f') or (ms.id > 1000 and ms.is_production = 'f');",
+  	"pkList": "msid, sid"
+  },
+	"F":
+	[
+		{
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.parent_id = 239 and ms.is_production = 'f') or (ms.id > 3000 and ms.is_production = 'f');",
+		"pkList": "msid, sid",
+		"relevent": ["PH1-N3"]
+		},
+		{
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.parent_id = 239 and ms.is_production = 'f') or (ms.id > 1000 and ms.is_production != 'f');",
+		"pkList": "msid, sid",
+		"relevent": ["PH1-N4"]
+		},
+		{
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.parent_id = 239 and ms.is_production = 'f' and s.unblinded='f') or (ms.id > 1000 and ms.is_production = 'f');",
+		"pkList": "msid, sid",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.id = 135 and ms.is_production = 'f') or (ms.id > 1000 and ms.is_production = 'f');",
+		"pkList": "msid, sid",
+		"relevent": ["PH0-N1"]
+		},
+		{
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.parent_id = 239 and ms.is_production = 'f') or (ms.id > 1000 );",
+		"pkList": "msid, sid",
+		"relevent": ["PH1-missing_node1"]
+		},
+		{
+  		"query": "select ms.id as msid, ms.parent_id, ms.is_production, s.id as sid from medidata_studies as ms join studies as s on ms.id = s.external_id where (ms.parent_id = 135 and ms.is_production = 'f') or (ms.id > 1000 and ms.is_production = 't');",
+		"pkList": "msid, sid",
+		"relevent": ["PH0-N1","PH1-N4"]
+		}
+	]
+}

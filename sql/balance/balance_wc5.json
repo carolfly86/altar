@@ -1,0 +1,41 @@
+{
+  "T":
+  {
+  	"query": "select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (a.id = 538 and dp.id = 531 and i.status in (1,6)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and md.deleted='f' and l.release_status = 2) or (md.id <> 531 and l.release_status = 3) or  (md.name = 'Depot141')  or (l.release_status = 1 and l.released_at is NULL);",
+  	"pkList": "mdid, did, iid, aid"
+  },
+	"F":
+	[
+		{
+  		"query": "select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (a.id = 538 and dp.id = 531 and i.status in (1)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and md.deleted='f' and l.release_status = 2) or (md.id <> 531 and l.release_status = 3) or ( md.name = 'Depot141')  or (l.release_status = 1 and l.released_at is NULL);",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N3"]
+		},
+		{
+  		"query": "select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (a.id = 538 and dp.id = 531 and i.status in (1,6)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and md.deleted='f' and l.release_status = 2) or (md.id <> 531 and l.release_status = 3) or ( md.name = 'Depot141')  or (l.release_status = 1 and l.released_at is not NULL);",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH3-N12"]
+		},
+		{
+  		"query": "select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (a.id = 538 and dp.id = 531 and i.status in (1,6)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and md.deleted='f' and l.release_status = 2) or (md.id <> 531 and l.release_status = 3) or ( md.name = 'Depot141')  or (l.release_status = 1 and l.released_at is NULL and dp.id=530);",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH3-N13"]
+		},
+		{
+  		"query": "select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (a.id = 538 and dp.id = 531 and i.status in (1,6)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and dp.active_for_drug_shipping='f' and l.release_status = 2) or (md.id <> 531 and l.release_status = 3)  or ( md.name = 'Depot141') or (l.release_status = 1 and l.released_at is NULL) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N6"]
+		},
+		{
+  		"query": "select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (a.id = 538 and dp.id = 531 and i.status in (1,6)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and md.deleted='f' and l.release_status = 2) or (md.id <> 531 and l.release_status = 3) or (l.release_status = 1 and l.released_at is NULL);",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["missing_branch1-missing_node1"]
+		},
+		{
+  		"query": "select md.id as mdid,  dp.id as did,  i.id as iid, a.id as aid from medidata_depots md join depots dp on dp.medidata_depot_id = md.id join inventory_items i on dp.id = i.depot_id join lots l on i.lot_id = l.id join article_types a on l.article_type_id = a.id where (a.id = 538 and dp.id = 531 and i.status in (1)  and a.is_open_label = 'f' and l.released_at < '2014-06-29' and md.deleted='f' and l.release_status = 2) or (md.id <> 531 and l.release_status = 3)  or (l.release_status = 1 and l.released_at is NULL) ;",
+		"pkList": "mdid, did, iid, aid",
+		"relevent": ["PH0-N3","missing_branch1-missing_node1"]
+		}
+	]
+
+}

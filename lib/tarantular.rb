@@ -104,10 +104,10 @@ class Tarantular
           node_query = node.columns.map{|c| c.renamed_colname}.join(' = ')
         else
           c = node.columns[0]
-          node_query = node_query.gsub(c.select_name, c.renamed_colname)
+          node_query = node.query.gsub(c.select_name, c.renamed_colname)
         end
-
         selectQuery = "SELECT COUNT(1) as cnt, type  FROM tarantular_execution WHERE #{node_query} group by type"
+        puts selectQuery
         res = DBConn.exec(selectQuery)
         t_failed_cnt = 0
         t_passed_cnt = 0
@@ -154,11 +154,11 @@ class Tarantular
 
     # rank tarantular score
     query = "INSERT INTO tarantular_result SELECT test_id,  branch_name||'-'||node_name,"\
-            ' sum(tarantular_score) as tarantular_score, rank() over(order by sum(tarantular_score) desc) AS tarantular_rank , '\
-            ' sum(ochihai_score) as ochihai_score, rank() over(order by sum(ochihai_score) desc) AS ochihai_rank'\
-            ', sum(naish2_score) as sum_naish2_score, rank() over(order by sum(naish2_score) desc) AS naish2_score'\
-            ', sum(kulczynski2_score) as kulczynski2_score, rank() over(order by sum(kulczynski2_score) desc) AS kulczynski2_score'\
-            ', sum(wong1_score) as sum_wong1_score, rank() over(order by sum(wong1_score) desc) AS wong1_score'\
+            ' sum(tarantular_score) as tarantular_score, rank() over(order by round(sum(tarantular_score)::numeric,6) desc) AS tarantular_rank , '\
+            ' sum(ochihai_score) as ochihai_score, rank() over(order by round(sum(ochihai_score)::numeric,6) desc) AS ochihai_rank'\
+            ', sum(naish2_score) as sum_naish2_score, rank() over(order by round(sum(naish2_score)::numeric,6) desc) AS naish2_rank'\
+            ', sum(kulczynski2_score) as kulczynski2_score, rank() over(order by round(sum(kulczynski2_score)::numeric,6) desc) AS kulczynski2_rank'\
+            ', sum(wong1_score) as sum_wong1_score, rank() over(order by round(sum(wong1_score)::numeric,6) desc) AS wong1_rank'\
             ' from tarantular_tbl group by branch_name,node_name, test_id;'
     # puts query
     DBConn.exec(query)
@@ -185,8 +185,9 @@ class Tarantular
     # crosstab ranking
     Crosstab.ranking_calculation
 
-    query = " with rank as (select bn_name, rank() over(order by sober_score desc) as sober_rank,
- rank() over(order by liblit_score desc) as liblit_rank
+    query = " with rank as (select bn_name,
+    rank() over(order by round(sober_score::numeric,6) desc) as sober_rank,
+ rank() over(order by round(liblit_score::numeric,6) desc) as liblit_rank
  from tarantular_result
  )
   update tarantular_result as ts
@@ -340,6 +341,11 @@ CREATE TABLE tarantular_result
   def create_execution_trace(is_join)
     global_tbl_name = create_global_tbl
     global_tbl = Table.new(global_tbl_name)
+
+    full_tbl = Table.new(@t_full_tbl)
+    select_cols = full_tbl.columns
+    full_tbl_target_list = full_tbl.columns.map{|c| "t.#{c.colname}"}.join(',')
+
     pklist = global_tbl.pk_column_list
     pkjoin = pklist.map{|c| "t.#{c.colname} = g.#{c.colname}"}.join (' AND ')
     # pk_null =pklist.map{|c| "(t.#{c.colname} = g.#{c.colname}) or (t.#{c.colname} is null and g.#{c.colname} is null)"}.join (' AND ')
@@ -348,9 +354,9 @@ CREATE TABLE tarantular_result
     # pkselect = @pkSelect.gsub('f.', '')
     # update null columns to resolve null value comparasion issue
 
-    included_select_query = "select t.*, 'p'::varchar(1) as type from #{@t_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'p'"
-    missing_select_query = "select t.*, 'f'::varchar(1) as type from #{@t_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'f'"
-    unwanted_select_query = "select t.*, 'f'::varchar(1) as type from #{@f_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'f'"
+    included_select_query = "select #{full_tbl_target_list}, 'p'::varchar(1) as type from #{@t_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'p'"
+    missing_select_query = "select #{full_tbl_target_list}, 'f'::varchar(1) as type from #{@t_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'f'"
+    unwanted_select_query = "select #{full_tbl_target_list}, 'f'::varchar(1) as type from #{@f_full_tbl} t join #{global_tbl_name} g on #{pkjoin} where g.type = 'f'"
 
     # pk_selectquery = "SELECT #{pkselect} from (SELECT * from #{@fromCondStr}) as tmp"
     select_query = "select * from ((#{included_select_query}) UNION ALL "\
@@ -362,20 +368,23 @@ CREATE TABLE tarantular_result
     # if is join query, add 1000 excluded rows from cross join
     if is_join
       # create join_excluded_tbl and update null pk
-      join_excluded_tbl = @tQueryObj.create_join_excluded_tbl(false)
-      pkjoin = pklist.map{|c| "excld.#{c.colname} = te.#{c.colname}"}.join (' AND ')
-
-      excluded_query = "insert into tarantular_execution "\
-                       "select *, 'p' from #{join_excluded_tbl} excld "\
-                       "where not exists (select 1 from tarantular_execution te where #{pkjoin}) limit 100"
-      puts excluded_query
-      # binding.pry
-      DBConn.exec(excluded_query)
-
+      excluded_tbl = @tQueryObj.create_join_excluded_tbl(false)
       # binding.pry
       # target_list =  ReverseParseTree.get_targetList(@fPS)
       # all_query = ReverseParseTree.convert_to_cross_join(@fPS, "#{target_list}, 'p'::varchar(1) as type")
+    else
+      excluded_tbl = @tQueryObj.create_excluded_tbl
     end
+
+    # get excluded rows
+    pkjoin = pklist.map{|c| "t.#{c.colname} = te.#{c.colname}"}.join (' AND ')
+
+    excluded_query = "insert into tarantular_execution "\
+                     "select #{full_tbl_target_list}, 'p' from #{excluded_tbl} t "\
+                     "where not exists (select 1 from tarantular_execution te where #{pkjoin}) limit 100"
+    puts excluded_query
+    # binding.pry
+    DBConn.exec(excluded_query)
 
     if ( passed_tuple_count == 0 || failed_tuple_count == 0)
       binding.pry
