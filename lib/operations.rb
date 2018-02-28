@@ -154,7 +154,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
         else
           puts 'No Join Key Error'
         end
-
+        
 
         # # Join type error localization
         puts 'fault localize: Join Type Errors'
