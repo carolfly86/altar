@@ -1,7 +1,7 @@
 require_relative 'db_connection'
 
 class Node
-  attr_accessor :name, :query, :columns, :suspicious_score, :location
+  attr_accessor :name, :query, :columns, :suspicious_score, :location, :opr, :const
   def is_passed?(pkCond, test_id, tuple_type)
     query = "select count(1) as cnt from tuple_node_test_result where #{pkCond} and test_id = #{test_id} and type = '#{tuple_type}' and node_name = '#{@name}'"
     res = DBConn.exec(query)
@@ -17,5 +17,15 @@ class Node
     passed = true if cnt > 0 && (tuple_type == 'U')
 
     passed
+  end
+
+  def to_hash
+    node_hash = Hash.new
+
+    key = columns.map do |c|
+        "#{c.relname}.#{c.colname}"
+    end.join('-')
+    node_hash[key]={opr: self.opr, const: self.const }
+    return node_hash
   end
 end

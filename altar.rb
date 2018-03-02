@@ -21,7 +21,7 @@ opts = Trollop.options do
   banner 'Usage: ' + $PROGRAM_NAME + ' --script [script] '
   opt :script, 'location of sql script', type: :string
   opt :allscripts, 'process all scripts in folder (y|n)', type: :string, default: 'n'
-  opt :operation, "fl(fault-localization)|ds(learning)", :type => :string
+  opt :operation, "fl(fault-localization)|ds(learning)|xdiff", :type => :string
   opt :golden_record, 'c(reate)|i(mport)', type: :string, default: 'i'
   opt :method, 'o(ld)r(emoval)|b(aseline SBFL)|o(ld)', type: :string
   opt :autofix, 'y|n', type: :string, default: 'y'
@@ -69,6 +69,9 @@ else
       faultLocalization(script, opts[:golden_record], opts[:method], autofix)
     elsif opts[:operation] == 'ds'
       ds_learning(script)
+    elsif opts[:operation] == 'xdiff'
+      file = File.join(File.dirname(__FILE__), "experiment_results/fix/alarm/WHERE/#{script}")
+      xdiff(file)
     else
       puts 'unknow operation'
     end

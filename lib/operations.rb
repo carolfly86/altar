@@ -1,4 +1,5 @@
 require 'timeout'
+require 'csv'
 def ds_learning(script)
   dbname = script[0...-4]
   script_type = script[-3]
@@ -188,7 +189,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
 
 
       # if fqueryObj.has_where_predicate?()
-      if script_type != 'j'
+      if script_type == 'w'
         # Where condition fault localization
         localizeErr.selecionErr(method)
         fqueryObj.score = localizeErr.getSuspiciouScore
@@ -241,67 +242,49 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   end
 end
 
-
-
-def randomMutation(fqueryObj, tqueryObj)
-  # options = {:script=> script, :table =>'f_result' }
-  # fqueryObj = QueryObj.new(options)
-  # pp fqueryObj
-
-  # t_options = {:script=> 'true', :table =>'t_result' }
-  # tqueryObj = QueryObj.new(t_options)
-  # pp tqueryObj
-  tqueryObj.create_stats_tbl
-  newQ = fqueryObj.generate_neighbor_program(127, 0)
-end
-
-def createGR(golden_record_opr, script, tqueryObj)
-  if golden_record_opr == 'c'
-    create_golden_record(tqueryObj)
-    puts 'Please verify golden record: verified (Y), not verified(N)'
-    verified = STDIN.gets.chomp
-    if verified == 'Y'
-      DBConn.dump_golden_record(script)
-    else
-      abort('not verified')
+def xdiff(file)
+  data = Array.new
+  CSV.foreach(file, { encoding: "UTF-8", headers: true, header_converters: :symbol, converters: :all}) do |row|
+    data << row.to_hash
+  end
+  header = data[0].keys
+  header << 'similarity'
+  new_file = File.dirname(file)+'/newresult.csv'
+  CSV.open(new_file, "wb") do |csv|
+    csv << header
+    data.each do |row|
+      tquery = row[:tquery].gsub('"','')
+      fixed_query = row[:fixed_query].gsub('"','')
+      t_predicateTree = build_pdtree_from_query(tquery, row[:test_id])
+      fixed_predicateTree = build_pdtree_from_query(fixed_query, row[:test_id])
+      similarity = XDiff.compare(t_predicateTree,fixed_predicateTree)
+      result = row.values
+      result << similarity
+      csv << result
     end
-  elsif golden_record_opr == 'i'
-    # import golden record
-    query = 'drop table IF EXISTS golden_record;'
-    DBConn.exec(query)
-    # binding.pry
-    DBConn.exec_golden_record_script(script)
-    # abort('test')
-  end
-end
-
-def create_golden_record(tQueryObj)
-  new_target_list = tQueryObj.all_cols_select
-  tQueryObj.predicate_tree_construct('t', true, 0)
-  excluded_tbl = tQueryObj.create_excluded_tbl
-  satisfied_tbl = tQueryObj.create_satisfied_tbl
-
-  excluded_query =  "select #{new_target_list},'excluded'::varchar(30) as type, ''::varchar(30) as branch from #{excluded_tbl} limit 1"
-  DBConn.tblCreation('golden_record', '', excluded_query)
-
-  query = "select count(1) as cnt from golden_record where type = 'excluded'"
-  res = DBConn.exec(query)
-  # if no excluded rows are found, we generate an excluded row which contains all Null values
-  if res[0]['cnt'].to_i == 0
-    # binding.pry
-    null_target_list = col_list.map do |col|
-      "null as #{col.renamed_colname}"
-    end.join(', ')
-    null_target_list = " #{null_target_list} , 'excluded' as type, '' as branch"
-    null_query = ReverseParseTree.reverseAndreplace(parseTree, null_target_list, '')
-    null_query = "INSERT INTO golden_record #{null_query} limit 1"
-    DBConn.exec(null_query)
-    # binding.pry
   end
 
-  satisfied_query = "SELECT distinct on (branch) #{new_target_list},'satisfied'::varchar(30) as type, branch from  #{satisfied_tbl}"
-  satisfied_query = "INSERT INTO golden_record #{satisfied_query}"
-  DBConn.exec(satisfied_query)
 end
 
+def build_pdtree_from_query(query,test_id)
+  parse_tree = PgQuery.parse(query).parsetree[0]
+  fromPT =  parse_tree['SELECT']['fromClause']
+  wherePT = parse_tree['SELECT']['whereClause']
+
+  root = Tree::TreeNode.new('root', '')
+  predicateTree = PredicateTree.new('t', true, test_id)
+  predicateTree.build_full_pdtree(fromPT[0], wherePT, root)
+  return predicateTree
+end
+# def randomMutation(fqueryObj, tqueryObj)
+#   # options = {:script=> script, :table =>'f_result' }
+#   # fqueryObj = QueryObj.new(options)
+#   # pp fqueryObj
+
+#   # t_options = {:script=> 'true', :table =>'t_result' }
+#   # tqueryObj = QueryObj.new(t_options)
+#   # pp tqueryObj
+#   tqueryObj.create_stats_tbl
+#   newQ = fqueryObj.generate_neighbor_program(127, 0)
+# end
 

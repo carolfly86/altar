@@ -24,6 +24,7 @@ class PredicateTree
     @branches = []
     @nodes = []
     @all_columns = []
+    @hash = Hash.new()
     # pdtree_construct(wherePT, @pdtree )
     # curNode = Tree::TreeNode.new(nodeName, '')
   end
@@ -38,7 +39,6 @@ class PredicateTree
       @pdtree = root
     end
     # 
-    
 
     @pdtree.children.each do |subtree|
       # binding.pry
@@ -49,6 +49,11 @@ class PredicateTree
     end
     # @pdtree.print_tree
     node_query_mapping_insert
+
+  end
+
+  def to_hash()
+    @hash
   end
 
   def pdtree_construct(fromPT, wherePT, curNode, depth = 0)
@@ -71,35 +76,10 @@ class PredicateTree
     # if logicOpr == 'AEXPR AND'
     # puts logicOpr
     if logicOpr == '0'
-      # pp 'lexpr'
-      # pp lexpr
-      # pp 'rexpr'
-      # pp rexpr
-      # p 'c'
-      # curNode.print_tree
-      # p 'l'
-      # lexprNode.print_tree
-      # p 'r'
-      # rexprNode.print_tree
-      # p lexprNode.breadth
-      # p rexprNode.breadth
-      # p lexprNode.out_degree
-      # p rexprNode.out_degree
-      # pp rexprNode
       copy = curNode.dup
       args.each_with_index do |expr,idx|
         # binding.pry
         exprNode = pdtree_construct(fromPT, expr, copy, depth)
-        # puts 'AND'
-        # puts expr
-        # puts 'before'
-        # puts 'e'
-        # exprNode.print_tree
-        # puts 'c'
-        # curNode.print_tree unless curNode.nil?
-
-        # binding.pry
-        # exprNode = extract_child_from(copy,exprNode)
         if curNode.out_degree > 1 || exprNode.out_degree > 1
           # puts 'reform'
           structure_reform(curNode, exprNode)
@@ -118,49 +98,9 @@ class PredicateTree
         # curNode.print_tree unless curNode.nil?
       end
       return curNode
-      # lexprNode = pdtree_construct(fromPT, lexpr, curNode, depth)
-      # rexprNode = pdtree_construct(fromPT, rexpr, curNode, depth)
-      # if lexprNode.out_degree > 1 || rexprNode.out_degree > 1
-      #   # puts 'reform'
-      #   structure_reform(lexprNode, rexprNode, curNode)
-      #   # puts 'after reform'
-      #   # p 'c'
-      #   # curNode.print_tree
-      #   # p 'l'
-      #   # lexprNode.print_tree
-      #   # p 'r'
-      #   # rexprNode.print_tree
-      #   return curNode
-      # else
-      #   append_to_end(lexprNode, rexprNode)
-      #   # append_to_end(curNode,lexprNode)
-      #   # return curNode
-      #   # puts 'after'
-      #   # lexprNode.print_tree
-      #   # puts "current depth #{depth}"
-      #   # p '-------------'
-      #   if depth == 1
-      #     # lexprNode = add_branch(lexprNode)
-      #     curNode << lexprNode unless curNode == lexprNode
-      #     return curNode
-      #   else
-      #     return lexprNode
-      #   end
-        # curNode<<lexprNode unless curNode==lexprNode
-      # end
     # or operator are tested as a whole
     # elsif logicOpr == 'AEXPR OR'
     elsif logicOpr == '1'
-      # puts 'OR'
-      # pp 'lexpr'
-      # pp lexpr
-      # pp 'rexpr'
-      # pp rexpr
-      # p 'c'
-      # p 'l'
-      # lexprNode.print_tree unless lexprNode.nil?
-      # p 'r'
-      # rexprNode.print_tree unless rexprNode.nil?
       branches = []
 
       args.each_with_index do |expr,idx|
@@ -189,37 +129,6 @@ class PredicateTree
           # puts 'after'
           # curNode.print_tree unless curNode.nil?
         end
-      # else
-      #   curNode = branches[0]
-      # end
-      # lexprNode = pdtree_construct(fromPT, lexpr, curNode, depth)
-      # rexprNode = pdtree_construct(fromPT, rexpr, curNode, depth)
-      # puts 'after'
-      # p 'c'
-      # curNode.print_tree
-      # p 'l'
-      # lexprNode.print_tree
-      # p 'r'
-      # rexprNode.print_tree
-
-      # puts "lroot: #{lexprNode.root.name}"
-      # puts "rroot: #{rexprNode.root.name}"
-        #
-      # lexprNode = add_branch(lexprNode)
-      # curNode << lexprNode if lexprNode.root.name != 'root'
-      # end #unless curNode==lexprNode
-      # if rexprNode.root.name != 'root'
-      #   rexprNode = add_branch(rexprNode)
-      # curNode << rexprNode if rexprNode.root.name != 'root'
-      # end
-      # curNode<<rexprNode unless curNode==rexprNode
-      # p 'l after'
-      # lexprNode.print_tree
-      # p 'curNode after'
-      # curNode.print_tree
-      # puts "current depth #{depth}"
-      # p '-------------'
-
       return curNode
     else
       # binding.pry
@@ -227,10 +136,8 @@ class PredicateTree
       nodeName = "N#{@node_count}"
       h = {}
       h['query'] = ReverseParseTree.whereClauseConst(wherePT)
-      # binding.pry
-      h['location'] = logicOpr == 'NULLTEST' ? wherePT[logicOpr]['arg']['COLUMNREF']['location'] : wherePT[logicOpr]['location']
-      # h['location'] = JsonPath.on(wherePT, '$..location').first
       h['columns'] = []
+
       cols = ReverseParseTree.columnsInPredicate(wherePT)
       # convert string to Column object
       cols.each do |col|
@@ -244,6 +151,20 @@ class PredicateTree
         # end
       end
       h['suspicious_score'] = 0
+
+      if logicOpr == 'NULLTEST'
+        h['location'] = wherePT[logicOpr]['arg']['COLUMNREF']['location']
+        h['opr'] = "NULLTEST-#{wherePT['NULLTEST']['nulltesttype']}"
+        h['const']= ''
+      else
+        h['location'] = wherePT[logicOpr]['location']
+        h['opr'] = wherePT[logicOpr]['name'][0]
+        if cols.count >1
+          h['const'] =''
+        else
+          h['const'] =  JsonPath.on(wherePT, '$..A_CONST')[0]['val']
+        end
+      end
       # pp h
       # binding.pry
       curNode = Tree::TreeNode.new(nodeName, h)
@@ -257,6 +178,7 @@ class PredicateTree
     # curNode.print_tree
   end
 
+
   def add_branch(subtree)
     phName = "PH#{@branch_count}"
     ph = Tree::TreeNode.new(phName, '')
@@ -265,8 +187,9 @@ class PredicateTree
     br.nodes = []
     @branches << br
 
-    br.nodes << transfer_child_to_node(subtree)
 
+    node = transfer_child_to_node(subtree)
+    br.nodes << node
     currentNode = subtree
     while currentNode.has_children?
       currentNode.children.each do |child|
@@ -275,12 +198,16 @@ class PredicateTree
       currentNode = currentNode.children[0]
     end
 
+    @hash.merge!(br.to_hash)
+
     @branch_count+= 1
 
     ph = Tree::TreeNode.new(phName, '')
     ph << subtree
     ph
   end
+
+
   # # extract child from Node that are not in base
   # def extract_child_from(base,node)
   #   # return node unless node.has_children?
@@ -302,6 +229,8 @@ class PredicateTree
       
   #   end
   # end
+
+
   def get_all_columns
     columns = []
     @branches.each do |br|
@@ -320,7 +249,6 @@ class PredicateTree
     branches.each do |br|
       br.nodes.each do |nd|
         nodeName = nd.name
-        # binding.pry
 
         # columnsArray=nd.columns.map{|c| "'"+(c.relalias.nil? ? '' : c.relalias+'.')+c.colname+"'"}.join(',')
         columnsArray = nd.columns.map { |c| "'" + c.relname + '.' + c.colname + "'" }.join(',')
@@ -482,12 +410,14 @@ class PredicateTree
   def transfer_child_to_node(child)
     # pp child
     nd = Node.new
-      nd.name = child.name
-      nd.query = child.content['query']
-      nd.location = child.content['location']
-      nd.columns = child.content['columns']
-      nd.suspicious_score = child.content['suspicious_score']
-      nd
+    nd.name = child.name
+    nd.query = child.content['query']
+    nd.location = child.content['location']
+    nd.columns = child.content['columns']
+    nd.opr = child.content['opr']
+    nd.const = child.content['const']
+    nd.suspicious_score = child.content['suspicious_score']
+    nd
   end
 
   def predicateArrayGen(pdtree)

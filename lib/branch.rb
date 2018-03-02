@@ -41,4 +41,13 @@ class Branch
   def columns_simialrity(other_columns)
     ( self.columns.to_set ^ other_columns.to_set ).count
   end
+
+  def to_hash
+    branch_hash = Hash.new()
+    branch_hash[self.name] = Hash.new()
+    @nodes.each do |nd|
+      branch_hash[self.name].merge!(nd.to_hash)
+    end
+    return branch_hash
+  end
 end
