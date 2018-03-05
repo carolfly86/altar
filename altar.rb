@@ -16,6 +16,7 @@ Dir['lib/*.rb', 'lib/*/*.rb'].each { |file| require_relative file }
 # ./altar.rb -a y -m b  -o fl
 # ./altar.rb -a y -o ds
 # ./altar.rb -s balance_m01 -m o -u n
+# ./altar.rb -s adventureworks_join_alarm.csv -q j -o xdiff
 # Dir.glob("lib/*.rb").each {|file| puts file; require_relative file }
 opts = Trollop.options do
   banner 'Usage: ' + $PROGRAM_NAME + ' --script [script] '
@@ -70,8 +71,16 @@ else
     elsif opts[:operation] == 'ds'
       ds_learning(script)
     elsif opts[:operation] == 'xdiff'
-      file = File.join(File.dirname(__FILE__), "experiment_results/fix/alarm/WHERE/#{script}")
-      xdiff(file)
+      sub_dir = case opts[:query_type]
+                when'w'
+                  'WHERE'
+                when'j'
+                  'JOIN'
+                else
+                  abort('unknown query type!')
+                end
+      file = File.join(File.dirname(__FILE__), "experiment_results/fix/alarm/#{sub_dir}/#{script}")
+      xdiff(file, opts[:query_type])
     else
       puts 'unknow operation'
     end

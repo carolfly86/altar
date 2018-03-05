@@ -242,7 +242,7 @@ def faultLocalization(script, golden_record_opr, method, auto_fix)
   end
 end
 
-def xdiff(file)
+def xdiff(file,query_type)
   data = Array.new
   CSV.foreach(file, { encoding: "UTF-8", headers: true, header_converters: :symbol, converters: :all}) do |row|
     data << row.to_hash
@@ -253,11 +253,18 @@ def xdiff(file)
   CSV.open(new_file, "wb") do |csv|
     csv << header
     data.each do |row|
-      tquery = row[:tquery].gsub('"','')
-      fixed_query = row[:fixed_query].gsub('"','')
-      t_predicateTree = build_pdtree_from_query(tquery, row[:test_id])
-      fixed_predicateTree = build_pdtree_from_query(fixed_query, row[:test_id])
-      similarity = XDiff.compare(t_predicateTree,fixed_predicateTree)
+      next if row[:tquery].to_s.empty?
+      tquery = row[:tquery].to_s.gsub('"','')
+      fixed_query = row[:fixed_query].to_s.gsub('"','')
+
+      if query_type == 'j'
+        similarity = XDiff.join_compare(tquery,fixed_query)
+      elsif query_type == 'w'
+        t_predicateTree = build_pdtree_from_query(tquery, row[:test_id])
+        fixed_predicateTree = build_pdtree_from_query(fixed_query, row[:test_id])
+        similarity = XDiff.where_compare(t_predicateTree,fixed_predicateTree)
+      end
+
       result = row.values
       result << similarity
       csv << result
